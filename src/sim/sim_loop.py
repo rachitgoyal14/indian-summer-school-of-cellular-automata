@@ -41,22 +41,28 @@ def run_midblock_simulation(config: dict, rate_veh_per_hour: float, duration_s: 
             # Check if entry is clear (front of a new vehicle would be at car_length - 1)
             # The new vehicle occupies cells 0 to car_length - 1
             entry_clear = True
+            min_back = road_length_cells
             for v in vehicles:
                 # If any vehicle's back is <= car_length - 1, the entry is blocked
                 v_back = v.position_cells - v.length_cells + 1
                 if v_back <= car_length - 1:
                     entry_clear = False
                     break
+                if v_back < min_back:
+                    min_back = v_back
                     
             if entry_clear:
+                gap = min_back - car_length
+                initial_speed = min(car_max_speed, max(0, gap))
+                
                 new_vehicle = Vehicle(
                     id=vehicle_id_counter,
                     mode="car",
                     length_cells=car_length,
-                    max_speed_cells_per_step=0,
+                    max_speed_cells_per_step=car_max_speed,
                     max_accel_cells_per_step2=car_max_accel,
                     position_cells=car_length - 1, # front bumper
-                    speed_cells_per_step=0 # starts from 0 or max speed? usually some entering speed, let's say 0
+                    speed_cells_per_step=initial_speed
                 )
                 vehicles.append(new_vehicle)
                 vehicle_id_counter += 1
