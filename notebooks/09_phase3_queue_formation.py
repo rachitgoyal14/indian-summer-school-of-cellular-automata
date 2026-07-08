@@ -8,15 +8,15 @@ from src.sim.sim_loop import run_single_leg_with_signal
 def run_queue_formation():
     config = load_config("configs/intersection_default.yaml")
     
-    rate_veh_per_hour = 3000
-    duration_s = 300 # Roughly 2-3 cycles of 130s
+    rate_veh_per_hour = 800
+    duration_s = 390 # 3 full cycles of 130s
     
     # We use a mix of vehicles to see the heterogeneous trajectories
     mode_mix = {
         'two_wheeler': 0.546,
-        'three_wheeler': 0.256,
-        'car': 0.036,
-        'bus': 0.162
+        'car': 0.267,
+        'three_wheeler': 0.151,
+        'bus': 0.036
     }
     
     rng = np.random.default_rng(42)
