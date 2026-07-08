@@ -416,3 +416,18 @@ def run_single_leg_with_signal(
             
     df = pd.DataFrame(records)
     return df
+
+def run_full_intersection(config: dict, rate_veh_per_hour: float, duration_s: int, mode_mix: dict, rng: np.random.Generator) -> pd.DataFrame:
+    """
+    Run a full 4-leg intersection simulation.
+    """
+    from src.intersection.intersection import Intersection
+    
+    intersection = Intersection(config, rate_veh_per_hour, duration_s, mode_mix, rng)
+    
+    all_records = []
+    for t in range(duration_s):
+        records_t = intersection.step(t)
+        all_records.extend(records_t)
+        
+    return pd.DataFrame(all_records)

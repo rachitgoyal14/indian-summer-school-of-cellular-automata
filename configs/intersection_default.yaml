@@ -22,6 +22,9 @@ izoi_distance_m:
   bus: 111.26 # from Table 1 mean for Bus
 izoi_deceleration_rate: 2.0 # cells/step^2
 
+turn_proportions:
+  default: {left: 0.175, straight: 0.65, right: 0.175}
+
 modes: [two_wheeler, three_wheeler, car, bus]
 mode_params:
   two_wheeler:
