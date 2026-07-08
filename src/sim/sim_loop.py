@@ -410,7 +410,8 @@ def run_single_leg_with_signal(
                 "position_cells": v.position_cells,
                 "lateral_position_cells": v.lateral_position_cells,
                 "speed_cells_per_step": v.speed_cells_per_step,
-                "signal": current_signal
+                "signal": current_signal,
+                "pending_count": len(pending_arrivals)
             })
             
     df = pd.DataFrame(records)
