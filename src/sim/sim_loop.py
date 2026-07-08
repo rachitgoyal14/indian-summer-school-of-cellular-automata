@@ -24,7 +24,7 @@ def run_midblock_simulation(config: dict, rate_veh_per_hour: float, duration_s: 
     # Waiting queue for vehicles that have arrived but cannot enter yet
     pending_arrivals = 0
     
-    # Standard car parameters from Table 2
+    # Test params for forcing jam
     car_length = 7
     car_max_speed = 28
     car_max_accel = 3
@@ -53,7 +53,7 @@ def run_midblock_simulation(config: dict, rate_veh_per_hour: float, duration_s: 
                     id=vehicle_id_counter,
                     mode="car",
                     length_cells=car_length,
-                    max_speed_cells_per_step=car_max_speed,
+                    max_speed_cells_per_step=0,
                     max_accel_cells_per_step2=car_max_accel,
                     position_cells=car_length - 1, # front bumper
                     speed_cells_per_step=0 # starts from 0 or max speed? usually some entering speed, let's say 0

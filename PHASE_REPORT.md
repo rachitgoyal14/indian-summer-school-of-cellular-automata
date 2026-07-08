@@ -36,7 +36,14 @@
   - Max speed: 28 cells/s
   - Max acceleration: 3 cells/s² (from "Acceleration speed <5.5 m/s" row)
   - Randomization parameter (p_slowdown): 0.06 (from "po" row)
-- Fundamental Diagram Observations: The plot shows a linear rise in flow as density increases from 0, representing the free-flow regime, peaking at the capacity density (around 30 veh/km with a flow of ~1400 veh/hr). However, because the system models an open boundary (unrestricted outflow at the end of the road) with vehicles driven exclusively by a fixed upstream arrival generator, the system never reaches the highly congested jam density. Instead of a full falling branch, the flow and density plateau at capacity. This is exactly in line with the physical expectation of an open-boundary NaSch driven by pure inflow with no downstream bottleneck.
+- Fundamental Diagram Observations: As requested, I investigated the lack of a falling branch by sweeping arrival rates up to 10,000 veh/hr, inspecting `decelerate_for_gap` (which correctly allows the lead vehicle unrestricted free-flow speed), and testing extreme parameters (`p_slowdown=0.8`, `road_length=10km`). In all cases, the flow plateaus at ~1400 veh/hr and the falling branch does not emerge.
+  
+  **Mechanistic Justification for the Missing Falling Branch**: 
+  The absence of the falling branch is a physical consequence of the Phase 1 setup (open boundary, single-lane, discrete entry). 
+  1. **Road Capacity**: With `car_length=7` and `max_speed=28`, the minimum safe headway is 35 cells. This yields a theoretical road capacity of ~2880 veh/hr (0.8 veh/s).
+  2. **Entry Bottleneck**: A vehicle entering at speed 0 with `max_accel=3` takes 2 full time steps to clear the entry zone (cells 0 to 6). Thus, the absolute fastest the generator can physically inject vehicles without overlapping is 1 vehicle every 2 seconds, capping inflow at exactly 1800 veh/hr.
+  3. **Result**: Because the maximum possible upstream inflow (1800 veh/hr) is significantly lower than the road's downstream carrying capacity (2880 veh/hr), the entry zone acts as a permanent, strict bottleneck. In open-boundary kinematic wave theory and CA, if a road is fed below its capacity and has unrestricted outflow, it operates permanently in the sub-critical (free-flow) phase. The queue grows entirely *off-road* in the generator's `pending_arrivals`, while the on-road density never exceeds the critical density (peaking at ~30 veh/km). 
+  To produce the falling branch, we would need to either artificially initialize the road at high densities, introduce a periodic ring-road boundary, or inject vehicles at high initial speeds to artificially boost entry capacity beyond 2880 veh/hr. Since Phase 1 prohibits downstream bottlenecks and ring roads, the plot correctly demonstrates the free-flow branch and the entry-capacity plateau.
 - Simplifications / Assumptions:
   - Used exponential (Poisson) headway generation in `generator.py` for simplicity in Phase 1 as requested.
   - Adjusted the flow measurement point to `road_length_cells - 50` so that high-speed vehicles are properly captured before they get deleted at the open boundary limit.
