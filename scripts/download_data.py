@@ -39,28 +39,42 @@ def download_data():
             # The column names might vary, so we map them correctly
             # We want: vehicle_id, mode, time_s, x_m, y_m, speed_mps
             
-            # Example mapping for Kanagaraj dataset
-            # We expect columns like Vehicle_ID, Frame_ID, Local_X, Local_Y, v_Length, v_Width, v_Class, v_Vel
-            
-            col_map = {}
-            for col in df.columns:
-                lower_col = col.lower()
-                if "id" in lower_col and "vehicle" in lower_col: col_map[col] = "vehicle_id"
-                elif "class" in lower_col or "type" in lower_col: col_map[col] = "mode"
-                elif "frame" in lower_col or "time" in lower_col: col_map[col] = "time_s"
-                elif "local_x" in lower_col or "x" == lower_col: col_map[col] = "x_m"
-                elif "local_y" in lower_col or "y" == lower_col: col_map[col] = "y_m"
-                elif "vel" in lower_col or "speed" in lower_col: col_map[col] = "speed_mps"
+            # Exact mapping for Kanagaraj dataset
+            col_map = {
+                'Vehicle Number': 'vehicle_id',
+                'Vehicle Type': 'mode',
+                'Time (sec)': 'time_s',
+                'Long Distance (m)': 'x_m',
+                'Lat Distance (m)': 'y_m',
+                'Long Speed (m/sec)': 'speed_mps'
+            }
             
             df.rename(columns=col_map, inplace=True)
             
             required_cols = ["vehicle_id", "mode", "time_s", "x_m", "y_m", "speed_mps"]
             for c in required_cols:
                 if c not in df.columns:
-                    # add dummy column if missing
+                    logging.warning(f"Column {c} missing from processed data!")
                     df[c] = 0
             
             df = df[required_cols]
+            
+            # Map Kanagaraj numerical mode to our text modes
+            # 1 - Motorcycle (two_wheeler)
+            # 2 - Car (car)
+            # 3 - Bus (bus)
+            # 4 - Truck (bus)
+            # 5 - LCV (car or bus, let's map to car)
+            # 6 - Auto-Rickshaw (three_wheeler)
+            type_mapping = {
+                1.0: 'two_wheeler',
+                2.0: 'car',
+                3.0: 'bus',
+                4.0: 'bus',
+                5.0: 'car',
+                6.0: 'three_wheeler'
+            }
+            df['mode'] = df['mode'].map(type_mapping).fillna('car')
             
             df.to_csv("data/processed/trajectories_kanagaraj.csv", index=False)
             logging.info("Processed real Kanagaraj data.")

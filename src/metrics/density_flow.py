@@ -1,4 +1,5 @@
 import pandas as pd
+from typing import Dict
 
 def flow_density_from_log(df: pd.DataFrame, road_length_cells: int, cell_length_m: float, window_s: int, measurement_point_offset: int = 50) -> pd.DataFrame:
     """
@@ -29,29 +30,16 @@ def flow_density_from_log(df: pd.DataFrame, road_length_cells: int, cell_length_
             density = 0.0
             flow = 0.0
         else:
-            # Density: avg vehicles per second / road_length_km
-            # count total vehicle records in this window / window length = avg vehicles
             avg_vehicles = len(df_window) / float(window_s)
             density = avg_vehicles / road_length_km
             
-            # Flow: count unique vehicles that cross measurement point
-            # To cross measurement point in this window, the vehicle must be before it at start of step
-            # and past it at end of step. We can just count vehicles whose position_cells is >= measurement_point
-            # and who were previously < measurement_point, or just look at max position in window vs min.
-            # Simpler: count vehicles that reach or exceed measurement_point in this window, but only count them once.
-            
             crossed_vehicles = set()
             for vid, group in df_window.groupby('vehicle_id'):
-                # Check if it was ever >= measurement point
-                if group['position_cells'].max() >= measurement_point_cells:
-                    # check if its FIRST appearance in this window was < measurement point?
-                    # Or just check if the exact crossing happened here.
-                    # Best: check if any step has position >= measurement_point and (position - speed) < measurement_point
-                    crossings = group[(group['position_cells'] >= measurement_point_cells) & 
-                                      (group['position_cells'] - group['speed_cells_per_step'] < measurement_point_cells)]
-                    if not crossings.empty:
-                        crossed_vehicles.add(vid)
-                        
+                crossings = group[(group['position_cells'] >= measurement_point_cells) & 
+                                  (group['position_cells'] - group['speed_cells_per_step'] < measurement_point_cells)]
+                if not crossings.empty:
+                    crossed_vehicles.add(vid)
+                    
             flow = len(crossed_vehicles) * (3600.0 / window_s)
             
         results.append({
@@ -62,3 +50,24 @@ def flow_density_from_log(df: pd.DataFrame, road_length_cells: int, cell_length_
         })
         
     return pd.DataFrame(results)
+
+def flow_density_by_mode(df: pd.DataFrame, road_length_cells: int, cell_length_m: float, window_s: int, measurement_point_offset: int = 50) -> Dict[str, pd.DataFrame]:
+    """
+    Computes per-mode and mixed-traffic flow-density curves.
+    Returns a dictionary mapping mode name (and 'all') to its DataFrame of results.
+    """
+    out = {}
+    
+    # All modes
+    out['all'] = flow_density_from_log(df, road_length_cells, cell_length_m, window_s, measurement_point_offset)
+    
+    if 'mode' not in df.columns:
+        return out
+        
+    # Group by mode and compute
+    modes = df['mode'].unique()
+    for mode in modes:
+        mode_df = df[df['mode'] == mode]
+        out[mode] = flow_density_from_log(mode_df, road_length_cells, cell_length_m, window_s, measurement_point_offset)
+        
+    return out

@@ -9,4 +9,50 @@ simulation:
   time_step_s: 1
   duration_s: 3600
   random_seed: 42
+
+signal:
+  cycle_length_s: 130
+  green_s: 30
+  red_s: 100
+
+izoi_distance_m:
+  two_wheeler: 100 # Placeholder (lower than MTW due to agility/reaction time)
+  three_wheeler: 141.13 # from Table 1 mean for MTW
+  car: 187.385 # from Table 1 mean for Car
+  bus: 111.26 # from Table 1 mean for Bus
+izoi_deceleration_rate: 2.0 # cells/step^2
+
 modes: [two_wheeler, three_wheeler, car, bus]
+mode_params:
+  two_wheeler:
+    length_cells: 4
+    width_cells: 1
+    max_speed_cells_per_step: 30
+    max_accel_cells_per_step2: 4
+    p_slowdown: 0.05
+    lane_change_prob: 0.8
+    position_preference: 0.1 # tends toward edges
+  three_wheeler:
+    length_cells: 5
+    width_cells: 2
+    max_speed_cells_per_step: 29
+    max_accel_cells_per_step2: 3
+    p_slowdown: 0.05
+    lane_change_prob: 0.7
+    position_preference: 0.3
+  car:
+    length_cells: 7
+    width_cells: 3
+    max_speed_cells_per_step: 28
+    max_accel_cells_per_step2: 3
+    p_slowdown: 0.06
+    lane_change_prob: 0.6
+    position_preference: 0.5 # tends toward center
+  bus:
+    length_cells: 20
+    width_cells: 4
+    max_speed_cells_per_step: 20
+    max_accel_cells_per_step2: 2
+    p_slowdown: 0.10
+    lane_change_prob: 0.3
+    position_preference: 0.5
