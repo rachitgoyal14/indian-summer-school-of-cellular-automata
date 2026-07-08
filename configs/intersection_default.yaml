@@ -1,0 +1,10 @@
+grid:
+  cell_length_m: 0.5
+  cell_width_m: 0.7
+  lane_width_m: 3.5
+legs: 4
+simulation:
+  time_step_s: 1
+  duration_s: 3600
+  random_seed: 42
+modes: [two_wheeler, three_wheeler, car, bus]
