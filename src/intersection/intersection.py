@@ -67,6 +67,24 @@ class Intersection:
         W = self.legs[0].road_width_cells
         self.box_size = 2 * W
         
+        # Bounded max-wait override: track when each vehicle entered the junction box.
+        # If stuck > 2 full signal cycles, grant right-of-way to cross.
+        self.junction_entry_t = {}  # vehicle_id -> timestep of first box entry
+        self.max_box_dwell_s = config['signal']['cycle_length_s']  # 1 cycle = 130s (was 2 cycles); vehicles stuck longer than this block the opposing phase
+        self.forced_crossings_count = 0
+        self.forced_crossing_ids = set()
+        self.natural_exits_count = 0
+        
+    def get_full_path_cells(self, leg_id: int, lat_pos: int, turn: str, length: int, width: int) -> set:
+        cells_set = set()
+        W = self.box_size // 2
+        exit_threshold = (W + length) if turn != 'straight' else (2 * self.box_size)
+        for p in range(0, exit_threshold):
+            for c in self.get_junction_cells(leg_id, lat_pos, turn, p, length, width):
+                if 0 <= c[0] < self.box_size and 0 <= c[1] < self.box_size:
+                    cells_set.add(c)
+        return cells_set
+        
     def get_junction_cells(self, leg_id: int, lat_pos: int, turn: str, pos_past_stop: int, v_length: int, v_width: int) -> List[Tuple[int, int]]:
         """
         Map a vehicle's 1D position (past stop line) to 2D cells in the junction box.
@@ -78,9 +96,15 @@ class Intersection:
         cells = []
         W = self.legs[0].road_width_cells
         
+        # For turning vehicles, clamp effective body length to W cells inside the box.
+        # A long vehicle (e.g. bus) turning has its rear still on the approach road;
+        # only the portion that has entered the box (up to W cells) traces the arc.
+        # This prevents unrealistically large exclusion zones for long turning vehicles.
+        effective_length = v_length if turn == "straight" else min(v_length, W)
+        
         # If pos_past_stop < 0, it hasn't reached the box yet.
         # We only care about the front of the vehicle up to its back.
-        for l in range(v_length):
+        for l in range(effective_length):
             p = pos_past_stop - l
             if p < 0:
                 continue
@@ -145,8 +169,7 @@ class Intersection:
                 if leg_id == 0 or leg_id == 2: cx += w
                 else: cy += w
                 
-                if 0 <= cx < 2*W and 0 <= cy < 2*W:
-                    cells.append((cx, cy))
+                cells.append((int(cx), int(cy)))  # Always int coords for correct dict key hashing
                     
         return cells
         
@@ -239,71 +262,121 @@ class Intersection:
             decelerate_for_gap(leg.vehicles)
             
         # Global 2D Junction Box Conflict Resolution
-        # Sort all vehicles by how far they are into the intersection (highest position first)
-        # to give priority to vehicles already in the box, then by ID.
+        def turn_priority(turn_str):
+            return 1 if turn_str in ["straight", "left"] else 0
         all_vehicles = []
         for leg in self.legs:
             for v in leg.vehicles:
-                all_vehicles.append((leg, v))
+                # Only consider vehicles that are near or in the junction box.
+                pos_past = v.position_cells - leg.stop_line_position_cells
+                if pos_past >= -30 and pos_past < 2*self.box_size:
+                    # Determine right-of-way status
+                    in_box = pos_past >= 0
+                    dwell_s = (t - self.junction_entry_t.get(v.id, t)) if in_box else 0
+                    row_status = 1 if (in_box and dwell_s > self.max_box_dwell_s) else 0
+                    all_vehicles.append((leg, v, row_status))
                 
-        all_vehicles.sort(key=lambda item: (item[1].position_cells - item[0].stop_line_position_cells, -item[1].id), reverse=True)
+        all_vehicles.sort(key=lambda item: (
+            item[2], # Right-of-way vehicles first (row_status = 1)
+            item[1].position_cells - item[0].stop_line_position_cells, 
+            turn_priority(item[0].turn_directions[item[1].id]),
+            -item[1].id
+        ), reverse=True)
         
-        claimed_cells = {} # (x, y) -> (leg_id, vehicle_id, turn)
+        # Two separate maps:
+        # current_occupancy: (x,y) -> vehicle_id  [physical cells RIGHT NOW — never overridable]
+        # future_reservations: (x,y) -> (vehicle_id, progress_score, row_status)
+        current_occupancy = {}   # hard constraint: cannot drive into these
+        future_reservations = {} # soft: lower-priority vehicle yields to higher-priority
         
-        # First, everyone claims their CURRENT footprint in the box
-        for leg, v in all_vehicles:
+        # Phase A: everyone already IN the box claims their CURRENT footprint (hard constraint)
+        for leg, v, _ in all_vehicles:
             pos_past = v.position_cells - leg.stop_line_position_cells
             if pos_past >= 0:
                 turn = leg.turn_directions[v.id]
-                for c in self.get_junction_cells(leg.leg_id, v.lateral_position_cells, turn, pos_past, v.length_cells, v.width_cells):
-                    claimed_cells[c] = (leg.leg_id, v.id, turn)
+                for cx, cy in self.get_junction_cells(leg.leg_id, v.lateral_position_cells, turn, pos_past, v.length_cells, v.width_cells):
+                    if 0 <= cx < self.box_size and 0 <= cy < self.box_size:
+                        current_occupancy[(cx, cy)] = v.id
                     
-        # Now each vehicle tries to claim its future cells
-        for leg, v in all_vehicles:
+        # Phase B: each vehicle (priority order) tries to claim its FUTURE cells
+        for leg, v, row_status in all_vehicles:
             turn = leg.turn_directions[v.id]
             speed = int(v.speed_cells_per_step)
+            my_progress = v.position_cells - leg.stop_line_position_cells
+            
+            if row_status == 1:
+                if v.id not in self.forced_crossing_ids:
+                    self.forced_crossing_ids.add(v.id)
+                # Bounded max-wait override: grant right-of-way and ignore soft conflicts
+                if v.speed_cells_per_step == 0:
+                    v.speed_cells_per_step = 5
+                speed = int(v.speed_cells_per_step)
+                granted_right_of_way = True
+            else:
+                granted_right_of_way = False
+                
+            # Box Junction / Gridlock Prevention Rule:
+            # Do not enter the box if a conflicting vehicle from a DIFFERENT leg is already
+            # inside the box with an overlapping path. Same-leg following vehicles are
+            # intentionally excluded here because their spacing is already enforced by
+            # decelerate_for_gap in 1D — including them caused a single-file serialization
+            # where only 1 vehicle per leg could ever be in the box at a time.
+            if my_progress < 0 and my_progress + speed >= 0 and not granted_right_of_way:
+                my_path = self.get_full_path_cells(leg.leg_id, v.lateral_position_cells, turn, v.length_cells, v.width_cells)
+                blocked = False
+                for other_leg, other_v, other_row in all_vehicles:
+                    if other_v.id != v.id and other_leg.leg_id != leg.leg_id:  # BUG FIX: skip same-leg vehicles
+                        other_progress = other_v.position_cells - other_leg.stop_line_position_cells
+                        W = self.box_size // 2
+                        other_turn = other_leg.turn_directions.get(other_v.id, 'straight')
+                        other_exit = (W + other_v.length_cells) if other_turn != 'straight' else (2 * self.box_size)
+                        if 0 <= other_progress < other_exit:
+                            other_path = self.get_full_path_cells(other_leg.leg_id, other_v.lateral_position_cells, other_turn, other_v.length_cells, other_v.width_cells)
+                            if my_path.intersection(other_path):
+                                blocked = True
+                                break
+                if blocked:
+                    speed = max(0, int(-my_progress - 1))
+                    v.speed_cells_per_step = speed
+                
             for step_ahead in range(1, speed + 1):
                 pos_past = v.position_cells + step_ahead - leg.stop_line_position_cells
                 if pos_past >= 0:
                     future_cells = self.get_junction_cells(leg.leg_id, v.lateral_position_cells, turn, pos_past, v.length_cells, v.width_cells)
                     conflict = False
-                    for c in future_cells:
-                        if c in claimed_cells:
-                            other_leg, other_vid, other_turn = claimed_cells[c]
-                            if other_vid != v.id:
-                                # We have a conflict with either someone already there, or someone who claimed it.
-                                # Rule: Right-turn yields to opposing straight/left.
-                                is_opposing = (abs(leg.leg_id - other_leg) == 2)
-                                we_must_yield = False
-                                
-                                # If the other vehicle is already physically at this cell (it's their current position), we ALWAYS yield to avoid rear-ending.
-                                # The claimed_cells includes current positions. We can't tell if it's current or future here, so we yield.
-                                if is_opposing:
-                                    if turn == "right" and other_turn in ["straight", "left"]:
-                                        we_must_yield = True
-                                    elif turn == "right" and other_turn == "right":
-                                        we_must_yield = v.id > other_vid
-                                    elif turn in ["straight", "left"] and other_turn == "right":
-                                        we_must_yield = False
-                                    else:
-                                        we_must_yield = v.id > other_vid
-                                else:
-                                    # Cross traffic or same-leg conflict
-                                    we_must_yield = True # Always yield if someone else claimed it first (since we sorted by priority)
-                                    
-                                if we_must_yield:
-                                    conflict = True
-                                    break
+                    for cx, cy in future_cells:
+                        if 0 <= cx < self.box_size and 0 <= cy < self.box_size:
+                            c = (cx, cy)
+                            # Hard check: never move into a cell physically occupied by another vehicle right now
+                            if c in current_occupancy and current_occupancy[c] != v.id:
+                                conflict = True
+                                break
+                            # Soft check: yield to future reservation from any other vehicle.
+                            # Note: same-leg vehicles are intentionally included here — vehicles
+                            # already inside the box from the same approach still need to be
+                            # respected to prevent rear-end collisions. The same-leg fix only
+                            # applies to the ENTRY check (gridlock-prevention block above).
+                            if c in future_reservations:
+                                other_vid, other_progress, other_row_status, other_res_leg_id = future_reservations[c]
+                                if other_vid != v.id:
+                                    if not granted_right_of_way or (other_row_status == 1 and other_progress >= my_progress):
+                                        conflict = True
+                                        break
                     if conflict:
                         v.speed_cells_per_step = step_ahead - 1
                         break
                         
-            # After deciding final speed, claim the cells for the entire path from current to future
+            # After deciding final speed, register the future reservations
+            my_progress = v.position_cells - leg.stop_line_position_cells
             for step_ahead in range(1, int(v.speed_cells_per_step) + 1):
                 pos_past = v.position_cells + step_ahead - leg.stop_line_position_cells
                 if pos_past >= 0:
-                    for c in self.get_junction_cells(leg.leg_id, v.lateral_position_cells, turn, pos_past, v.length_cells, v.width_cells):
-                        claimed_cells[c] = (leg.leg_id, v.id, turn)
+                    for cx, cy in self.get_junction_cells(leg.leg_id, v.lateral_position_cells, turn, pos_past, v.length_cells, v.width_cells):
+                        if 0 <= cx < self.box_size and 0 <= cy < self.box_size:
+                            c = (cx, cy)
+                            # Only claim if not already reserved by a higher-priority vehicle
+                            if c not in future_reservations or future_reservations[c][1] <= my_progress:
+                                future_reservations[c] = (v.id, pos_past, row_status, leg.leg_id)  # leg_id stored for O(1) lookup
                         
         for leg in self.legs:
             current_signal = leg.signal.state_at(t)
@@ -341,15 +414,38 @@ class Intersection:
                     if v.speed_cells_per_step > 0 and self.rng.random() < p_slow:
                         v.speed_cells_per_step -= 1
                         
-            # Update positions
+            # Update positions  
             leg.vehicles = update_positions(leg.vehicles, leg.road_length_cells + 2*self.box_size)
             
-            # Remove vehicles that exited the junction box
+            # Remove vehicles that exited the junction box.
+            # Turning vehicles exit after W + v_length cells; straight vehicles after 2*box_size.
+            # Bounded max-wait override: also forcibly eject any vehicle that has been
+            # in the box for > max_box_dwell_s steps (geometric-deadlock guard).
+            W = self.box_size // 2
             surviving = []
             for v in leg.vehicles:
                 pos_past = v.position_cells - leg.stop_line_position_cells
-                if pos_past < 2 * self.box_size:
+                
+                # Track junction box entry time
+                if pos_past >= 0 and v.id not in self.junction_entry_t:
+                    self.junction_entry_t[v.id] = t
+                
+                # Determine standard exit threshold
+                turn = leg.turn_directions.get(v.id, 'straight')
+                if turn == 'straight':
+                    exit_threshold = 2 * self.box_size
+                else:
+                    exit_threshold = W + v.length_cells
+                
+                # Remove if it exceeds the exit threshold.
+                # Vehicles forced through will move forward and exit naturally since they have right-of-way.
+                if pos_past < exit_threshold:
                     surviving.append(v)
+                else:
+                    if v.id in self.forced_crossing_ids:
+                        self.forced_crossings_count += 1
+                    else:
+                        self.natural_exits_count += 1
             leg.vehicles = surviving
             
             for v in leg.vehicles:

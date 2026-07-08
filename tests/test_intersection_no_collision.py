@@ -7,9 +7,9 @@ from src.intersection.intersection import Intersection
 def test_intersection_no_collision():
     config = load_config("configs/intersection_default.yaml")
     
-    # Run a busy intersection to force interaction
+    # Run a busy intersection to force interaction and trigger force-through overrides (>260s)
     rate_veh_per_hour = 1500
-    duration_s = 260 # 2 full cycles of 130s
+    duration_s = 600
     
     mode_mix = {
         'two_wheeler': 0.546,
@@ -47,7 +47,9 @@ def test_intersection_no_collision():
                 
                 cells = inter.get_junction_cells(leg_id, lat_pos, turn, pos_past, v_length, v_width)
                 for c in cells:
-                    if c in occupancy:
-                        other_v_id = occupancy[c]
-                        pytest.fail(f"Collision in junction box at t={t}, cell={c} between vehicle {v_id} and {other_v_id}")
-                    occupancy[c] = v_id
+                    cx, cy = c
+                    if 0 <= cx < inter.box_size and 0 <= cy < inter.box_size:
+                        if c in occupancy:
+                            other_v_id = occupancy[c]
+                            pytest.fail(f"Collision in junction box at t={t}, cell={c} between vehicle {v_id} and {other_v_id}")
+                        occupancy[c] = v_id

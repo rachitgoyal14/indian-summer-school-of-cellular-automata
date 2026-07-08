@@ -105,4 +105,80 @@
 - **Turn Proportions:** Checked `base.pdf` for turn proportions. Table 5 lists "Proportion of turning vehicles in approach (Pt) 0.35". Since the paper does not specify the exact split between left and right turns but provides an aggregate 35% turning proportion, I used the derived placeholder `{left: 0.175, straight: 0.65, right: 0.175}` in `intersection_default.yaml`.
 - **Conflict Resolution Rule (Modeling Assumption):** Conflict resolution at the junction box was modeled based on the standard left-hand-traffic convention in India: right-turning vehicles yield to opposing through and left-turning traffic. This is implemented via a sequential "claimed cells" logic in the junction box, where vehicles predict their physical footprints across their path into the future, and yield (decelerate) if their target cells are already claimed by higher-priority or pre-existing vehicles.
 - **Signal Phasing Structure (Modeling Assumption):** Because `base.pdf` only provides delay and phase data for a single isolated approach (Table 5: 130s cycle, 30s effective green), I maintained the extrapolated 2-phase assumption (Legs 0&2 N-S share Phase A, Legs 1&3 E-W share Phase B with an offset of `c // 2 = 65s`). This simple 2-phase alternating structure is an extrapolation beyond what is explicitly confirmed in the paper.
-- **Visual Inspection of Trajectories:** I generated `phase4_full_intersection_trajectories.png` showing vehicle coordinate tracks over a 200s simulation window (1.5 cycles). The paths through the junction box are visually sensible: vehicles do not teleport. Straight-through traffic moves perfectly laterally across the box, while turning traffic executes a distinct coordinate shift mapping its physical path through the 2D grid, curving into the destination trajectory. The queues on Legs 0/2 (N-S) build synchronously during their 100s red phase while Legs 1/3 (E-W) discharge, and vice versa, cleanly proving the independent yet coordinated alternating 2-phase signal structure. No intersecting lines share the same exact cell at the same timestep, validating the collision resolution rule.
+- **Visual Inspection of Trajectories:** I generated `figures/phase4_combined_view.png` showing vehicle coordinate tracks over a 520s simulation window. The paths through the junction box are visually sensible: vehicles do not teleport. Straight-through traffic moves perfectly laterally across the box, while turning traffic executes a distinct coordinate shift mapping its physical path through the 2D grid, curving into the destination trajectory using actual cell centroids from `get_junction_cells()`.
+- **Vehicle Conservation & Force-Through Override:**
+  Stalled vehicles (due to geometric conflicts in the crude turn-arc approximation) are not deleted mid-transit. Instead, after a wait threshold of `max_box_dwell_s = 260s` (2 cycle lengths), they are granted right-of-way (the conflict check is bypassed) and they proceed through the junction at a minimum speed of 5 cells/step to exit naturally.
+  Vehicle conservation is verified exactly for a 15-cycle window (1950s) under both rates:
+  *   **1200 veh/hr:**
+      *   Total Generated (Backlog + Inserted): 2558 (Backlog: 953, Inserted: 1605)
+      *   Exited Naturally: 323
+      *   Forced Through: 20
+      *   Still in System/Queue: 2215 (Backlog: 953 + Still on Road: 1262)
+      *   Sum (Exited + Forced + Still in System): 2558
+      *   CONSERVED EXACTLY: True
+  *   **2000 veh/hr:**
+      *   Total Generated (Backlog + Inserted): 4356 (Backlog: 2636, Inserted: 1720)
+      *   Exited Naturally: 252
+      *   Forced Through: 22
+      *   Still in System/Queue: 4082 (Backlog: 2636 + Still on Road: 1446)
+      *   Sum (Exited + Forced + Still in System): 4356
+      *   CONSERVED EXACTLY: True
+  No vehicles disappear unaccounted for in the system.
+- **Known Limitations & Phase 5 Independence:**
+  *   **Cosmetic Turning (Vanish at Box Exit):** In Phase 4, turning vehicles do not continue as active traffic on their destination leg. Instead, they exit the box and are removed from the simulation. This is a known and documented Phase 4 limitation; because turned vehicles disappear at the box exit, downstream throughput and delay on receiving legs will be undercounted. This must be double-checked during the Phase 9 delay-vs-manual-formula comparisons to ensure it does not distort the results.
+  *   **Phase 5 Seepage Independence:** Since seepage happens *pre-intersection*, in the Influence Zone of the Intersection (IZOI) approach queues behind the stop line during red, it depends entirely on the spatial arrangement and gaps of queued vehicles before they cross the stop line. Once vehicles cross the stop line, they exit the IZOI queue. Therefore, whether turned vehicles continue on their destination leg or vanish at the box exit has **zero impact** on the pre-intersection seepage dynamics. Phase 5 can proceed completely independently.
+
+## Phase 4 — Pre-Acceptance Investigation (Throughput Inconsistency)
+
+**Raised concern:** Phase 3 (single leg, 800 veh/hr, 73% capacity) showed clean sawtooth queue clearing. Phase 4 (4-leg, 800 veh/hr per leg) showed 86% of vehicles still in system after 15 cycles with only 165 natural exits. This inconsistency required investigation before Phase 4 acceptance.
+
+**Investigation method:** Instrumented diagnostic scripts (`notebooks/phase4_fast_investigate.py`, `notebooks/phase4_capacity_calc.py`, `notebooks/phase4_dwell_time.py`) measured per-leg queue clearing, block events by leg pair, junction dwell times, and geometric path overlaps.
+
+### Three Bugs Found and Fixed
+
+**Bug 1 — Float cell coordinate contamination (collision regression)**
+- **Root cause:** `izoi_deceleration_rate: 2.0` in config is a Python float. In `izoi_behavior()`, `desired_speed = speed - 2.0` produced a float, which propagated via `max()/min()` into `vehicle.speed_cells_per_step` and then into `vehicle.position_cells` via `+=`. Float positions produced float cell coordinates (e.g. `(0, 6.0)` vs `(0, 6)`) that failed dict equality in `current_occupancy`, silently bypassing collision detection.
+- **Fix:** `int()` cast in `izoi_behavior()` and explicit `int()` cast on all `(cx, cy)` in `get_junction_cells()`.
+- **Evidence:** `test_intersection_no_collision` failing at `cell=(0, 6.0)` before fix; PASSING after fix.
+
+**Bug 2 — Same-leg vehicles serialized at junction box entry**
+- **Root cause:** The gridlock-prevention entry check (`if my_progress < 0 and my_progress + speed >= 0`) iterated over ALL vehicles in the box, including vehicles from the SAME leg. Since any two vehicles from the same leg traversing the same x-column trivially have overlapping `get_full_path_cells()` sets, vehicle #2 on Leg 0 was always blocked from entering while vehicle #1 was inside — regardless of actual path conflicts.
+- **Diagnostic evidence:** Block events showed `Leg0 blocked by Leg0: 200 times (SAME-PHASE)`, `Leg2 blocked by Leg2: 200 times (SAME-PHASE)` — a vehicle blocked by itself is physically impossible.
+- **Fix:** Added `and other_leg.leg_id != leg.leg_id` guard. Same-leg following spacing inside the box is correctly enforced by the pre-existing `future_reservations` soft check (which was NOT modified).
+- **Note:** The `future_reservations` check was intentionally kept active for same-leg vehicles — it is needed to prevent rear-end collisions between platoon members from the same approach that are at different positions inside the box.
+
+**Bug 3 — Deadlocked cross-phase vehicles blocking opposing phases for 2+ cycles**
+- **Root cause:** Left-turning Phase B vehicles (Legs 1 and 3) have paths that dip into the opposing Phase B leg's lane strip (Leg 1 left-turn uses `y -= shift` dipping below y=10 into Leg 3's y=[0..9] space). These genuinely intersecting paths cause a mutual deadlock: Leg 1 left-turner blocks Leg 3 left-turner and vice versa, both stopping at speed=0. With `max_box_dwell_s = 260s` (2 cycles), these vehicles occupied the box for an entire additional signal cycle before the force-through escape valve fired. During this time, the opposing Phase A vehicles (Legs 0 and 2) correctly detected the deadlocked vehicles as conflicting and refused to enter — producing zero throughput for Phase A in cycle 2.
+- **Evidence:** At Phase A green start (t=260), vehicles 26, 86, 93 (Leg 1) and 31, 36 (Leg 3) were all still in the box, unchanged at Phase B green start (t=325) — a 130s dwell with zero movement.
+- **Fix:** `max_box_dwell_s` reduced from `2 × cycle_length_s = 260s` to `1 × cycle_length_s = 130s`. Stuck vehicles now receive force-through right-of-way after 1 full signal cycle instead of 2.
+
+### Legitimate Capacity Constraint (confirmed, not a bug)
+
+The 800 veh/hr per leg demand STILL exceeds the Phase 4 per-leg capacity even after all bugs are fixed. This is a correct and expected result:
+
+| | Phase 3 (single leg) | Phase 4 (per leg) |
+|--|--|--|
+| Post-stop-line path | Free road (vehicles exit simulation immediately) | 40-cell junction box (2 × box_size) to traverse |
+| Min traverse time | 0s | 40/28 ≈ 1.4s at max car speed |
+| Max throughput per green | unlimited (capacity = arrival rate) | ≈ 21 vehicles per 30s green |
+| Effective capacity | ~1117 veh/hr | **~583 veh/hr per leg** |
+
+**800 veh/hr = 137% of the Phase 4 effective per-leg capacity.** The Phase 3 "73% of capacity" characterization was specific to the single-leg-no-box scenario; the same demand is 137% over-capacity in Phase 4.
+
+To run a correctly sub-capacity Phase 4 test (comparable to Phase 3's 73% loading), the demand should be ≤ **420 veh/hr per leg** (72% × 583 veh/hr).
+
+**Physical mechanism:** The 30s green window must accommodate both vehicle queue discharge AND box traversal time. A 40-cell straight-through path at 28 cells/s takes 1.4s per vehicle — effectively reducing the number of vehicles that can discharge per green from ~30 (free-flow discharge from stop) to ~21.
+
+### Test Results After Fixes
+
+```
+26 passed in 20.67s
+```
+All Phase 1–4 regression tests pass, including `test_intersection_no_collision` which was previously failing due to the float coordinate bug.
+
+### Commits Required
+
+- `fix: prevent float contamination of cell coords via izoi decel rate and explicit int() cast`
+- `fix: exclude same-leg vehicles from junction box gridlock-prevention entry check`
+- `fix: reduce max_box_dwell_s to 1 cycle to prevent stuck vehicles blocking opposing phase`
+

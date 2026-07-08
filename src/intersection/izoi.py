@@ -21,7 +21,7 @@ def izoi_behavior(vehicle, signal_state: Literal["green", "red"], field_decel_ra
         # We assume the gap includes distance to stop line if there is no leader.
         desired_speed = vehicle.speed_cells_per_step - field_decel_rate
         # Ensure we don't hit the vehicle ahead or cross the stop line
-        v_next = max(0, min(desired_speed, min_gap))
+        v_next = int(max(0, min(desired_speed, min_gap)))  # int cast: field_decel_rate is float(2.0)
         vehicle.speed_cells_per_step = v_next
         return "decelerate_izoi"
     else:
