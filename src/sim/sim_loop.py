@@ -417,20 +417,91 @@ def run_single_leg_with_signal(
     df = pd.DataFrame(records)
     return df
 
-def run_full_intersection(config: dict, rate_veh_per_hour: float, duration_s: int, mode_mix: dict, rng: np.random.Generator) -> pd.DataFrame:
+def run_full_intersection(
+    config: dict,
+    rate_veh_per_hour: float,
+    duration_s: int,
+    mode_mix: dict,
+    rng: np.random.Generator,
+    use_collector: bool = True,
+) -> pd.DataFrame:
     """
     Run a full 4-leg intersection simulation.
+
+    Phase 6 refactor: uses the canonical Collector class by default.
+    The simulation behavior is IDENTICAL to the pre-refactor version;
+    only the logging path has changed.  Pass use_collector=False to
+    fall back to the legacy ad-hoc path (kept for regression comparison).
     """
     from src.intersection.intersection import Intersection
-    
+    from src.sim.collector import Collector
+
     intersection = Intersection(config, rate_veh_per_hour, duration_s, mode_mix, rng)
-    
-    all_records = []
-    for t in range(duration_s):
-        records_t = intersection.step(t)
-        all_records.extend(records_t)
-        
-    return pd.DataFrame(all_records)
+
+    if use_collector:
+        # Build IZOI distances in cells for the collector's in_izoi computation
+        cell_length_m = config["grid"]["cell_length_m"]
+        izoi_distances_cells = {
+            mode: int(dist_m / cell_length_m)
+            for mode, dist_m in config.get("izoi_distance_m", {}).items()
+        }
+        collector = Collector(izoi_distances_cells=izoi_distances_cells)
+
+        for t in range(duration_s):
+            records_t = intersection.step(t)
+            # intersection.step() returns legacy dicts; route them through the Collector.
+            # We rebuild per-leg vehicle lists from the records for the Collector API.
+            # Group records by leg to pass the right stop_line_cells per leg.
+            for leg in intersection.legs:
+                leg_recs = [r for r in records_t if r["leg_origin"] == leg.leg_id]
+                if not leg_recs:
+                    continue
+                # Reconstruct minimal Vehicle-like objects from the record dicts
+                # (the real Vehicle objects are inside leg.vehicles but positions
+                # have already been updated by intersection.step — use the records).
+                leg_vehicles = [
+                    _RecordVehicle(
+                        r["vehicle_id"], r["mode"],
+                        r["position_cells"], r["lateral_position_cells"],
+                        r["speed_cells_per_step"],
+                    )
+                    for r in leg_recs
+                ]
+                turns = {r["vehicle_id"]: r["turn"] for r in leg_recs}
+                collector.record(
+                    t_s=t,
+                    vehicles=leg_vehicles,
+                    extra_fields={
+                        "signal_state": leg_recs[0].get("signal"),
+                        "leg_origin": leg.leg_id,
+                        "leg_destination": None,
+                        "turns": turns,
+                        "stop_line_cells": leg.stop_line_position_cells,
+                        "seepage_actions": {},  # intersection does not log seepage per-step
+                    },
+                )
+
+        return collector.to_dataframe()
+
+    else:
+        # Legacy path — identical to pre-Phase 6 code
+        all_records = []
+        for t in range(duration_s):
+            records_t = intersection.step(t)
+            all_records.extend(records_t)
+        return pd.DataFrame(all_records)
+
+
+class _RecordVehicle:
+    """Lightweight struct to satisfy Collector.record()'s Vehicle duck-typing."""
+    __slots__ = ("id", "mode", "position_cells", "lateral_position_cells", "speed_cells_per_step")
+
+    def __init__(self, vid, mode, pos, lat, speed):
+        self.id = vid
+        self.mode = mode
+        self.position_cells = pos
+        self.lateral_position_cells = lat
+        self.speed_cells_per_step = speed
 
 
 def run_single_leg_with_seepage(

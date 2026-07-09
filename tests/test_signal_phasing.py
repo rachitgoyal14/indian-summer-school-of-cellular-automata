@@ -13,13 +13,17 @@ def test_signal_phasing():
     if df.empty:
         # If no vehicles, test cannot verify from logs.
         pass
+    
+    # Phase 6 refactor: Collector uses 'signal_state' (canonical name).
+    # Legacy path used 'signal'. Support both for backward compatibility.
+    signal_col = "signal_state" if "signal_state" in df.columns else "signal"
         
     for t, grp in df.groupby("time_s"):
         signals = {}
         for leg_id in range(4):
             leg_rows = grp[grp["leg_origin"] == leg_id]
             if not leg_rows.empty:
-                signals[leg_id] = leg_rows.iloc[0]["signal"]
+                signals[leg_id] = leg_rows.iloc[0][signal_col]
                 
         if 0 in signals and 2 in signals:
             assert signals[0] == signals[2], f"Time {t}: Leg 0 and 2 signals mismatch"
