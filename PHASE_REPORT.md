@@ -182,3 +182,137 @@ All Phase 1–4 regression tests pass, including `test_intersection_no_collision
 - `fix: exclude same-leg vehicles from junction box gridlock-prevention entry check`
 - `fix: reduce max_box_dwell_s to 1 cycle to prevent stuck vehicles blocking opposing phase`
 
+## Phase 5 — Seepage (Algorithm 3)
+
+### Implementation
+
+Implemented Algorithm 3 from Singh & Ramachandra Rao (2023) in three new/modified files:
+
+- **`src/core/gaps.py`** — Added `seepage_lateral_gap()` (Eq 4) and `seepage_longitudinal_gap()` (Eq 5).
+- **`src/intersection/seepage.py`** — New file with `is_seepage_eligible()` and `attempt_seepage()`.
+- **`src/sim/sim_loop.py`** — Added `run_single_leg_with_seepage()` wiring seepage into the full IZOI-signal loop.
+- **`configs/intersection_default.yaml`** — Added Phase 5 seepage parameters: `lateral_safety_margin_cells`, `longitudinal_safety_margin_cells`, `seepage_eligible_modes`, `seepage_advance_cells_per_step`.
+
+### Three Bugs Fixed (debugging session)
+
+A two-session debugging effort found and fixed three bugs. Each is verified below with explicit test cases rather than just re-assertion.
+
+---
+
+#### Bug 1 — `seepage_lateral_gap`: wide-neighbor straddle case blocked only the wrong side
+
+**Root cause:** When a neighbor's left edge was to the left of `v_main` (`o_left < v_left`) but the neighbor was wide enough to extend *past* `v_main`'s right edge (`o_right > v_right`), the code treated it as a left-only blocker and left `gap_right = inf`. This allowed seepage to the right of a vehicle that physically blocked the right side too.
+
+**Truth table (v_main: v_left=4, v_right=4, width=1):**
+
+| Case | o_left | o_right | gap_left | gap_right | Correct? |
+|------|--------|---------|----------|-----------|---------|
+| Ample gap left | 0 | 1 | 2 | inf | ✓ |
+| Touching left edge | 0 | 3 | 0 | inf | ✓ |
+| Left-touching, right edge = v_right | 3 | 4 | 0 | inf | ✓ (right NOT blocked — o_right not strictly > v_right) |
+| Wide straddle (past right) | 2 | 6 | 0 | **0** | ✓ (both blocked) |
+| Ample gap right | 8 | 10 | inf | 3 | ✓ |
+| Touching right | 5 | 7 | inf | 0 | ✓ |
+| Center straddle | 4 | 6 | 0 | 0 | ✓ |
+
+**Fix:** In the `o_left < v_left` branch, added `if o_right > v_right: gap_right = 0.0`. Condition is strict `>` (not `>=`) — a left-side neighbor whose right edge merely aligns with `v_main`'s right edge (touching, not past it) does not block the right side.
+
+---
+
+#### Bug 2 — `attempt_seepage` + `sim_loop`: seeping vehicles moved twice (double-movement)
+
+**Root cause:** `attempt_seepage` directly set `vehicle.position_cells = new_pos` AND set `vehicle.speed_cells_per_step = advance`. Then `sim_loop`'s subsequent call to `update_positions()` moved the vehicle a *second* time by `advance` cells, causing overshooting past the stop line.
+
+**Fix (sim_loop.py, lines 653–663):** Before `update_positions()`, the loop saves and zeroes out `speed_cells_per_step` for all vehicles with a seep action, then restores it afterwards. This ensures `update_positions()` adds zero for seeping vehicles while still logging the correct advance distance as the speed.
+
+**Verification — advance distance check (8-cycle run):**
+
+| Mode | Configured advance | Logged speed correct | Position diff correct |
+|------|--------------------|---------------------|-----------------------|
+| two_wheeler | 2 | 2464/2464 ✓ | 2464/2464 ✓ |
+| three_wheeler | 1 | 1457/1457 ✓ | 1457/1457 ✓ |
+
+Both methods (speed check and position diff against the full df's t-1 row) confirm exact agreement.
+
+**⚠️ Phase 6 data-quality flag:** After each seep move, `speed_cells_per_step` is restored to `advance` (2 for two-wheeler, 1 for three-wheeler). At the next timestep, `accelerate()` may increment this to 3 or higher, and the vehicle then moves freely. This means Phase 6's collector will observe apparent accelerations of `(max_speed - advance)` cells/step² at the first timestep after seepage stops — up to 28 cells/step² for a two-wheeler that seeps at 2 then immediately free-flows at 30. These are measurement artifacts, not real accelerations. Phase 6 must mask or tag the timestep immediately following a seep event when computing acceleration metrics.
+
+---
+
+#### Bug 3 — `sim_loop` seepage: stale occupancy snapshot allowed two vehicles to claim the same cell
+
+**Root cause:** Multiple seeping vehicles computed their gaps against a stale snapshot of positions within the same timestep. Vehicle A could compute "I have a gap here" and move; then Vehicle B independently computed against the pre-A-move state and also moved into the same cell.
+
+**Fix:** Pre-populate a shared `seepage_occupied` set with ALL current vehicle footprints before processing any seepage in the timestep. Pass it into each `attempt_seepage()` call; committed moves add their destination cells to the set, blocking subsequent vehicles from claiming the same cells.
+
+**Additional diagnosis (v22/v28 discrepancy):** The previous session suspected `front_gap()` and `seepage_longitudinal_gap()` were disagreeing about what counts as "occupied ahead," papering over a deeper inconsistency. Full analysis:
+
+- `front_gap()` checks for vehicles with **lateral overlap + strictly ahead** (`o_back > v_front`), returns 0.0 for same-position lateral neighbors (collision detection).
+- `seepage_longitudinal_gap()` checks **strictly ahead** (`o_back > v_front`) without lateral filtering — intentional, since diagonal seepage navigates *between* vehicles.
+- The `f_gap` cap that the previous session added (`effective_long_gap = min(long_gap, f_gap)`) was the actual source of Bug 3's residual: `front_gap()` returning 0.0 for lateral neighbors at the same longitudinal position was being used to block diagonal seepage, even when the destination cells were actually clear. **Fixed:** Removed the `f_gap` cap entirely; `is_dest_clear()` in `attempt_seepage()` is the correct and sufficient occupancy guard for this purpose.
+- Verdict: the two functions compute legitimately different things (midblock following gap vs. diagonal gap-to-two-front-vehicles) and do NOT need unification. The `is_dest_clear()` check provides the unified occupancy primitive.
+
+---
+
+### Verification Results (8 signal cycles = 1040s, 800 veh/hr, real mode mix)
+
+**Mode mix used:** two_wheeler 54.6%, car 26.7%, three_wheeler 15.1%, bus 3.6%  
+**IZOI distances:** car 187.4m, bus 111.3m, three_wheeler 141.1m, two_wheeler 100.0m (placeholder)
+
+| Metric | Result |
+|--------|--------|
+| Cell-occupancy collisions (seepage ON, 8 cycles) | **0** ✓ |
+| Cell-occupancy collisions (seepage OFF, 8 cycles) | 0 ✓ |
+| Seep events in 8-cycle run | 2,464 two_wheeler + 1,457 three_wheeler = **3,921 total** |
+| Seep action breakdown | seep_left: 1,756 \| seep_right: 1,661 \| seep_diagonal: 504 \| stopped: 147 |
+| Cars seeping | 0 ✓ |
+| Buses seeping | 0 ✓ |
+| Advance distance match (speed method) | 100% exact ✓ |
+| Advance distance match (position-diff method) | 100% exact ✓ |
+
+**FIFO violation analysis:**
+
+FIFO violations are measured as pair-instants within the IZOI zone where a later-arriving vehicle is ahead of an earlier-arriving one. In heterogeneous multi-lane traffic, some overtaking is physically expected (two-wheelers naturally filter past stopped larger vehicles).
+
+| | Pair-instants checked | FIFO violations | Rate |
+|--|--|--|--|
+| Seepage OFF | 114,832 | ~18,720 | 16.30% |
+| Seepage ON | 123,522 | 12,820 | **10.38%** |
+| Delta | — | — | **−5.92%** |
+
+Seepage *reduces* the measured FIFO violation rate by 5.9 percentage points. This is expected: seepage allows small vehicles to advance closer to the stop line during red, which positions them *consistently at the front* rather than behind larger vehicles. This produces a more spatially ordered queue at green onset, reducing apparent FIFO inversions.
+
+**Space-time trajectory plot:** `figures/phase5_seepage_trajectories.png` (two-panel, seepage off vs on, gold dots mark seep events, pink shading marks red signal phases).
+
+### Test Suite Results
+
+```
+54 passed in 22.69s
+```
+
+All 54 tests pass (Phases 0–5), zero regressions. Tests include:
+- `test_seepage_gaps.py` — seepage_lateral_gap and seepage_longitudinal_gap unit tests (all branches, including wide-straddle)
+- `test_seepage.py` — is_seepage_eligible and attempt_seepage (all 4 branches: left/right/diagonal/stopped, plus car/bus never-eligible)
+- `test_seepage_no_collision.py` — 10-cycle collision test (high two-wheeler 70%), seepage-off baseline, action column validation, stop-line enforcement
+
+### Acceptance Criteria Checklist
+
+| Criterion | Status |
+|-----------|--------|
+| Seepage-eligible modes: two_wheeler + three_wheeler only | ✓ Done |
+| Cars and buses NEVER eligible regardless of gap | ✓ Done (explicit test) |
+| Algorithm 3 priority order: left → right → diagonal → stop | ✓ Done |
+| Lateral gap per Eq 4, longitudinal gap per Eq 5 | ✓ Done |
+| Wide-straddle lateral gap bug fixed and verified via truth table | ✓ Done |
+| Zero collisions in 5+ cycle seepage-heavy test | ✓ Done (10 cycles) |
+| Two-panel space-time trajectory figure (real mode mix, real IZOI) | ✓ Done |
+| FIFO violation count + rate with method explained | ✓ Done |
+| Seepage advance distances verified exactly (both methods) | ✓ Done |
+| front_gap vs seepage_longitudinal_gap reconciliation | ✓ Done (different by design, f_gap cap removed) |
+| Phase 6 data-quality flag for post-seep speed artifacts | ✓ Documented above |
+| Full test suite (Phases 0–5) passing, zero regressions | ✓ 54 passed |
+
+### Commits
+
+- `feat(phase5): implement seepage Algorithm 3 (gaps, seepage, sim_loop)`
+- `fix(phase5): fix seepage_lateral_gap wide-straddle and attempt_seepage double-movement and stale-occupancy bugs`
+

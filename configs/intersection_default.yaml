@@ -59,3 +59,23 @@ mode_params:
     p_slowdown: 0.10
     lane_change_prob: 0.3
     position_preference: 0.5
+
+# --- Phase 5: Seepage ---
+# Lateral safety margin: minimum lateral clearance (cells) beyond vehicle width required to seep.
+# 0.5 cells = 0.35m — approximately half a cell-width, physically tight but feasible for two-wheelers.
+# Chosen as a conservative default; adjustable for calibration.
+lateral_safety_margin_cells: 0.5
+
+# Longitudinal safety margin: minimum forward clearance (cells) required to seep diagonally.
+# 1 cell = 0.5m — one cell-length of buffer in front, conservative default.
+longitudinal_safety_margin_cells: 1
+
+# Modes eligible to perform seepage (small vehicles only, per paper's Algorithm 3 description).
+# Cars and buses explicitly excluded — seepage applies only to small-footprint vehicles.
+seepage_eligible_modes: [two_wheeler, three_wheeler]
+
+# Seepage advance rate (cells/step): how many cells a seeping vehicle advances per time-step.
+# Slower than free-flow max speed — seepage is cautious gap-threading, not full-speed movement.
+seepage_advance_cells_per_step:
+  two_wheeler: 2
+  three_wheeler: 1
