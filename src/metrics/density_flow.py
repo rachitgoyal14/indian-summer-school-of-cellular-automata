@@ -167,14 +167,36 @@ def flow_density_table(
             "density_veh_per_km", "flow_veh_per_hr",
         ])
 
+    # ------------------------------------------------------------------
+    # FIX (Phase 6 prerequisite): pre-compute prev_position on the GLOBAL
+    # DataFrame before windowing.  shift(1) within a per-window slice
+    # produces NaN for the first row of each window even when the vehicle
+    # was present at t-1 (which lies outside the window slice), causing a
+    # ~1-3% crossing undercount at capacity.
+    #
+    # Solution: sort the full df by (vehicle_id, time_s) and shift(1) once
+    # across the whole trajectory, then store as a new column
+    # '_prev_pos_cells'.  NaN is only produced for a vehicle's very first
+    # appearance in the entire run — which is correct (no prior position).
+    # ------------------------------------------------------------------
+    sorted_full = collector_df.sort_values(["vehicle_id", "time_s"])
+    sorted_full = sorted_full.copy()
+    sorted_full["_prev_pos_cells"] = sorted_full.groupby("vehicle_id")["position_cells"].shift(1)
+    # Re-index so we can join back by original index
+    prev_pos_series = sorted_full["_prev_pos_cells"]
+
+    # Attach prev_pos to working df (align on original index)
+    collector_with_prev = collector_df.copy()
+    collector_with_prev["_prev_pos_cells"] = prev_pos_series
+
     results = []
     modes = list(collector_df["mode"].unique()) if "mode" in collector_df.columns else ["all"]
 
     for i in range(len(windows) - 1):
         w_start = windows[i]
         w_end = windows[i + 1]
-        mask = (collector_df["time_s"] >= w_start) & (collector_df["time_s"] < w_end)
-        df_win = collector_df[mask]
+        mask = (collector_with_prev["time_s"] >= w_start) & (collector_with_prev["time_s"] < w_end)
+        df_win = collector_with_prev[mask]
 
         # --- Mixed traffic row ---
         if df_win.empty:
@@ -184,8 +206,6 @@ def flow_density_table(
                 "density_veh_per_km": 0.0, "flow_veh_per_hr": 0.0,
             })
         else:
-            # Occupied cells: sum of length_cells for each vehicle record,
-            # averaged over the window (unique vehicles per timestep).
             occupied_per_t = []
             for ts, grp in df_win.groupby("time_s"):
                 footprint = sum(
@@ -199,16 +219,12 @@ def flow_density_table(
             avg_fp = _avg_footprint(df_win, mode_params)
             dens = density_veh_per_km(int(avg_occupied), total_cells, avg_fp, cell_length_m)
 
-            # Flow: vehicles crossing measurement point this window
-            crossings = set()
-            for vid, grp in df_win.groupby("vehicle_id"):
-                prev_pos = grp["position_cells"].shift(1)
-                crossed = grp[
-                    (grp["position_cells"] >= measurement_pt) &
-                    (prev_pos < measurement_pt)
-                ]
-                if not crossed.empty:
-                    crossings.add(vid)
+            # Flow: vehicles crossing measurement point — using global prev_pos
+            crossed_mask = (
+                (df_win["position_cells"] >= measurement_pt) &
+                (df_win["_prev_pos_cells"] < measurement_pt)
+            )
+            crossings = set(df_win.loc[crossed_mask, "vehicle_id"])
             fl = flow_veh_per_hr(len(crossings), w_end - w_start)
 
             results.append({
@@ -237,15 +253,11 @@ def flow_density_table(
                 avg_fp = float(mode_len)
                 dens = density_veh_per_km(int(avg_occupied), road_length_cells, avg_fp, cell_length_m)
 
-                crossings = set()
-                for vid, grp in df_mode.groupby("vehicle_id"):
-                    prev_pos = grp["position_cells"].shift(1)
-                    crossed = grp[
-                        (grp["position_cells"] >= measurement_pt) &
-                        (prev_pos < measurement_pt)
-                    ]
-                    if not crossed.empty:
-                        crossings.add(vid)
+                crossed_mask = (
+                    (df_mode["position_cells"] >= measurement_pt) &
+                    (df_mode["_prev_pos_cells"] < measurement_pt)
+                )
+                crossings = set(df_mode.loc[crossed_mask, "vehicle_id"])
                 fl = flow_veh_per_hr(len(crossings), w_end - w_start)
 
                 results.append({
