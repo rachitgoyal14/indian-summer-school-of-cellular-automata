@@ -558,63 +558,101 @@ Running Eq 16 with field FD as both field and simulated data:
 - Above 12 + `max_accel_cells_per_step2 × 4 modes` + `position_preference × 4 modes`
 - **Full run impractical on laptop** — see wall-clock note below.
 
-### Calibration Run Results
+### Bugs Found and Fixed Before Re-Calibration
 
-**Run configuration:** `reduced_mode=True`, pop=30, gen=20, nm_max_iter=50, window_s=60, seed=42
+Two bugs were discovered during investigation of the initial calibration's 3-5x flow/density mismatch:
 
-**Wall-clock time: 31.4 minutes total** (21.6 min GA stage + 9.8 min NM stage, ~41s/generation on M-class MacBook)
+**Bug 1 (PRIMARY) — `rate=2000` hardcoded, field demand ~6066 veh/hr (3x mismatch):**
+`calibration_objective()` injected 2000 veh/hr into the sim while the Kanagaraj field data represents ~6066 veh/hr near-capacity demand. The GA was comparing a half-empty road against near-capacity field data and compensating by pushing `p_slowdown` to 0.48 (unphysically high). Fix: infer `sim_rate = int(clip(field_fd.flow_veh_per_hr.mean(), 1000, 10000))` → 6120 veh/hr.
 
-**Full (20-dim) run is impractical** at ~41s/generation with 30 evaluations/generation. A 50-generation full run would require ~3 hours. This is noted explicitly; reduced_mode is the practical choice for iterative development.
+**Traced arithmetic (one field bin vs one sim bin):**
 
-**Convergence (ATTACHED — see plot description below):**
+| | Field bin [63–123s) | Sim (OLD rate=2000) | Sim (FIXED rate=6120) |
+|-|--------------------|--------------------|----------------------|
+| Road length | 242.76m | 1000m | 1000m |
+| Vehicles/timestep | 26.4 | ~92.6 | 139.8 |
+| density (veh/km) | **108.6** | ~93 | **~140** |
+| crossings | 87 vehicles | ~33 | ~90 |
+| flow (veh/hr) | **5220** | ~2000 | **~5400** |
+
+**Bug 2 (SECONDARY) — Measurement point near road end, not midpoint:**
+`flow_density_table` used `offset=50` (25m from end of 1000m road). Field measures at midpoint of 243m road (121m). Fix: `meas_offset = road_length_cells // 2` (center of sim road).
+
+**Objective impact:**
+
+| Configuration | E (Eq 16) |
+|--------------|-----------|
+| Default params, buggy rate=2000 | ~13.04 |
+| Default params, fixed rate=6120 | **1.26** (10× better) |
+| Field vs field self-comparison | 0.00 |
+
+### Calibration Run Results (RE-RUN with corrected rate)
+
+**Run configuration:** `reduced_mode=True`, pop=30, gen=20, nm_max_iter=50, window_s=60, seed=42, **rate=6120** (inferred from field)
+
+**Wall-clock time: 362 minutes total** (68 min GA stage + 294 min NM stage, ~200s/generation on M-class MacBook). Longer than initial run because simulating 3x more vehicles per evaluation.
+
+**Convergence:**
 
 | Generation | Best E | Notes |
 |-----------|--------|-------|
-| 1 | 10.4284 | Random initial population |
-| 3 | 9.7134 | Rapid early improvement |
-| 4–8 | 9.6815 | **Plateau** — 5 consecutive gen no improvement |
-| 9–12 | 9.6714 | **Plateau** — 4 gen no improvement |
-| 13 | 9.6110 | Jump improvement |
-| 17–19 | 9.5995 | **Plateau** — 3 gen no improvement |
-| 20 | 9.5936 | GA final |
-| NM final | **9.4785** | Nelder-Mead improved by 0.1151 |
+| 1 | 1.596 | Random initial population |
+| 2 | 1.222 | Rapid early improvement |
+| 5 | 1.132 | Continued descent |
+| 7 | 1.118 | |
+| 10–13 | 1.078 | **Plateau** — 4 gen no improvement |
+| 14 | 1.005 | Jump improvement |
+| 14–20 | 1.005 | **Plateau** — 7 gen no improvement |
+| NM final | **0.925** | Nelder-Mead improved by 0.080 |
 
 **Convergence plot: `figures/phase7_convergence.png`**
 
 **Description of what I see:**
-- **Left panel (objective vs generation):** Rapid descent in generations 1-3, then classic plateau-and-break pattern. The curve is still declining but slowly at gen 20; orange plateau zones highlight 4 multi-generation stall periods. The NM final (9.4785, red dashed line) lies below the GA final, showing Nelder-Mead added value. The curve has NOT fully converged by gen 20 — it's still making incremental progress, suggesting more generations would help, but the objective improvements are diminishing (<0.01 per 4 gens in the later plateaus).
-- **Right panel (objective vs wall-clock):** The GA stage spans 22 minutes, NM stage a further 10 minutes (highlighted in red). The NM stage provides a modest but genuine improvement relative to GA time invested.
+- **Left panel (objective vs generation):** Rapid descent gen 1→5 (1.60 → 1.13), then plateau-and-break pattern. Major jump at gen 14 (1.078 → 1.005), then stable plateau through gen 20. The NM final (0.925, red dashed) sits below the GA final, confirming Nelder-Mead added genuine value. The GA stage has clearly plateaued by gen 20 — further generations would likely not improve meaningfully.
+- **Right panel (objective vs wall-clock):** The GA stage takes 68 minutes (vs 22 min in old buggy run), NM stage takes a further 294 minutes (highlighted in red). The NM stage is disproportionately long because the stochastic objective requires many evaluations for Nelder-Mead to navigate the noisy surface.
 
-**Overall assessment:** The optimizer is making progress but 20 generations is insufficient for convergence. At current pace, ~40-50 generations would likely plateau for real. The stochastic nature of the simulator (random NaSch deceleration) means the objective is noisy; convergence is genuinely slow on stochastic simulators and this is expected.
+**Overall assessment:** The GA converged to a stable plateau at gen 14 (E=1.005) and Nelder-Mead refined to E=0.925. This is a 10× improvement over the old buggy calibration (E=9.48). The objective of 0.925 across 14 bins with 12 parameters represents a genuine, meaningful calibration — average relative error per bin-metric is `sqrt(0.925/28) ≈ 18%`, which is reasonable for a CA model vs real heterogeneous traffic data.
+
+**FD Comparison plot: `figures/phase7_fd_comparison.png`**
+
+The corrected FD comparison shows field, default-params, and calibrated-params all in the same scale range (density ~100-190 veh/km, flow ~3000-8000 veh/hr). The old buggy plot showed a 3-5x mismatch. The calibrated sim tracks the field data's bin-to-bin variation reasonably well, with the largest residuals in bins 0 (warm-up) and 7-9 (peak density ~193 veh/km where the CA reaches capacity saturation).
+
+### Field Data Sufficiency
+
+| Window | Total bins | Usable bins |
+|--------|-----------|-------------|
+| 60s | 14 | **14** |
+| 120s | 7 | 7 |
+| 300s | 2 | 2 |
+
+**14 usable 60-second bins** — adequate for a 12-dimensional calibration. The field data spans 898.5s of near-capacity midblock traffic. This is a single traffic regime (congested free-flow), not a full FD sweep. Calibration finds parameters for this regime; it cannot separately constrain capacity vs free-flow. This is a known limitation, not a failure.
 
 ### Calibrated Parameters — Before/After Table
 
 | Parameter | Mode | Default | Calibrated | Changed? |
 |-----------|------|---------|------------|---------|
-| `max_speed_cells_per_step` | two_wheeler | 30 | **37** | ✓ |
-| `max_speed_cells_per_step` | three_wheeler | 29 | **20** | ✓ |
-| `max_speed_cells_per_step` | car | 28 | **21** | ✓ |
-| `max_speed_cells_per_step` | bus | 20 | **10** | ✓ |
-| `p_slowdown` | two_wheeler | 0.05 | **0.483** | ✓ |
-| `p_slowdown` | three_wheeler | 0.05 | **0.379** | ✓ |
-| `p_slowdown` | car | 0.06 | **0.373** | ✓ |
-| `p_slowdown` | bus | 0.10 | **0.497** | ✓ |
-| `lane_change_prob` | two_wheeler | 0.80 | **0.523** | ✓ |
-| `lane_change_prob` | three_wheeler | 0.70 | **0.438** | ✓ |
-| `lane_change_prob` | car | 0.60 | **0.398** | ✓ |
-| `lane_change_prob` | bus | 0.30 | **0.100** | ✓ |
+| `max_speed_cells_per_step` | two_wheeler | 30 | **34** | ✓ |
+| `max_speed_cells_per_step` | three_wheeler | 29 | **25** | ✓ |
+| `max_speed_cells_per_step` | car | 28 | 28 | — |
+| `max_speed_cells_per_step` | bus | 20 | 20 | — |
+| `p_slowdown` | two_wheeler | 0.05 | **0.251** | ✓ |
+| `p_slowdown` | three_wheeler | 0.05 | **0.321** | ✓ |
+| `p_slowdown` | car | 0.06 | **0.147** | ✓ |
+| `p_slowdown` | bus | 0.10 | **0.197** | ✓ |
+| `lane_change_prob` | two_wheeler | 0.80 | **0.850** | ✓ |
+| `lane_change_prob` | three_wheeler | 0.70 | **0.362** | ✓ |
+| `lane_change_prob` | car | 0.60 | **0.234** | ✓ |
+| `lane_change_prob` | bus | 0.30 | **0.129** | ✓ |
 
 ### Mode Ordering — Red Flag Investigation
 
 **Expected ordering (Phases 2/6 convention):** `two_wheeler ≥ three_wheeler ≥ car ≥ bus`
 
-**Calibrated ordering (by max_speed):** `two_wheeler(37) > car(21) > three_wheeler(20) > bus(10)`
+**Calibrated ordering (by max_speed):** `two_wheeler(34) > car(28) > three_wheeler(25) > bus(20)`
 
-**Violation:** `car=21 > three_wheeler=20` — the calibrator placed car 1 cell faster than three_wheeler.
+**Violation:** `car=28 > three_wheeler=25` — 3-cell difference (larger gap than old buggy run's 1-cell difference).
 
-**Investigation performed:**
-
-This is a **data-driven finding, not an artifact**. The Kanagaraj field data shows:
+**Investigation:** This is a **data-driven finding, not an artifact**. The Kanagaraj field data shows:
 
 | Mode | Mean speed (m/s) | Median (m/s) |
 |------|-----------------|-------------|
@@ -623,35 +661,31 @@ This is a **data-driven finding, not an artifact**. The Kanagaraj field data sho
 | bus | 5.71 | 5.76 |
 | three_wheeler | 5.06 | 5.02 |
 
-The field data shows `car (6.12 m/s) > two_wheeler (6.04 m/s) > bus (5.71 m/s) > three_wheeler (5.06 m/s)`. This is unusual — in India, two-wheelers are typically fastest in mixed traffic — but this specific dataset (a single midblock stretch with moderate congestion, mid-day) shows car slightly faster than two_wheeler, and three_wheeler clearly slowest of the motorised modes (consistent with auto-rickshaw behavior in dense mixed traffic: slow but manoeuvrable laterally rather than longitudinally).
+Car is clearly faster than three_wheeler in this dataset (6.12 vs 5.06 m/s). The calibrator found `car(28) > three_wheeler(25)` which is consistent. Car's max_speed stayed at its default value (28), while three_wheeler dropped from 29 → 25, reflecting the field data's lower three_wheeler speeds.
 
-**The calibrator finding `car(21) > three_wheeler(20)` is exactly consistent with the field data ordering**, not in contradiction to it. The 1-cell difference (21 vs 20 = 10.5 m/s vs 10.0 m/s at 0.5m/cell) is within the statistical uncertainty of the calibration at 20 generations.
-
-**The expected `two_wheeler ≥ three_wheeler ≥ car ≥ bus` ordering reflects the paper's Table 2 assumption** (based on a different dataset context), not this specific Kanagaraj midblock stretch's empirical ordering.
-
-**Resolution:** The calibrated parameters are accepted as-is. The `car > three_wheeler` finding is flagged as a contextual note — it reflects midblock empirics from this specific dataset. If intersection-level calibration (Phase 9) produces the same ordering, it would be worth deeper investigation; for midblock, it is plausible. This is documented as a known deviation from the assumed ordering, not silently accepted.
-
-**two_wheeler ordering:** two_wheeler (37) is clearly fastest — correct. Bus (10) is clearly slowest — correct. The middle ordering (car vs three_wheeler) is the only anomaly, and it is data-driven.
+**Resolution:** Accepted as data-driven. TW(34) clearly fastest, bus(20) clearly slowest — outer ordering preserved. The car > 3W ordering is a known deviation from the paper's assumption, documented not silently accepted.
 
 ### Physical Plausibility Check
 
 | Parameter | Calibrated | Physical meaning | Plausible? |
 |-----------|------------|-----------------|-----------|
-| `max_speed` TW=37 cells/step | 37×0.5=18.5 m/s = 66 km/h | Two-wheeler free-flow on uncongested midblock | ✓ (Indian roads, ~60-70 km/h feasible) |
-| `max_speed` car=21 | 10.5 m/s = 37.8 km/h | Car in mixed midblock traffic | ✓ (field mean=6.12, but free-flow higher) |
-| `max_speed` bus=10 | 5.0 m/s = 18 km/h | Bus free-flow | ⚠ Low — likely reflects heavy congestion in field data keeping bus slow |
-| `p_slowdown` TW=0.483 | ~50% stochastic braking | High randomisation — midblock stop-and-go character | ✓ |
-| `p_slowdown` bus=0.497 | Nearly 50% | Bus near-random slowdown | ✓ (heavy vehicles brake more) |
-| `lane_change_prob` bus=0.100 | Low lateral movement | Buses stay in lane | ✓ |
-| `lane_change_prob` TW=0.523 | Moderate | Two-wheeler lane-changes frequently | ✓ |
+| `max_speed` TW=34 | 17.0 m/s = 61 km/h | Two-wheeler free-flow | ✓ (Indian roads, ~60-70 km/h feasible) |
+| `max_speed` car=28 | 14.0 m/s = 50.4 km/h | Car free-flow | ✓ (unchanged from default; reasonable) |
+| `max_speed` 3W=25 | 12.5 m/s = 45 km/h | Three-wheeler free-flow | ✓ (auto-rickshaws slower in mixed traffic) |
+| `max_speed` bus=20 | 10.0 m/s = 36 km/h | Bus free-flow | ✓ (unchanged from default; reasonable for urban bus) |
+| `p_slowdown` TW=0.251 | ~25% stochastic braking | Moderate randomisation | ✓ (higher than Table 2's 0.05 but within plausible range for heterogeneous traffic) |
+| `p_slowdown` car=0.147 | ~15% | Car moderate braking | ✓ (close to reasonable literature values) |
+| `p_slowdown` bus=0.197 | ~20% | Bus braking | ✓ (heavy vehicles brake more) |
+| `lane_change_prob` TW=0.850 | High lateral movement | Two-wheeler lane-changes frequently | ✓ (near default 0.80) |
+| `lane_change_prob` bus=0.129 | Low lateral movement | Buses stay in lane | ✓ |
 
-All calibrated parameters are within their defined bounds. The p_slowdown values are high (0.37-0.50) compared to the paper's Table 2 default of 0.05-0.10, which reflects that the Kanagaraj midblock data shows substantial speed variance — consistent with Indian traffic stop-and-go character.
+**Comparison with old buggy calibration:** p_slowdown values dropped from 0.37-0.50 (unphysically high) to 0.15-0.32 (much more reasonable). The old values were artifacts of the 3x demand mismatch — the optimizer was desperately trying to slow vehicles to reduce the flow gap, which was backwards. The new values are closer to Table 2 literature values (~0.05-0.10) though still higher, reflecting the stop-and-go character of this congested midblock data.
 
 ### Tests Added
 
 | Test file | Tests | What they check |
 |-----------|-------|----------------|
-| `tests/test_objective.py` | 5 | Self-comparison = 0.0 (reported numerically), field FD non-empty, mismatch > 0, smoke run finite, bin exclusion not epsilon |
+| `tests/test_objective.py` | 5 | Self-comparison = 0.0 (reported numerically, n_used=14 at 60s), field FD non-empty, mismatch > 0, smoke run finite, bin exclusion not epsilon |
 | `tests/test_flow_crossing_fix.py` | 4 (was 3) | All prior + new `test_exact_crossing_count_no_boundary_vehicle` (algebraic equivalence) |
 
 ### Acceptance Criteria Checklist
@@ -663,13 +697,15 @@ All calibrated parameters are within their defined bounds. The p_slowdown values
 | `objective.py` implements Eq 16 with bin exclusion (not epsilon) | ✓ **Done — `FLOW_ZERO_THRESHOLD=10`, `DENSITY_ZERO_THRESHOLD=0.5`** |
 | `optimizer.py` implements NSGA-II global + Nelder-Mead local, `reduced_mode` flag | ✓ **Done — pymoo GA + scipy Nelder-Mead** |
 | `run_calibration.py` CLI entry point | ✓ **Done** |
-| Self-comparison test actually run and reported numerically | ✓ **Error = 0.000000000000000e+00 exactly (n_used=2 bins, n_excluded=0)** |
-| Convergence plot attached as image, with description of what it shows | ✓ **`figures/phase7_convergence.png` — still declining/noisy at gen 20, not fully converged** |
-| Started with `reduced_mode=True`, wall-clock time reported | ✓ **31.4 min total; full (20-dim) run impractical (~3 hrs), stated explicitly** |
-| Calibrated parameters in physically reasonable ranges | ✓ **All within bounds; p_slowdown high (0.37-0.50) consistent with field data variance** |
-| Mode ordering check (TW fastest, bus slowest) | ⚠ **two_wheeler(37) > car(21) > three_wheeler(20) > bus(10) — `car > three_wheeler` violation investigated and documented: field data confirms car(6.12 m/s) > three_wheeler(5.06 m/s) in this dataset; data-driven, not an artifact** |
-| Single-objective GA vs paper's multi-objective explicitly stated in PHASE_REPORT.md | ✓ **Documented above: gamultiobj → NSGA-II simplification, no parameter-value replication claimed** |
-| Which parameters calibrated vs left at literature values | ✓ **Documented above: midblock-relevant (speed, p_slow, lane_change) vs intersection-specific (IZOI, seepage, signal)** |
+| Self-comparison test actually run and reported numerically | ✓ **Error = 0.000000000000000e+00 exactly (n_used=14 bins at 60s, n_excluded=0)** |
+| Convergence plot attached as image, with description of what it shows | ✓ **`figures/phase7_convergence.png` — GA plateaued by gen 14, NM refined to 0.925** |
+| FD comparison plot shows field and sim in same scale | ✓ **`figures/phase7_fd_comparison.png` — density ~100-190, flow ~3000-8000 on both sides** |
+| Started with `reduced_mode=True`, wall-clock time reported | ✓ **362 min total (68 GA + 294 NM); longer due to 3x more vehicles at corrected rate** |
+| Calibrated parameters in physically reasonable ranges | ✓ **All within bounds; p_slowdown 0.15-0.32 (much closer to Table 2 than old 0.37-0.50)** |
+| Mode ordering check (TW fastest, bus slowest) | ⚠ **TW(34) > car(28) > 3W(25) > bus(20) — car > 3W violation persists, data-driven (field: car 6.12 m/s > 3W 5.06 m/s)** |
+| Rate/scale mismatch investigated and fixed | ✓ **Bug 1: rate 2000→6120; Bug 2: meas_pt end→center. E dropped 13.04→1.26 before optimization** |
+| Single-objective GA vs paper's multi-objective explicitly stated | ✓ **Documented: gamultiobj → NSGA-II simplification, no parameter-value replication claimed** |
+| Which parameters calibrated vs left at literature values | ✓ **midblock-relevant (speed, p_slow, lane_change) vs intersection-specific (IZOI, seepage, signal)** |
 | `pytest` full suite passes | ✓ **79 passed, 0 failed** |
 | Git commits | ✓ **See commits below** |
 
@@ -678,4 +714,6 @@ All calibrated parameters are within their defined bounds. The p_slowdown values
 - `fix(phase6-prereq): fix shift(1) window-boundary crossing undercount in flow_density_table` — `25b0682`
 - `test(phase6-prereq): add exact-match regression test for no-boundary-vehicle scenario` — `1345eee`
 - `feat(phase7): calibration objective (Eq 16), optimizer (NSGA-II + Nelder-Mead), run_calibration.py` — `c83bd6c`
-- `data(phase7): calibration run results — convergence CSV, calibrated config, convergence plot` — `99a13f4`
+- `fix(phase7): fix 2 calibration bugs causing 10x-13x objective inflation` — `7aa2f11`
+- `docs(phase7): clarify self-comparison bin count in test comment` — `b51f7e3`
+- `data(phase7): re-calibration results with corrected rate=6120 and center meas_pt` — `8b8ac76`
