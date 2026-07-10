@@ -33,34 +33,34 @@ mode_params:
   two_wheeler:
     length_cells: 4
     width_cells: 1
-    max_speed_cells_per_step: 37
+    max_speed_cells_per_step: 34
     max_accel_cells_per_step2: 4
-    p_slowdown: 0.48263301588289725
-    lane_change_prob: 0.5230599186707282
+    p_slowdown: 0.2506012699458442
+    lane_change_prob: 0.8503521662107685
     position_preference: 0.1
   three_wheeler:
     length_cells: 5
     width_cells: 2
-    max_speed_cells_per_step: 20
+    max_speed_cells_per_step: 25
     max_accel_cells_per_step2: 3
-    p_slowdown: 0.3793723719066499
-    lane_change_prob: 0.4375137330880953
+    p_slowdown: 0.32086024933152024
+    lane_change_prob: 0.36195630557405567
     position_preference: 0.3
   car:
     length_cells: 7
     width_cells: 3
-    max_speed_cells_per_step: 21
+    max_speed_cells_per_step: 28
     max_accel_cells_per_step2: 3
-    p_slowdown: 0.37260641462403227
-    lane_change_prob: 0.3979871005475982
+    p_slowdown: 0.1465889406340139
+    lane_change_prob: 0.23410419572106694
     position_preference: 0.5
   bus:
     length_cells: 20
     width_cells: 4
-    max_speed_cells_per_step: 10
+    max_speed_cells_per_step: 20
     max_accel_cells_per_step2: 2
-    p_slowdown: 0.49657227098716505
-    lane_change_prob: 0.0998939563672965
+    p_slowdown: 0.19728526078630007
+    lane_change_prob: 0.12859730878788125
     position_preference: 0.5
 lateral_safety_margin_cells: 0.5
 longitudinal_safety_margin_cells: 1
@@ -78,6 +78,6 @@ _calibration_meta:
   nm_max_iter: 50
   window_s: 60
   rng_seed: 42
-  best_f_ga: 9.593623064538042
-  best_f_nm: 9.478494138409795
-  wall_time_s: 1883.1299118995667
+  best_f_ga: 1.0048670758126514
+  best_f_nm: 0.9249985317778942
+  wall_time_s: 21707.638283014297
