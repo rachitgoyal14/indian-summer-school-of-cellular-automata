@@ -1,0 +1,83 @@
+grid:
+  cell_length_m: 0.5
+  cell_width_m: 0.7
+  lane_width_m: 3.5
+legs: 4
+midblock_test:
+  road_length_m: 1000
+simulation:
+  time_step_s: 1
+  duration_s: 3600
+  random_seed: 42
+signal:
+  cycle_length_s: 130
+  green_s: 30
+  red_s: 100
+izoi_distance_m:
+  two_wheeler: 100
+  three_wheeler: 141.13
+  car: 187.385
+  bus: 111.26
+izoi_deceleration_rate: 2.0
+turn_proportions:
+  default:
+    left: 0.175
+    straight: 0.65
+    right: 0.175
+modes:
+- two_wheeler
+- three_wheeler
+- car
+- bus
+mode_params:
+  two_wheeler:
+    length_cells: 4
+    width_cells: 1
+    max_speed_cells_per_step: 37
+    max_accel_cells_per_step2: 4
+    p_slowdown: 0.48263301588289725
+    lane_change_prob: 0.5230599186707282
+    position_preference: 0.1
+  three_wheeler:
+    length_cells: 5
+    width_cells: 2
+    max_speed_cells_per_step: 20
+    max_accel_cells_per_step2: 3
+    p_slowdown: 0.3793723719066499
+    lane_change_prob: 0.4375137330880953
+    position_preference: 0.3
+  car:
+    length_cells: 7
+    width_cells: 3
+    max_speed_cells_per_step: 21
+    max_accel_cells_per_step2: 3
+    p_slowdown: 0.37260641462403227
+    lane_change_prob: 0.3979871005475982
+    position_preference: 0.5
+  bus:
+    length_cells: 20
+    width_cells: 4
+    max_speed_cells_per_step: 10
+    max_accel_cells_per_step2: 2
+    p_slowdown: 0.49657227098716505
+    lane_change_prob: 0.0998939563672965
+    position_preference: 0.5
+lateral_safety_margin_cells: 0.5
+longitudinal_safety_margin_cells: 1
+seepage_eligible_modes:
+- two_wheeler
+- three_wheeler
+seepage_advance_cells_per_step:
+  two_wheeler: 2
+  three_wheeler: 1
+_calibration_meta:
+  reduced_mode: true
+  n_dim: 12
+  pop_size: 30
+  n_gen: 20
+  nm_max_iter: 50
+  window_s: 60
+  rng_seed: 42
+  best_f_ga: 9.593623064538042
+  best_f_nm: 9.478494138409795
+  wall_time_s: 1883.1299118995667
