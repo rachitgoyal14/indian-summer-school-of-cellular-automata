@@ -28,6 +28,14 @@ Parameters calibrated:
     full trajectory lateral analysis, out of scope for first calibration pass)
     IZOI parameters (intersection-specific, not present in midblock data)
     seepage safety margins (red-phase specific, midblock has no signal)
+
+BUGS FIXED (Phase 7 re-calibration commit):
+  Bug 1 (PRIMARY): calibration_objective previously hardcoded rate=2000 veh/hr
+    while the Kanagaraj field data represents ~6066 veh/hr demand (3x mismatch).
+    Fix: infer simulation demand rate from field_flow_density mean flow.
+  Bug 2 (SECONDARY): flow_density_table used measurement_point_offset=50
+    (25m from end of 1000m road) while field measures at midpoint of 243m road
+    (121m). Fix: use offset = road_length_cells // 2 for both sides.
 """
 
 from __future__ import annotations
@@ -41,10 +49,9 @@ from src.metrics.density_flow import flow_density_table
 
 
 # Field data road is ~242.8m; simulation midblock is 1000m.
-# We calibrate on the SIMULATION side of equal length to the field data
-# by using a measurement window that maps to comparable density regimes.
-# The sim road is longer intentionally (boundary effects); we compare
-# at the FD level where length cancels out in density/flow calculations.
+# Density and flow are both scale-invariant under Little's Law at matched demand:
+# density [veh/km] = N_on_road / road_length_km; flow [veh/hr] = crossings × 3600/window_s.
+# For these to be comparable, the simulation must run at the SAME demand rate as the field.
 
 FLOW_ZERO_THRESHOLD = 10.0   # veh/hr below which a bin is excluded (q≈0)
 DENSITY_ZERO_THRESHOLD = 0.5 # veh/km below which a bin is excluded (k≈0)
@@ -186,9 +193,16 @@ def calibration_objective(
         "bus":           0.036,
     }
 
+    # --- BUG 1 FIX: infer simulation demand rate from field data ---
+    # Previously hardcoded as 2000 veh/hr — 3x below field demand (~6066 veh/hr).
+    # The mean flow in the field FD table is the best single-number estimate of
+    # the field's arrival rate.  Clamped to [1000, 10000] as a sanity guard.
+    field_mean_flow = float(field_flow_density["flow_veh_per_hr"].mean())
+    sim_rate = int(np.clip(field_mean_flow, 1000, 10000))
+
     rng = np.random.default_rng(rng_seed)
     try:
-        sim_df = run_midblock_simulation_multimode(cfg, 2000, duration_s, mode_mix, rng)
+        sim_df = run_midblock_simulation_multimode(cfg, sim_rate, duration_s, mode_mix, rng)
     except Exception:
         return 1e9  # penalty for crash
 
@@ -199,10 +213,17 @@ def calibration_objective(
     road_length_cells = int(cfg["midblock_test"]["road_length_m"] / cell_length_m)
     road_geometry = {"road_length_cells": road_length_cells, "cell_length_m": cell_length_m}
 
+    # --- BUG 2 FIX: measurement point at center of sim road ---
+    # Previously offset=50 (25m from end of 1000m road) — far from field's midpoint.
+    # Field measures at midpoint of 243m road (121m).  Use road center (offset = half
+    # road length in cells) so both sides measure at comparable relative positions.
+    meas_offset = road_length_cells // 2  # = 1000 cells from end = center of 1000m road
+
     sim_fd_all = flow_density_table(
         sim_df, road_geometry,
         window_s=window_s,
         mode_params=cfg.get("mode_params"),
+        measurement_point_offset=meas_offset,
     )
     # Use "all" aggregated row
     sim_fd = sim_fd_all[sim_fd_all["mode"] == "all"] if not sim_fd_all.empty else sim_fd_all
