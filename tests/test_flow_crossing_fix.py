@@ -213,3 +213,86 @@ def test_fixed_p6_not_below_legacy(sim_df, road_geometry, config):
         f"Fixed P6 undercounts Legacy by >1 vehicle in {len(bad)} windows: "
         f"{[(i, int(undercount[i])) for i in bad[:5]]}"
     )
+
+
+# ---------------------------------------------------------------------------
+# 4. EXACT MATCH — no-boundary-vehicle scenario (algebraic equivalence test)
+#    When no vehicle straddles a window boundary (i.e., all vehicles' prior
+#    positions are recorded within the same window), both methods must agree
+#    to the exact integer crossing count — not just within ±1.
+#    This is the "algebraic equivalence" analogue for flow counting,
+#    as requested in the Phase 7 prerequisite spec.
+# ---------------------------------------------------------------------------
+
+def test_exact_crossing_count_no_boundary_vehicle(road_geometry, config):
+    """
+    Synthetic scenario: one vehicle crosses the measurement point at t=30
+    (mid-window in [0,60)), with its prior position at t=29 also within the
+    window.  Neither method needs cross-window data, so both must count
+    exactly 1 crossing — exact integer agreement, not just ±1.
+
+    This proves the fix did not introduce spurious crossings or miss any
+    for the nominal (non-boundary) case.
+    """
+    road_length_cells = road_geometry["road_length_cells"]
+    cell_length_m = road_geometry["cell_length_m"]
+    meas_pt = road_length_cells - 50
+
+    # Vehicle travels at speed=1: at t=29 it is at meas_pt-1, at t=30 at meas_pt.
+    # All rows are in window [0,60) — no boundary crossing needed.
+    rows = []
+    for t in range(10, 60):
+        pos = meas_pt - (30 - t) if t <= 30 else meas_pt + (t - 30)
+        rows.append({
+            "time_s": t, "vehicle_id": 7777, "mode": "two_wheeler",
+            "position_cells": pos, "lateral_position_cells": 0,
+            "speed_cells_per_step": 1,
+            "leg_origin": 0, "leg_destination": None, "turn": None,
+            "accel_cells_per_step2": 0, "accel_artifact_seepage": False,
+            "in_izoi": False, "signal_state": None, "seepage_action": None,
+        })
+    # Padding row so flow_density_table generates windows [0,60) and [60,120).
+    rows.append({
+        "time_s": 61, "vehicle_id": 7777, "mode": "two_wheeler",
+        "position_cells": meas_pt + 32, "lateral_position_cells": 0,
+        "speed_cells_per_step": 1,
+        "leg_origin": 0, "leg_destination": None, "turn": None,
+        "accel_cells_per_step2": 0, "accel_artifact_seepage": False,
+        "in_izoi": False, "signal_state": None, "seepage_action": None,
+    })
+
+    synthetic = pd.DataFrame(rows)
+    road_geom = road_geometry
+
+    # Phase 6 fixed method
+    fd_p6 = flow_density_table(
+        synthetic, road_geom, window_s=60,
+        mode_params=config["mode_params"]
+    )
+    p6_w0 = fd_p6[(fd_p6["time_window_start"] == 0) & (fd_p6["mode"] == "all")]
+    assert not p6_w0.empty, "No row for window [0,60) in P6 FD table"
+
+    # Legacy method
+    from src.metrics.density_flow import flow_density_by_mode
+    fd_leg = flow_density_by_mode(synthetic, road_length_cells, cell_length_m, 60)
+    leg_w0 = fd_leg["all"][fd_leg["all"]["window_start"] == 0]
+    assert not leg_w0.empty, "No row for window [0,60) in Legacy FD table"
+
+    p6_flow  = float(p6_w0["flow_veh_per_hr"].iloc[0])
+    leg_flow = float(leg_w0["flow_veh_per_hr"].iloc[0])
+
+    # Expected: 1 crossing × 3600/60 = 60 veh/hr
+    expected = 60.0
+    assert p6_flow == pytest.approx(expected, abs=1e-9), (
+        f"P6 fixed method counted wrong crossings: flow={p6_flow} (expected {expected})"
+    )
+    assert leg_flow == pytest.approx(expected, abs=1e-9), (
+        f"Legacy method counted wrong crossings: flow={leg_flow} (expected {expected})"
+    )
+    # EXACT integer agreement (the algebraic equivalence requirement):
+    p6_count  = round(p6_flow  * 60 / 3600)
+    leg_count = round(leg_flow * 60 / 3600)
+    assert p6_count == leg_count == 1, (
+        f"Exact-match failed: P6 count={p6_count}, Legacy count={leg_count} "
+        f"(expected both = 1, flows: P6={p6_flow}, Legacy={leg_flow})"
+    )
