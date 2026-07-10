@@ -102,28 +102,35 @@ field_df = pd.read_csv("data/processed/trajectories_kanagaraj.csv")
 road_length_m = float(field_df["x_m"].max())
 cell_length_m = config_default["grid"]["cell_length_m"]
 
-WINDOW_S = 300
+WINDOW_S = 60  # match calibration window
 field_fd = build_field_fd(field_df, WINDOW_S, road_length_m, cell_length_m)
 
 MODE_MIX = {"two_wheeler": 0.546, "car": 0.267, "three_wheeler": 0.151, "bus": 0.036}
-DURATION = 600  # 10 min — faster diagnostic
-RATE = 2000
+DURATION = 900  # match field duration
+# Infer rate from field data (same as calibration_objective does)
+RATE = int(np.clip(field_fd["flow_veh_per_hr"].mean(), 1000, 10000))
+print(f"Using rate={RATE} veh/hr (inferred from field)")
+
 rng_default = np.random.default_rng(42)
 rng_calib   = np.random.default_rng(42)
 
-print("Running default sim...")
-sim_df_def = run_midblock_simulation_multimode(config_default, RATE, DURATION, MODE_MIX, rng_default)
 road_len_cells = int(config_default["midblock_test"]["road_length_m"] / cell_length_m)
 road_geom = {"road_length_cells": road_len_cells, "cell_length_m": cell_length_m}
+meas_offset = road_len_cells // 2  # center of sim road (matches field midpoint)
+
+print("Running default sim...")
+sim_df_def = run_midblock_simulation_multimode(config_default, RATE, DURATION, MODE_MIX, rng_default)
 
 fd_def = flow_density_table(sim_df_def, road_geom, WINDOW_S,
-                            mode_params=config_default.get("mode_params"))
+                            mode_params=config_default.get("mode_params"),
+                            measurement_point_offset=meas_offset)
 fd_def_all = fd_def[fd_def["mode"] == "all"]
 
 print("Running calibrated sim...")
 sim_df_cal = run_midblock_simulation_multimode(config_calib, RATE, DURATION, MODE_MIX, rng_calib)
 fd_cal = flow_density_table(sim_df_cal, road_geom, WINDOW_S,
-                            mode_params=config_calib.get("mode_params"))
+                            mode_params=config_calib.get("mode_params"),
+                            measurement_point_offset=meas_offset)
 fd_cal_all = fd_cal[fd_cal["mode"] == "all"]
 
 print(f"  Field FD: {len(field_fd)} bins,  Default sim FD: {len(fd_def_all)} bins,  Calibrated sim FD: {len(fd_cal_all)} bins")
@@ -138,8 +145,8 @@ ax.scatter(fd_cal_all["density_veh_per_km"], fd_cal_all["flow_veh_per_hr"],
 ax.set_xlabel("Density (veh/km)", fontsize=12)
 ax.set_ylabel("Flow (veh/hr)", fontsize=12)
 ax.set_title(
-    "Phase 7 — Field vs Simulation FD Comparison\n"
-    "(Midblock, 300s windows, all-mode aggregate, rate=2000 veh/hr, 10 min sim)",
+    f"Phase 7 — Field vs Simulation FD Comparison\n"
+    f"(Midblock, {WINDOW_S}s windows, all-mode aggregate, rate={RATE} veh/hr, {DURATION//60} min sim)",
     fontsize=10
 )
 ax.legend(fontsize=10)
@@ -150,3 +157,4 @@ fig2.savefig(out2, dpi=150, bbox_inches="tight")
 plt.close()
 print(f"Saved: {out2}")
 print("Done.")
+
