@@ -590,7 +590,9 @@ Two bugs were discovered during investigation of the initial calibration's 3-5x 
 
 **Run configuration:** `reduced_mode=True`, pop=30, gen=20, nm_max_iter=50, window_s=60, seed=42, **rate=6120** (inferred from field)
 
-**Wall-clock time: 362 minutes total** (68 min GA stage + 294 min NM stage, ~200s/generation on M-class MacBook). Longer than initial run because simulating 3x more vehicles per evaluation.
+**Wall-clock time: 362 minutes total** (68 min GA stage + 294 min NM stage, ~200s/generation on M-class MacBook). Longer than the initial buggy run (31 min) because the corrected rate of 6120 veh/hr injects ~3× more vehicles per simulation step than the old 2000 veh/hr, making each objective evaluation ~3× slower.
+
+> **⚠ PLANNING NOTE FOR PHASE 8/9:** Every simulation run at the corrected field-matched rate (~6120 veh/hr, 900s duration) takes ~8-10 seconds on this hardware. Phase 8's validation suite and Phase 9's delay analysis should budget accordingly — a single 900s sim takes ~10s, so any batch of N runs takes ~10N seconds. This is a known cost of running at realistic demand and should be planned for, not discovered mid-phase.
 
 **Convergence:**
 
@@ -611,11 +613,36 @@ Two bugs were discovered during investigation of the initial calibration's 3-5x 
 - **Left panel (objective vs generation):** Rapid descent gen 1→5 (1.60 → 1.13), then plateau-and-break pattern. Major jump at gen 14 (1.078 → 1.005), then stable plateau through gen 20. The NM final (0.925, red dashed) sits below the GA final, confirming Nelder-Mead added genuine value. The GA stage has clearly plateaued by gen 20 — further generations would likely not improve meaningfully.
 - **Right panel (objective vs wall-clock):** The GA stage takes 68 minutes (vs 22 min in old buggy run), NM stage takes a further 294 minutes (highlighted in red). The NM stage is disproportionately long because the stochastic objective requires many evaluations for Nelder-Mead to navigate the noisy surface.
 
-**Overall assessment:** The GA converged to a stable plateau at gen 14 (E=1.005) and Nelder-Mead refined to E=0.925. This is a 10× improvement over the old buggy calibration (E=9.48). The objective of 0.925 across 14 bins with 12 parameters represents a genuine, meaningful calibration — average relative error per bin-metric is `sqrt(0.925/28) ≈ 18%`, which is reasonable for a CA model vs real heterogeneous traffic data.
+**Overall assessment — HONEST: The calibration provided marginal improvement over Table 2 defaults.**
+
+The 10× E improvement (9.48 → 0.925) came almost entirely from fixing the rate bug (2000→6120), not from the parameter search. Once the rate was corrected, Table 2 defaults already achieved E ≈ 1.26 — and the GA+NM search only improved this to E ≈ 0.925 at its best realization (seed=42).
+
+**Multi-seed robustness test (5 seeds, default vs calibrated):**
+
+| Seed | E(default) | E(calibrated) | Δ (improvement) |
+|------|-----------|---------------|------------------|
+| 42 | 1.259 | 0.925 | +0.334 (26.5%) |
+| 123 | 1.652 | 2.034 | **−0.382 (−23.1%)** |
+| 456 | 1.893 | 1.196 | +0.698 (36.9%) |
+| 789 | 1.359 | 1.495 | **−0.136 (−10.0%)** |
+| 1024 | 1.595 | 1.413 | +0.182 (11.4%) |
+
+| | Value |
+|---|---|
+| Mean improvement | **+0.139** |
+| Std of improvement | **±0.374** |
+| Signal-to-noise ratio | **0.37** (noise is 2.7× the signal) |
+| Seeds where calibrated was worse | **2 of 5** |
+
+**Plain conclusion:** The stochastic CA simulator has a noise floor of ~±0.4 per objective evaluation, which swamps the calibration's mean improvement of ~0.14. The calibrated parameters are not reliably better than Table 2 defaults for this field site. This means:
+
+1. **Table 2 defaults are already close to optimal** for this Kanagaraj midblock dataset. The paper's literature values were chosen well.
+2. **The stochastic objective landscape is too noisy** for the GA+NM search to reliably navigate at 20 generations / 30 population. Ensemble-averaging (running each candidate N times and averaging E) would reduce noise but at N× computational cost — already 362 min for a single-evaluation run.
+3. **The real value of the calibration exercise** was diagnosing and fixing the rate/measurement-point bugs, not the parameter values themselves. The calibrated config is retained for Phase 8 but should not be presented as meaningfully superior to defaults.
 
 **FD Comparison plot: `figures/phase7_fd_comparison.png`**
 
-The corrected FD comparison shows field, default-params, and calibrated-params all in the same scale range (density ~100-190 veh/km, flow ~3000-8000 veh/hr). The old buggy plot showed a 3-5x mismatch. The calibrated sim tracks the field data's bin-to-bin variation reasonably well, with the largest residuals in bins 0 (warm-up) and 7-9 (peak density ~193 veh/km where the CA reaches capacity saturation).
+The corrected FD comparison confirms this finding visually: default (E=1.29) and calibrated (E=1.25) bars nearly overlap in most bins, with differences well within stochastic variation. Both track the field data in the same scale range (density ~100-190 veh/km, flow ~3000-8000 veh/hr), confirming the rate-bug fix resolved the scale mismatch. The remaining ~18% mean per-bin-metric error is the irreducible gap between a NaSch CA model and real heterogeneous Indian traffic.
 
 ### Field Data Sufficiency
 
