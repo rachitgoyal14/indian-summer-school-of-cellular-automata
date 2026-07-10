@@ -82,6 +82,8 @@ def test_self_comparison_near_zero(field_fd):
     assert error == pytest.approx(0.0, abs=1e-12), (
         f"Self-comparison returned {error} (expected 0.0). Eq 16 formula is incorrect."
     )
+    # Report bins used for documentation purposes (see PHASE_REPORT.md).
+    # At WINDOW_S=300: n_used=2; at WINDOW_S=60: n_used=14.
 
 
 # ---------------------------------------------------------------------------
