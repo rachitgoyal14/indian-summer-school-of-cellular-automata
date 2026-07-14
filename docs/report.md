@@ -1,4 +1,4 @@
-# Project Context — What We've Actually Built (Plain-Language Version)
+# Report
 
 *A self-contained explainer, written so you (or anyone else) can read it later without needing to remember all the back-and-forth that got us here.*
 
