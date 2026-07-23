@@ -1,4 +1,4 @@
-# Plan B: Combined Simulator — Seepage-Intersection Model + General Network Simulator
+# Plan B: Combined Simulator - Seepage-Intersection Model + General Network Simulator
 
 **Idea:** Don't discard the existing, validated, calibrated NaSch/seepage intersection work (Singh & Ramachandra Rao replication, Phases 0-7 already complete). Instead, treat it as the **traffic-dynamics engine** at the heart of a more general, visual, multi-scenario simulator — and selectively adopt the parts of the Genaro/Sukanta brief that make the existing work more presentable and useful, without regressing to a simpler model or diluting the core research contribution (seepage-driven vehicle reordering).
 
