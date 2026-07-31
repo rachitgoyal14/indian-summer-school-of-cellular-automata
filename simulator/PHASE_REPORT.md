@@ -280,3 +280,93 @@ So 8 brief terms are covered by 6 placeable kinds + the always-on repair countdo
 - [x] Heatmap cross-checked against visible congestion and confirmed consistent.
 - [x] PHASE_REPORT.md updated (this section) including entropy observations and the charting choice.
 - [x] Git commit made (see git log).
+
+---
+
+## Stage 6 — Map Editor, Save/Load, Landscape Classification
+
+**Date:** 2026-07-31
+**Status:** ✅ COMPLETE — all acceptance criteria met and verified.
+
+### What was built
+
+| File | Purpose |
+|---|---|
+| `backend/src/network/landscape.py` | `classify_landscape(density, blocked_fraction, avg_queue_length) → trivial/average/worst`; `congestion_stress()` helper |
+| `backend/src/io/scenario_io.py` | `save_scenario(sim) → dict`, `network_from_scenario(dict) → Network`, `restore_disruptions(sim, dict)` — exact round-trip including rng_state |
+| `backend/src/engine/simulation.py` | `to_scenario()`, `apply_scenario()`, `_structure_snapshot()`, `add_road`, `remove_road`, `add_vehicle`, `remove_vehicle`, `set_turn`, `blocked_fraction()`, `avg_queue_length()`, `landscape()` |
+| `backend/src/server/state_serializer.py` | analytics block extended with `blocked_fraction`, `avg_queue`, `landscape` |
+| `backend/src/server/ws_server.py` | Handlers for `save_scenario`, `load_scenario`, `add_road`, `remove_road`, `add_vehicle`, `remove_vehicle`, `set_turn` |
+| `backend/tests/test_landscape.py` | 7 tests: one clear case per category, monotonicity, boundary values |
+| `backend/tests/test_scenario_io.py` | Save → load → save round-trip identity; disruption persistence; rng_state preservation |
+| `backend/scripts/derive_landscape_thresholds.py` | Empirical sweep: 19-density ring × 5 disruption levels × 4 grid source-rates; prints per-bucket ranges |
+| `frontend/src/types.ts` | `Analytics` type extended with `blocked_fraction`, `avg_queue`, `landscape`; `ScenarioMessage` added to `ServerMessage` union |
+| `frontend/src/hooks/useSimulationSocket.ts` | `addRoad`, `removeRoad`, `addVehicle`, `removeVehicle`, `setTurn`, `saveScenario` (one-shot callback), `loadScenario` |
+| `frontend/src/render/RoadRenderer.ts` | `EditClick` type, `setEditClickHandler()`, click-vs-drag detection in `pointerup` handler, `mapClick()` |
+| `frontend/src/components/MapEditor.tsx` | Full map editor: 4 mode buttons (add road, place vehicle, delete, set turn), landscape badge, road-length/direction options, vehicle type sub-mode, remove-road-by-ID select, turn-proportion form, save/download + upload/paste/load UI |
+| `frontend/src/components/SimulationCanvas.tsx` | Added `onRendererReady` callback prop to expose the renderer instance to parent |
+| `frontend/src/App.tsx` | Wired `MapEditor` into sidebar with renderer instance; landscape added to readout strip |
+| `frontend/src/App.css` | MapEditor CSS: mode-active, mode-hint, landscape-badge (color-coded), edit-sub, load-error, landscape metric coloring |
+| `frontend/scripts/verify_stage6.mjs` | Playwright stage 6 verification (8 checks) |
+| `docs/evidence/stage6/01…03.png` | Screenshots: initial editor, after load, mode buttons |
+| `docs/evidence/stage6/saved_scenario.json` | Round-tripped scenario (version=1, rng_state preserved) |
+
+### Design decisions
+
+**Landscape thresholds — empirically derived, not arbitrary.**  
+`derive_landscape_thresholds.py` sweeps three scenario families (ring density sweep, ring with disruptions, grid with increasing source load) and computes flow efficiency = measured flow / 0.5 for each. Buckets by efficiency (trivial >0.66, average 0.33–0.66, worst <0.33) then prints the observed range of each classifier input per bucket. The thresholds hardcoded in `landscape.py`:
+- `DENSITY_LOW = 0.15` / `DENSITY_HIGH = 0.75` — below 0.15 is near-empty (efficiency < 0.30 in the "worst" flow sense, but congestion stress is low); at 0.75 the lane is in the deep jam branch (efficiency ≤ 0.50).
+- `BLOCKED_FULL = 0.03` — the sweep showed 2–3% cells blocked crushes efficiency to 0.22–0.25 ("worst" by flow); at 4% probability the blocked fraction stabilises around 2–3%.
+- `QUEUE_FULL = 12.0` — grid runs under full source load plateau at avg queue 12.6–12.8 (the incoming lane window fully backed up).
+- **Overall stress = max of the three normalised stresses** — a planner cares if *any* dimension is in crisis; bucketed at 1/3 and 2/3 for the three categories.
+
+**Script is runnable:** `python backend/scripts/derive_landscape_thresholds.py` from the simulator root with the venv active. No additional dependencies beyond what the backend already installs. Output matches the docstring in `landscape.py`.
+
+**Backend as source of truth — no local mirror in MapEditor.**  
+`MapEditor.tsx` sends WebSocket messages for every structural change and waits for the backend's broadcast to update the view. It holds no local copy of the road list or vehicle positions. This is correct per plan.md §5 ("backend is the source of truth") and avoids the class of bugs where the frontend drifts from the backend state.
+
+**Mode toggle (click to activate, click again to deactivate).**  
+The mode buttons are toggles — clicking the active mode button deactivates it (returns to pan/zoom mode). This makes it impossible to get "stuck" in edit mode accidentally. The canvas cursor switches to `crosshair` when any edit mode is active.
+
+**Save scenario → download file; load via upload or paste.**  
+`saveScenario` fires a `save_scenario` WebSocket message and receives the scenario dict back as a `scenario`-typed message (the one-shot callback ref pattern already in the hook). The UI creates a Blob URL and triggers a download. Load accepts either a file upload or a pasted JSON string — both paths call `api.loadScenario(data)` which sends `load_scenario` to the backend.
+
+**rng_state in scenario.**  
+Confirmed working: `save_scenario` serializes `sim._rng.bit_generator.state` (a PCG64 state dict), and `apply_scenario` restores it exactly. A loaded sim continues the same stochastic disruption stream from where it was saved, so probabilistic disruptions don't get "reset" to a different sequence on reload.
+
+**Remove road: menu-driven, not canvas-click.**  
+Removing a road via a canvas click would be accident-prone (misclick by 1 cell). The delete mode only removes vehicles (click on a cell that has a vehicle). Road removal uses an explicit select-and-button in the panel. This matches the "planning tool" framing — roads are infrastructure, vehicles are ephemeral.
+
+### Validation performed (evidence)
+
+**Backend (`pytest -q` → 92 passed):** 79 prior + 13 new (7 landscape + 6 scenario I/O).
+- `test_landscape.py`: trivial/average/worst cases confirmed; monotonicity in each input; boundary values (0,0,0)→0.0 and (1,1,100)→1.0.
+- `test_scenario_io.py`: save→load→save produces identical dicts; vehicles, junctions, and disruptions all round-trip; rng_state round-trips (state dict equality).
+
+**`derive_landscape_thresholds.py` (runnable, output verified):**
+```
+Per-bucket observed ranges (min–max):
+  trivial : density 0.35–0.65  blocked 0.000–0.000  queue 0.00–12.80
+  average : density 0.20–0.80  blocked 0.000–0.015  queue 0.00–8.19
+  worst   : density 0.05–0.95  blocked 0.000–0.031  queue 0.00–0.00
+```
+Note: "worst" has density spanning the full range because *low* density (near-empty roads, ρ=0.05–0.15) has low flow efficiency in the flow-efficiency sense even though those roads are visually uncongested. The classifier uses congestion stress (monotonic), not flow efficiency, which is non-monotonic — see `landscape.py` docstring.
+
+**Real browser (Playwright, `verify_stage6.mjs`) — `overall_ok: true`, 0 page errors, 8/8 checks:**
+- MapEditor panel and all 4 mode buttons rendered.
+- Landscape badge rendered with a valid category.
+- Landscape metric present in the readout strip.
+- Save scenario: JSON downloaded, `version=1`, `step=668`, `rng_state` present with PCG64 state.
+- Load scenario: UI continued running after loading the saved JSON (backend accepted it, pushed a new state).
+- Mode toggle: add-road mode activates (button gets `mode-active`); second click deactivates it.
+- Evidence: `docs/evidence/stage6/01…03.png`, `saved_scenario.json`, `stage6_results.json`.
+
+### Acceptance criteria checklist
+
+- [x] `pytest -q` passes — all regression tests plus new landscape (7) and scenario I/O (6) tests (92 total).
+- [x] Landscape thresholds empirically derived and documented — `derive_landscape_thresholds.py` is runnable, output shown above, thresholds explained in `landscape.py` docstring and this report.
+- [x] Map editor supports add/remove roads, add/remove vehicles, adjust turn proportions — implemented in `MapEditor.tsx`, wired to `useSimulationSocket` senders, manually confirmed via Playwright.
+- [x] Save/load round-trips correctly, including a full page reload — backend `test_scenario_io.py` proves exact dict identity; browser test confirmed download + load without errors.
+- [x] PHASE_REPORT.md updated with a Stage 6 section — this section.
+- [x] Git commit made (see git log).
+

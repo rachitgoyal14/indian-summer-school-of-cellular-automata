@@ -1,0 +1,946 @@
+{
+  "version": 1,
+  "config": "one_way",
+  "step": 668,
+  "seed": 42,
+  "rng_state": {
+    "bit_generator": "PCG64",
+    "state": {
+      "state": 1.4848318086334788e+38,
+      "inc": 3.3272409075804913e+38
+    },
+    "has_uint32": 1,
+    "uinteger": 92823176
+  },
+  "density_target": 0.3,
+  "car_fraction": 0,
+  "steps_per_second": 12,
+  "roads": [
+    {
+      "id": 0,
+      "length": 500,
+      "x0": 0,
+      "y0": 0,
+      "dx": 1,
+      "dy": 0,
+      "periodic": true,
+      "head_junction": null,
+      "tail_junction": null,
+      "source_rate": 0,
+      "source_car_fraction": 0,
+      "vehicles": [
+        {
+          "id": 99,
+          "front": 0,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 100,
+          "front": 2,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 101,
+          "front": 5,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 102,
+          "front": 9,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 103,
+          "front": 14,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 104,
+          "front": 16,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 105,
+          "front": 18,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 106,
+          "front": 20,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 107,
+          "front": 22,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 108,
+          "front": 24,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 109,
+          "front": 26,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 110,
+          "front": 28,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 111,
+          "front": 30,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 112,
+          "front": 32,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 113,
+          "front": 34,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 114,
+          "front": 40,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 115,
+          "front": 43,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 116,
+          "front": 45,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 117,
+          "front": 47,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 118,
+          "front": 51,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 119,
+          "front": 53,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 120,
+          "front": 66,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 121,
+          "front": 68,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 122,
+          "front": 70,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 123,
+          "front": 72,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 124,
+          "front": 74,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 125,
+          "front": 76,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 126,
+          "front": 78,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 127,
+          "front": 80,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 128,
+          "front": 86,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 129,
+          "front": 91,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 130,
+          "front": 96,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 131,
+          "front": 99,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 132,
+          "front": 103,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 133,
+          "front": 109,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 134,
+          "front": 111,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 135,
+          "front": 113,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 136,
+          "front": 115,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 137,
+          "front": 117,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 138,
+          "front": 125,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 139,
+          "front": 131,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 140,
+          "front": 134,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 141,
+          "front": 140,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 142,
+          "front": 145,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 143,
+          "front": 147,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 144,
+          "front": 149,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 145,
+          "front": 151,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 146,
+          "front": 154,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 147,
+          "front": 157,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 148,
+          "front": 159,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 149,
+          "front": 161,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 150,
+          "front": 164,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 1,
+          "front": 171,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 2,
+          "front": 183,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 3,
+          "front": 185,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 4,
+          "front": 191,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 5,
+          "front": 193,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 6,
+          "front": 195,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 7,
+          "front": 197,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 8,
+          "front": 199,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 9,
+          "front": 201,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 10,
+          "front": 203,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 11,
+          "front": 205,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 12,
+          "front": 209,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 13,
+          "front": 211,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 14,
+          "front": 215,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 15,
+          "front": 221,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 16,
+          "front": 223,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 17,
+          "front": 229,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 18,
+          "front": 231,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 19,
+          "front": 233,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 20,
+          "front": 235,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 21,
+          "front": 237,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 22,
+          "front": 240,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 23,
+          "front": 245,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 24,
+          "front": 247,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 25,
+          "front": 254,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 26,
+          "front": 258,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 27,
+          "front": 265,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 28,
+          "front": 273,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 29,
+          "front": 275,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 30,
+          "front": 282,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 31,
+          "front": 284,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 32,
+          "front": 294,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 33,
+          "front": 296,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 34,
+          "front": 300,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 35,
+          "front": 302,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 36,
+          "front": 304,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 37,
+          "front": 306,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 38,
+          "front": 308,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 39,
+          "front": 313,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 40,
+          "front": 315,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 41,
+          "front": 317,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 42,
+          "front": 319,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 43,
+          "front": 321,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 44,
+          "front": 323,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 45,
+          "front": 330,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 46,
+          "front": 332,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 47,
+          "front": 334,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 48,
+          "front": 336,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 49,
+          "front": 338,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 50,
+          "front": 340,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 51,
+          "front": 344,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 52,
+          "front": 353,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 53,
+          "front": 355,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 54,
+          "front": 357,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 55,
+          "front": 359,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 56,
+          "front": 363,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 57,
+          "front": 365,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 58,
+          "front": 368,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 59,
+          "front": 370,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 60,
+          "front": 373,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 61,
+          "front": 375,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 62,
+          "front": 379,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 63,
+          "front": 381,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 64,
+          "front": 384,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 65,
+          "front": 389,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 66,
+          "front": 391,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 67,
+          "front": 399,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 68,
+          "front": 403,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 69,
+          "front": 410,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 70,
+          "front": 414,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 71,
+          "front": 417,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 72,
+          "front": 423,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 73,
+          "front": 425,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 74,
+          "front": 427,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 75,
+          "front": 429,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 76,
+          "front": 431,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 77,
+          "front": 433,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 78,
+          "front": 435,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 79,
+          "front": 437,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 80,
+          "front": 439,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 81,
+          "front": 441,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 82,
+          "front": 443,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 83,
+          "front": 445,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 84,
+          "front": 448,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 85,
+          "front": 452,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 86,
+          "front": 454,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 87,
+          "front": 456,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 88,
+          "front": 459,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 89,
+          "front": 461,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 90,
+          "front": 465,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 91,
+          "front": 470,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 92,
+          "front": 472,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 93,
+          "front": 474,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 94,
+          "front": 477,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 95,
+          "front": 479,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 96,
+          "front": 483,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 97,
+          "front": 489,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 98,
+          "front": 492,
+          "length": 1,
+          "vtype": "moto"
+        }
+      ]
+    }
+  ],
+  "junctions": [],
+  "disruptions": {
+    "probs": {
+      "breakdown": 0,
+      "tree": 0,
+      "accident": 0,
+      "flood": 0
+    },
+    "repair_scale": 1,
+    "active": []
+  }
+}

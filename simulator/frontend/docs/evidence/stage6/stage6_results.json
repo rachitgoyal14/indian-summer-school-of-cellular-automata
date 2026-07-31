@@ -1,0 +1,47 @@
+{
+  "passed": 8,
+  "total": 8,
+  "overall_ok": true,
+  "results": [
+    {
+      "name": "MapEditor panel renders",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "All 4 mode buttons present",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Landscape badge renders",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Landscape metric in readout strip",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Save scenario: JSON downloaded with version key",
+      "ok": true,
+      "detail": "version=1, step=668"
+    },
+    {
+      "name": "Load scenario: UI still running after load",
+      "ok": true,
+      "detail": "step elem present"
+    },
+    {
+      "name": "Add road mode activates (button gets mode-active class)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Mode deactivates on second click",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

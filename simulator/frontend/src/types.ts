@@ -78,6 +78,9 @@ export interface Analytics {
   flow: number;
   entropy: number; // normalised 0..1
   entropy_bits: number;
+  blocked_fraction: number;
+  avg_queue: number;
+  landscape: "trivial" | "average" | "worst";
 }
 
 export interface StateMessage {
@@ -96,4 +99,10 @@ export interface PongMessage {
   t: number;
 }
 
-export type ServerMessage = NetworkMessage | StateMessage | PongMessage;
+/** Sent by the backend in response to a save_scenario request. */
+export interface ScenarioMessage {
+  type: "scenario";
+  data: unknown;
+}
+
+export type ServerMessage = NetworkMessage | StateMessage | PongMessage | ScenarioMessage;

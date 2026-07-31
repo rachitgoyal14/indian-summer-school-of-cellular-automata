@@ -9,6 +9,13 @@
 import { Application, Container, Graphics } from "pixi.js";
 import type { DisruptionKind, NetworkMessage, StateMessage } from "../types";
 
+/** Result of mapping a canvas click in edit mode. */
+export interface EditClick {
+  gridX: number; // grid cell coords (for placing a new road)
+  gridY: number;
+  road: { roadId: number; cell: number } | null; // nearest road cell, if close
+}
+
 const CELL_SIZE = 14; // world px per cell
 const COLORS = {
   background: 0x0f1420,
@@ -63,6 +70,8 @@ export class RoadRenderer {
 
   private dragging = false;
   private lastPointer = { x: 0, y: 0 };
+  private downPos = { x: 0, y: 0 };
+  private editClickHandler: ((loc: EditClick) => void) | null = null;
 
   private constructor(app: Application) {
     this.app = app;
@@ -247,6 +256,7 @@ export class RoadRenderer {
     canvas.addEventListener("pointerdown", (e: PointerEvent) => {
       this.dragging = true;
       this.lastPointer = { x: e.offsetX, y: e.offsetY };
+      this.downPos = { x: e.offsetX, y: e.offsetY };
       canvas.setPointerCapture(e.pointerId);
     });
     canvas.addEventListener("pointermove", (e: PointerEvent) => {
@@ -262,9 +272,47 @@ export class RoadRenderer {
       } catch {
         /* already released */
       }
+      // a click (negligible movement) in edit mode → map to a location
+      const moved = Math.hypot(e.offsetX - this.downPos.x, e.offsetY - this.downPos.y);
+      if (moved < 6 && this.editClickHandler) {
+        this.editClickHandler(this.mapClick(e.offsetX, e.offsetY));
+      }
     };
     canvas.addEventListener("pointerup", endDrag);
     canvas.addEventListener("pointercancel", endDrag);
+  }
+
+  setEditClickHandler(fn: ((loc: EditClick) => void) | null) {
+    this.editClickHandler = fn;
+    this.app.canvas.style.cursor = fn ? "crosshair" : "default";
+  }
+
+  /** Map a screen click to grid coords + the nearest road cell (if close). */
+  private mapClick(sx: number, sy: number): EditClick {
+    const scale = this.camera.scale.x;
+    const worldX = (sx - this.camera.x) / scale;
+    const worldY = (sy - this.camera.y) / scale;
+    const gridX = Math.round(worldX / CELL_SIZE);
+    const gridY = Math.round(worldY / CELL_SIZE);
+    let best: { roadId: number; cell: number } | null = null;
+    let bestDist = Infinity;
+    if (this.network) {
+      for (const road of this.network.roads) {
+        const { x0, y0, dx, dy } = road.geometry;
+        for (let k = 0; k < road.length; k++) {
+          const cxp = (x0 + k * dx + 0.5) * CELL_SIZE;
+          const cyp = (y0 + k * dy + 0.5) * CELL_SIZE;
+          const d = Math.hypot(cxp - worldX, cyp - worldY);
+          if (d < bestDist) {
+            bestDist = d;
+            best = { roadId: road.id, cell: k };
+          }
+        }
+      }
+    }
+    // only accept a road hit if within ~1.5 cells (in world units)
+    const road = best && bestDist < CELL_SIZE * 1.5 ? best : null;
+    return { gridX, gridY, road };
   }
 
   zoomAt(sx: number, sy: number, factor: number) {

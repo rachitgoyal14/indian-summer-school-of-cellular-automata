@@ -2,6 +2,9 @@
 // and feeds it network/state updates. Also renders a small debug overlay
 // showing the visible cell-index range (Stage 2c: proves the camera never
 // desyncs from the underlying road array) and a "Fit view" button.
+//
+// Stage 6: exposes the RoadRenderer instance via onRendererReady so that
+// MapEditor can install an edit-click handler on it.
 
 import { useEffect, useRef, useState } from "react";
 import { RoadRenderer } from "../render/RoadRenderer";
@@ -10,9 +13,10 @@ import type { NetworkMessage, StateMessage } from "../types";
 interface Props {
   network: NetworkMessage | null;
   state: StateMessage | null;
+  onRendererReady?: (r: RoadRenderer | null) => void;
 }
 
-export function SimulationCanvas({ network, state }: Props) {
+export function SimulationCanvas({ network, state, onRendererReady }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<RoadRenderer | null>(null);
   const [ready, setReady] = useState(false);
@@ -33,13 +37,15 @@ export function SimulationCanvas({ network, state }: Props) {
       renderer = r;
       rendererRef.current = r;
       setReady(true);
+      onRendererReady?.(r);
     });
     return () => {
       cancelled = true;
       renderer?.destroy();
       rendererRef.current = null;
+      onRendererReady?.(null);
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Feed network structure.
   useEffect(() => {

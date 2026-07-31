@@ -8,7 +8,7 @@
 // a reset, which legitimately restarts step at 0), so it clears the guard.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { NetworkMessage, ServerMessage, StateMessage } from "../types";
+import type { NetworkMessage, ScenarioMessage, ServerMessage, StateMessage } from "../types";
 
 function defaultWsUrl(): string {
   // Same-origin in dev (Vite proxies /ws → backend). Override with ?ws=...
@@ -35,6 +35,14 @@ export interface SocketApi {
   triggerDisruption: (kind: string) => void;
   addReserved: (kind: string) => void;
   clearDisruptions: (kind?: string) => void;
+  // Stage 6 — map editing + save/load
+  addRoad: (x0: number, y0: number, dx: number, dy: number, length: number) => void;
+  removeRoad: (roadId: number) => void;
+  addVehicle: (roadId: number, cell: number, vtype: string) => void;
+  removeVehicle: (roadId: number, cell: number) => void;
+  setTurn: (junctionId: number, inRoad: number, proportions: Record<number, number>) => void;
+  saveScenario: (cb: (data: unknown) => void) => void;
+  loadScenario: (data: unknown) => void;
   ping: () => void;
   setArtificialDelay: (seconds: number) => void;
 }
@@ -49,6 +57,8 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
 
   // Guard state kept in refs so it never triggers re-renders.
   const lastStepRef = useRef<number>(-1);
+  // one-shot callback for a save_scenario reply
+  const scenarioCbRef = useRef<((data: unknown) => void) | null>(null);
 
   const send = useCallback((msg: Record<string, unknown>) => {
     const ws = wsRef.current;
@@ -75,6 +85,12 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
 
       ws.onmessage = (ev) => {
         const msg = JSON.parse(ev.data as string) as ServerMessage;
+        if (msg.type === "scenario") {
+          const cb = scenarioCbRef.current;
+          scenarioCbRef.current = null;
+          if (cb) cb((msg as ScenarioMessage).data);
+          return;
+        }
         if (msg.type === "network") {
           lastStepRef.current = -1; // new epoch: accept the next state (step 0)
           setNetwork(msg);
@@ -149,6 +165,41 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
       send({ type: "clear_disruptions", ...(kind ? { kind } : {}) }),
     [send],
   );
+  const addRoad = useCallback(
+    (x0: number, y0: number, dx: number, dy: number, length: number) =>
+      send({ type: "add_road", x0, y0, dx, dy, length }),
+    [send],
+  );
+  const removeRoad = useCallback(
+    (roadId: number) => send({ type: "remove_road", road_id: roadId }),
+    [send],
+  );
+  const addVehicle = useCallback(
+    (roadId: number, cell: number, vtype: string) =>
+      send({ type: "add_vehicle", road_id: roadId, cell, vtype }),
+    [send],
+  );
+  const removeVehicle = useCallback(
+    (roadId: number, cell: number) =>
+      send({ type: "remove_vehicle", road_id: roadId, cell }),
+    [send],
+  );
+  const setTurn = useCallback(
+    (junctionId: number, inRoad: number, proportions: Record<number, number>) =>
+      send({ type: "set_turn", junction_id: junctionId, in_road: inRoad, proportions }),
+    [send],
+  );
+  const saveScenario = useCallback(
+    (cb: (data: unknown) => void) => {
+      scenarioCbRef.current = cb;
+      send({ type: "save_scenario" });
+    },
+    [send],
+  );
+  const loadScenario = useCallback(
+    (data: unknown) => send({ type: "load_scenario", data }),
+    [send],
+  );
   const ping = useCallback(
     () => send({ type: "ping", t: performance.now() }),
     [send],
@@ -174,6 +225,13 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
     triggerDisruption,
     addReserved,
     clearDisruptions,
+    addRoad,
+    removeRoad,
+    addVehicle,
+    removeVehicle,
+    setTurn,
+    saveScenario,
+    loadScenario,
     ping,
     setArtificialDelay,
   };

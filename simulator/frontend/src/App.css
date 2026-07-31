@@ -387,3 +387,79 @@ button.mini {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
+
+/* ----------------------------------------------------------------- map editor */
+
+.edit-mode-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+button.mode-active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(92, 200, 255, 0.08);
+}
+
+.mode-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 10px;
+  line-height: 1.5;
+  border-left: 2px solid var(--edge);
+  padding-left: 8px;
+}
+
+.edit-sub {
+  margin-bottom: 12px;
+}
+
+.load-error {
+  font-size: 12px;
+  color: #ff6b6b;
+  margin-bottom: 8px;
+}
+
+/* landscape badge */
+.landscape-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--edge);
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--panel-2);
+  transition: border-color 0.3s, background 0.3s;
+}
+.landscape-badge .landscape-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-left: auto;
+}
+.landscape-badge.landscape-trivial {
+  border-color: #67d982;
+  color: #67d982;
+}
+.landscape-badge.landscape-average {
+  border-color: #ffb454;
+  color: #ffb454;
+}
+.landscape-badge.landscape-worst {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+  box-shadow: 0 0 10px rgba(255, 107, 107, 0.25);
+}
+
+/* landscape coloring in the readout metric */
+.landscape-text-trivial { color: #67d982; }
+.landscape-text-average { color: #ffb454; }
+.landscape-text-worst   { color: #ff6b6b; }
+

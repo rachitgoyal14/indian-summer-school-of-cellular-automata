@@ -1,16 +1,29 @@
 // App.tsx — top-level layout: canvas on the left, control panel + live
 // readouts on the right.
+//
+// Stage 6: adds MapEditor to the sidebar and wires the renderer instance
+// through so MapEditor can install click handlers.
 
+import { useCallback, useState } from "react";
 import { SimulationCanvas } from "./components/SimulationCanvas";
 import { ControlPanel } from "./components/ControlPanel";
 import { DisruptionPanel } from "./components/DisruptionPanel";
 import { AnalyticsPanel } from "./components/AnalyticsPanel";
+import { MapEditor } from "./components/MapEditor";
 import { useSimulationSocket } from "./hooks/useSimulationSocket";
+import type { RoadRenderer } from "./render/RoadRenderer";
 import "./App.css";
 
 export default function App() {
   const api = useSimulationSocket();
   const st = api.state;
+
+  // Renderer instance: set once the canvas mounts, cleared on unmount.
+  const [renderer, setRenderer] = useState<RoadRenderer | null>(null);
+  const handleRendererReady = useCallback(
+    (r: RoadRenderer | null) => setRenderer(r),
+    [],
+  );
 
   // counts of active disruptions by kind — hidden, for automated verification
   const disCounts: Record<string, number> = {};
@@ -32,7 +45,11 @@ export default function App() {
 
       <main className="layout">
         <section className="stage">
-          <SimulationCanvas network={api.network} state={st} />
+          <SimulationCanvas
+            network={api.network}
+            state={st}
+            onRendererReady={handleRendererReady}
+          />
           <div className="readout">
             <Metric label="step" value={st ? String(st.step) : "—"} />
             <Metric
@@ -44,6 +61,10 @@ export default function App() {
               value={st ? st.analytics.flow.toFixed(3) : "—"}
             />
             <Metric label="running" value={st ? String(st.running) : "—"} />
+            <Metric
+              label="landscape"
+              value={st ? st.analytics.landscape : "—"}
+            />
           </div>
 
           {st && st.junctions.length > 0 && (
@@ -65,6 +86,13 @@ export default function App() {
         <aside className="sidebar">
           <AnalyticsPanel state={st} />
           <div className="divider" />
+          <MapEditor
+            api={api}
+            network={api.network}
+            state={st}
+            renderer={renderer}
+          />
+          <div className="divider" />
           <ControlPanel api={api} />
           <div className="divider" />
           <DisruptionPanel api={api} />
@@ -78,7 +106,11 @@ function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="metric">
       <div className="metric-label">{label}</div>
-      <div className="metric-value">{value}</div>
+      <div
+        className={`metric-value${label === "landscape" ? ` landscape-text-${value}` : ""}`}
+      >
+        {value}
+      </div>
     </div>
   );
 }

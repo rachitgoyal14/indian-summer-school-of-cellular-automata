@@ -92,5 +92,8 @@ def serialize_state(sim: Simulation) -> dict[str, Any]:
             "flow": round(sim.flow(), 6),
             "entropy": round(entropy_norm, 6),      # normalised 0..1 (UI-friendly)
             "entropy_bits": round(entropy_bits, 6),
+            "blocked_fraction": round(sim.blocked_fraction(), 6),
+            "avg_queue": round(sim.avg_queue_length(), 4),
+            "landscape": sim.landscape(),           # trivial | average | worst
         },
     }

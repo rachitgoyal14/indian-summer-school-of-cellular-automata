@@ -123,6 +123,11 @@ class SimulationManager:
             self.artificial_delay = float(max(0.0, msg.get("seconds", 0.0)))
             return None
 
+        if t == "save_scenario":
+            # Return the full scenario to the requesting client for download.
+            async with self._lock:
+                return {"type": "scenario", "data": self.sim.to_scenario()}
+
         async with self._lock:
             if t == "pause":
                 self.sim.pause()
@@ -162,11 +167,36 @@ class SimulationManager:
                 self.sim.add_reserved(msg.get("kind", ""))
             elif t == "clear_disruptions":
                 self.sim.clear_disruptions(msg.get("kind"))
+            elif t == "load_scenario":
+                self.sim.apply_scenario(msg.get("data") or {})
+            elif t == "add_road":
+                self.sim.add_road(
+                    x0=msg.get("x0", 0), y0=msg.get("y0", 0),
+                    dx=msg.get("dx", 1), dy=msg.get("dy", 0),
+                    length=int(msg.get("length", 30)),
+                    periodic=bool(msg.get("periodic", False)),
+                )
+            elif t == "remove_road":
+                self.sim.remove_road(int(msg.get("road_id")))
+            elif t == "add_vehicle":
+                self.sim.add_vehicle(
+                    int(msg.get("road_id")), int(msg.get("cell")),
+                    msg.get("vtype", "moto"),
+                )
+            elif t == "remove_vehicle":
+                self.sim.remove_vehicle(int(msg.get("road_id")), int(msg.get("cell")))
+            elif t == "set_turn":
+                props = {int(k): float(v) for k, v in (msg.get("proportions") or {}).items()}
+                self.sim.set_turn(int(msg.get("junction_id")), int(msg.get("in_road")), props)
             else:
                 return None  # unknown message: ignore
 
         # Reflect the mutation to everyone immediately for responsiveness.
-        if t in ("reset", "load_config"):
+        structural = t in (
+            "reset", "load_config", "load_scenario",
+            "add_road", "remove_road", "set_turn",
+        )
+        if structural:
             await self.broadcast_network()
         await self.broadcast_state()
         return None
