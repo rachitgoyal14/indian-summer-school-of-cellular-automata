@@ -28,8 +28,9 @@ export interface SocketApi {
   pause: () => void;
   resume: () => void;
   singleStep: () => void;
-  reset: (density: number, seed?: number) => void;
+  reset: (density: number, seed?: number, carFraction?: number) => void;
   setSpeed: (stepsPerSecond: number) => void;
+  loadConfig: (config: string, opts?: { density?: number; carFraction?: number }) => void;
   ping: () => void;
   setArtificialDelay: (seconds: number) => void;
 }
@@ -98,8 +99,23 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
   const resume = useCallback(() => send({ type: "resume" }), [send]);
   const singleStep = useCallback(() => send({ type: "step" }), [send]);
   const reset = useCallback(
-    (density: number, seed?: number) =>
-      send({ type: "reset", density, ...(seed !== undefined ? { seed } : {}) }),
+    (density: number, seed?: number, carFraction?: number) =>
+      send({
+        type: "reset",
+        density,
+        ...(seed !== undefined ? { seed } : {}),
+        ...(carFraction !== undefined ? { car_fraction: carFraction } : {}),
+      }),
+    [send],
+  );
+  const loadConfig = useCallback(
+    (config: string, opts?: { density?: number; carFraction?: number }) =>
+      send({
+        type: "load_config",
+        config,
+        ...(opts?.density !== undefined ? { density: opts.density } : {}),
+        ...(opts?.carFraction !== undefined ? { car_fraction: opts.carFraction } : {}),
+      }),
     [send],
   );
   const setSpeed = useCallback(
@@ -127,6 +143,7 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
     singleStep,
     reset,
     setSpeed,
+    loadConfig,
     ping,
     setArtificialDelay,
   };

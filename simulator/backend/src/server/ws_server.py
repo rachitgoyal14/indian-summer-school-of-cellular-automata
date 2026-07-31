@@ -135,6 +135,18 @@ class SimulationManager:
                     density=msg.get("density"),
                     seed=msg.get("seed"),
                     length=msg.get("length"),
+                    car_fraction=msg.get("car_fraction"),
+                )
+            elif t == "load_config":
+                # Switch lane/junction configuration (Stage 3). Optional
+                # density/car_fraction override the defaults for the new config.
+                if msg.get("density") is not None:
+                    self.sim.density_target = float(msg["density"])
+                if msg.get("car_fraction") is not None:
+                    self.sim.car_fraction = float(msg["car_fraction"])
+                self.sim.load_config(
+                    msg.get("config", "one_way"),
+                    **(msg.get("build_kwargs") or {}),
                 )
             elif t == "set_speed":
                 self.sim.set_speed(float(msg.get("steps_per_second", 12.0)))
@@ -142,7 +154,7 @@ class SimulationManager:
                 return None  # unknown message: ignore
 
         # Reflect the mutation to everyone immediately for responsiveness.
-        if t == "reset":
+        if t in ("reset", "load_config"):
             await self.broadcast_network()
         await self.broadcast_state()
         return None

@@ -135,3 +135,57 @@ The acceptance bar is met by the automated browser drive above. To reproduce/rec
 2. In another shell: `cd simulator/frontend && npm install && npm run dev`
 3. Open `http://localhost:5173`, screen-record 10–15 s including a scroll-zoom and a drag-pan.
 Or simply re-run everything headlessly: `bash simulator/scripts/verify_stage2.sh`.
+
+---
+
+## Stage 3 — Vehicle Footprints + All 5 Lane/Junction Configurations
+
+**Date:** 2026-07-31
+**Status:** ✅ COMPLETE — all acceptance criteria met; math baseline preserved and re-proven.
+
+### What was built
+
+| File | Purpose |
+|---|---|
+| `backend/src/core/vehicle.py` | `Vehicle` agent (front, length, vtype) + `FOOTPRINTS` (moto=1, car=2, justified in-file) |
+| `backend/src/core/footprint.py` | Footprint-aware synchronous stepper for a single road; occupancy derivation; **proven tick-for-tick identical to `rule184.step` for 1-cell vehicles** |
+| `backend/src/core/junction.py` | `Junction` with turn proportions (validated to sum to 1.0) and weighted-random routing |
+| `backend/src/network/network.py` | `Network` engine: multi-road, footprint vehicles, junction transfers, sources/sinks; collision-free 3-pass synchronous update; per-junction queue metric |
+| `backend/src/network/grid_builder.py` | All 5 configurations + procedural R×C grid; registry + case-number map |
+| `backend/src/engine/simulation.py` | Refactored to wrap a `Network` (default = one-way ring); Stage 2 interface preserved |
+| `backend/src/server/state_serializer.py` | Schema extended: junctions, per-vehicle `{f,l,t}`, per-junction `queue` |
+| `backend/scripts/demo_congestion_propagation.py` | Camera-independent numeric proof of upstream congestion propagation |
+| `backend/tests/test_footprint.py`, `test_junction.py`, `test_no_junction_collision.py` | 16 new tests |
+| frontend `RoadRenderer.ts`, `ControlPanel.tsx`, `App.tsx`, `types.ts` | Multi-road/junction rendering, footprint-sized/coloured vehicles, config selector, car-fraction, always-visible junction-queue readout |
+| `docs/evidence/stage3/*.png` | Screenshot of each of the 5 configs + zoom/pan |
+
+### Design decisions
+
+- **Agent representation (single source of truth).** Vehicles became agents (`front`, `length`, `vtype`); each road's occupancy grid is *derived* from its vehicle list, so the grid and the vehicles can never drift apart. This cleanly supports multi-cell footprints and junction transfers.
+- **Footprint = footprint-aware Rule 184.** A vehicle advances iff the single cell ahead of its *front* is empty in the snapshot; the check reads the whole-footprint occupancy, so no vehicle ever enters a car's body cell. For all-motorbike roads this is provably identical to classic Rule 184 (see below).
+- **Car = 2 cells** (justified in `vehicle.py`): minimal ratio giving a clear visual size distinction while keeping single-motorbike lanes numerically identical to the Rule 184 baseline. One constant to change if 3 is wanted.
+- **Collision-free synchronous step (3 passes against a projected grid):** Pass A intra-road moves/wraps/exits; Pass B junction transfers (claim entry cells on the projected occupancy — blocked vehicles queue in place, which *is* the congestion backup); Pass C sources spawn where there's room. Ordered resolution guarantees no two vehicles land on the same cell.
+- **Junction transfer semantics** (documented artifact): a vehicle transfers atomically onto the first `length` cells of its chosen outgoing road when they are free. For motorbikes (the common junction case) this is exactly a one-cell advance; for cars it is a small, bounded, documented artifact preferred over the complexity of a vehicle physically spanning two roads.
+- **Rendering:** vehicles drawn per-footprint-cell (robust to ring-wrap), motorbikes cyan / cars amber, junctions as diamond nodes; camera bounds recomputed over all roads + junctions so `Fit view` and zoom/pan work across the whole network.
+
+### Validation performed (evidence)
+
+**Backend (`pytest -q` → 64 passed):** 48 prior + 16 new.
+- `test_footprint.py::test_equivalent_to_rule184_periodic` — over 4 seeds × 5 densities × 120 steps, the footprint engine's occupancy is **bit-for-bit identical** to `rule184.step`. This is the regression guarantee that Stage 3 did not disturb the Stage 1 math.
+- `test_no_junction_collision.py::test_network_single_ring_matches_rule184` — the *Network* engine (the one the app runs) also matches classic Rule 184 on a periodic ring, tick for tick.
+- Footprint correctness: car occupies its full 2-cell footprint; a follower is blocked by a car's **body** cell (not just its front); a car moves as a rigid unit; **no cell is ever double-booked** over 2000-step mixed-vehicle grid runs and 1500-step bidirectional runs; grid density stays bounded (sources+sinks).
+- Junctions: proportion-sum and negative-proportion validation; `choose_out` frequencies match configured proportions within 2% over 20 000 samples; an **integration** test on case 3 confirms the observed straight/turn split tracks `straight_bias` within 5%.
+
+**Congestion propagation (`demo_congestion_propagation.py`) — camera-independent:** a two-junction chain with a downstream bottleneck. Output: downstream junction J1 first backed up (queue≥6) at **step 39**, the upstream neighbour J0 at **step 51** — the backup demonstrably propagated upstream with a **12-step lag**, quantified from queue readouts, not inferred from a camera move. (The UI also shows these same per-junction queue lengths live and always-visible.)
+
+**Real browser (Playwright, `verify_stage3.mjs`) — `overall_ok: true`, 0 page errors:** all 5 configurations selected in turn, each rendering live motion; junction readouts present on the junction configs (case 3→1, case 4→1, grid→4 junctions); zoom changed the visible cell-range on the grid (`cells 0–39` → `cells 8–39`) and pan worked across the network. Screenshots `docs/evidence/stage3/01…06`. Motorbikes (cyan, 1 cell) are visibly distinct from cars (amber, 2 cells) in the grid screenshot.
+
+### Acceptance criteria checklist
+
+- [x] `pytest -q` passes — all regression + new footprint, junction, and collision tests (64 total).
+- [x] All 5 lane/junction configurations confirmed working in the browser (screenshots).
+- [x] Zero collisions confirmed over extended runs, including footprint-aware cars (2000+ steps).
+- [x] Motorbikes and cars visually distinct by size (1 vs 2 cells) and colour.
+- [x] Congestion-propagation demonstration uses a camera-independent method (numeric queue readout + `demo_congestion_propagation.py`).
+- [x] PHASE_REPORT.md updated (this section).
+- [x] Git commit made (see git log).

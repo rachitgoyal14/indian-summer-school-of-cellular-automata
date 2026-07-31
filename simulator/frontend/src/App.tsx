@@ -34,6 +34,21 @@ export default function App() {
             />
             <Metric label="running" value={st ? String(st.running) : "—"} />
           </div>
+
+          {st && st.junctions.length > 0 && (
+            <div className="queues">
+              <span className="queues-label">junction queues:</span>
+              {st.junctions.map((j) => (
+                <span
+                  key={j.id}
+                  className={`qbadge ${j.queue >= 6 ? "hot" : ""}`}
+                  title={`vehicles backed up near junction ${j.id}`}
+                >
+                  J{j.id}: {j.queue}
+                </span>
+              ))}
+            </div>
+          )}
         </section>
 
         <aside className="sidebar">

@@ -1,44 +1,37 @@
 """
-state_serializer.py — convert the NumPy `Simulation` state into compact,
-frontend-friendly JSON messages.
+state_serializer.py — convert the NumPy `Simulation`/`Network` state into
+compact, frontend-friendly JSON messages.
 
-Message schema (v1, Stage 2)
-============================
-Two server → client message kinds. Structure that rarely changes is sent
-separately from per-tick occupancy so the per-tick payload stays small and
-every later stage extends this same schema rather than replacing it.
+Message schema
+==============
+Two server → client message kinds; structure is sent separately from
+per-tick occupancy so the per-tick payload stays small.
 
-1. "network" — sent once on connect and whenever the network *structure*
-   changes (Stage 6 map edits). Describes roads' fixed geometry.
-
+1. "network" (on connect / structure change):
    {
      "type": "network",
-     "roads": [
-       {"id": 0, "length": 500,
-        "geometry": {"x0": 0.0, "y0": 0.0, "dx": 1.0, "dy": 0.0},
-        "periodic": true}
-     ],
-     "junctions": []            # Stage 3
+     "config": "grid",
+     "roads": [{"id", "length", "geometry":{x0,y0,dx,dy}, "periodic"}],
+     "junctions": [{"id", "x", "y"}]
    }
 
-2. "state" — sent every tick. Carries only what changes.
-
+2. "state" (every tick):
    {
      "type": "state",
-     "step": 1234,              # monotonic; client rejects stale/out-of-order
-     "running": true,
-     "steps_per_second": 12.0,
-     "roads": [
-       {"id": 0, "cells": [0,1,0,...]}   # 0=empty, 1=vehicle (Stage 2)
-     ],
-     "disruptions": [],         # Stage 4
-     "analytics": {             # Stage 5 extends with entropy, per-segment
-       "density": 0.42,
-       "flow": 0.35
-     }
+     "step", "running", "steps_per_second",
+     "roads": [{
+        "id",
+        "cells": [0/1 ...],                     # occupancy (compat + heatmap)
+        "vehicles": [{"f": front, "l": length, "t": "moto"|"car"}]
+     }],
+     "junctions": [{"id", "queue"}],            # per-junction backup length
+     "disruptions": [],                          # Stage 4
+     "analytics": {"density", "flow"}            # Stage 5 extends
    }
 
-Client → server control messages are documented in ws_server.py.
+`cells` (occupancy) and `vehicles` are both sent: `vehicles` drives
+footprint-accurate rendering; `cells` supports the desync check, density,
+and the Stage 5 heatmap.
 """
 
 from __future__ import annotations
@@ -49,9 +42,9 @@ from src.engine.simulation import Simulation
 
 
 def serialize_network(sim: Simulation) -> dict[str, Any]:
-    """Structural message: fixed geometry, sent on connect / structure change."""
     return {
         "type": "network",
+        "config": sim.config,
         "roads": [
             {
                 "id": r.id,
@@ -61,12 +54,15 @@ def serialize_network(sim: Simulation) -> dict[str, Any]:
             }
             for r in sim.roads
         ],
-        "junctions": [],  # populated in Stage 3
+        "junctions": [
+            {"id": j.id, "x": j.x, "y": j.y}
+            for j in sim.network.junctions.values()
+        ],
     }
 
 
 def serialize_state(sim: Simulation) -> dict[str, Any]:
-    """Per-tick message: occupancy + live analytics, stamped with `step`."""
+    queues = sim.junction_queue_lengths()
     return {
         "type": "state",
         "step": sim.step_count,
@@ -75,10 +71,16 @@ def serialize_state(sim: Simulation) -> dict[str, Any]:
         "roads": [
             {
                 "id": r.id,
-                # tolist() keeps the JSON small and avoids NumPy int types
                 "cells": r.cells.astype(int).tolist(),
+                "vehicles": [
+                    {"f": v.front, "l": v.length, "t": v.vtype}
+                    for v in r.vehicles
+                ],
             }
             for r in sim.roads
+        ],
+        "junctions": [
+            {"id": jid, "queue": q} for jid, q in queues.items()
         ],
         "disruptions": [],  # populated in Stage 4
         "analytics": {

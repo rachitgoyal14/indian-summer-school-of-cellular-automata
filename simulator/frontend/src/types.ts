@@ -16,15 +16,36 @@ export interface NetworkRoad {
   periodic: boolean;
 }
 
+export interface NetworkJunction {
+  id: number;
+  x: number;
+  y: number;
+}
+
 export interface NetworkMessage {
   type: "network";
+  config: string;
   roads: NetworkRoad[];
-  junctions: unknown[]; // Stage 3
+  junctions: NetworkJunction[];
+}
+
+export type VehicleType = "moto" | "car";
+
+export interface VehicleDTO {
+  f: number; // front cell index
+  l: number; // footprint length in cells
+  t: VehicleType;
 }
 
 export interface StateRoad {
   id: number;
-  cells: number[]; // 0 = empty, 1 = vehicle (Stage 2)
+  cells: number[]; // occupancy 0/1
+  vehicles: VehicleDTO[];
+}
+
+export interface StateJunction {
+  id: number;
+  queue: number; // backup length (vehicles queued near this junction)
 }
 
 export interface Analytics {
@@ -38,6 +59,7 @@ export interface StateMessage {
   running: boolean;
   steps_per_second: number;
   roads: StateRoad[];
+  junctions: StateJunction[];
   disruptions: unknown[]; // Stage 4
   analytics: Analytics;
 }
