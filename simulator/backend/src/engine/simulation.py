@@ -20,6 +20,7 @@ import numpy as np
 
 from src.network import grid_builder
 from src.network.network import Network, Road
+from src.core.disruptions import DisruptionManager
 
 
 class Simulation:
@@ -45,7 +46,12 @@ class Simulation:
         self.step_count = 0
         self._last_moved = 0
         self._rng = np.random.default_rng(seed)
+        # disruption settings persist across resets/config switches
+        self._disruption_probs: dict[str, float] = {}
+        self._repair_scale: float = 1.0
         self.network: Network = self._build()
+        self.disruptions = DisruptionManager(self.network)
+        self._apply_disruption_settings()
 
     # ------------------------------------------------------------------ build
     def _build(self) -> Network:
@@ -73,6 +79,9 @@ class Simulation:
     # ------------------------------------------------------------------ ticking
     def advance(self, n: int = 1) -> None:
         for _ in range(n):
+            # update disruptions (repair countdown + probabilistic triggers),
+            # then advance the traffic on the resulting blocked layout.
+            self.disruptions.step(self._rng)
             self._last_moved = self.network.step(self._rng)
             self.step_count += 1
 
@@ -110,12 +119,42 @@ class Simulation:
         self.step_count = 0
         self._last_moved = 0
         self.network = self._build()
+        # rebuild disruptions for the new network, preserving the user's
+        # probability / repair-speed settings (but clearing placed instances).
+        self.disruptions = DisruptionManager(self.network)
+        self._apply_disruption_settings()
 
     def load_config(self, config: str, **build_kwargs: Any) -> None:
         """Switch to a different lane/junction configuration and rebuild."""
         self.config = config
         self.build_kwargs = build_kwargs
         self.reset()
+
+    # ------------------------------------------------------------------ disruptions
+    def _apply_disruption_settings(self) -> None:
+        self.disruptions.set_params(
+            probs=self._disruption_probs, repair_scale=self._repair_scale
+        )
+
+    def set_disruption_params(
+        self,
+        probs: dict[str, float] | None = None,
+        repair_scale: float | None = None,
+    ) -> None:
+        if probs:
+            self._disruption_probs.update({k: float(v) for k, v in probs.items()})
+        if repair_scale is not None:
+            self._repair_scale = float(repair_scale)
+        self._apply_disruption_settings()
+
+    def trigger_disruption(self, kind: str) -> bool:
+        return self.disruptions.trigger(kind, self._rng)
+
+    def add_reserved(self, kind: str) -> bool:
+        return self.disruptions.add_reserved(kind, self._rng)
+
+    def clear_disruptions(self, kind: str | None = None) -> None:
+        self.disruptions.clear(kind)
 
     # ------------------------------------------------------------------ analytics
     def density(self) -> float:

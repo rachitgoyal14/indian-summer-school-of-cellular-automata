@@ -82,7 +82,7 @@ def serialize_state(sim: Simulation) -> dict[str, Any]:
         "junctions": [
             {"id": jid, "queue": q} for jid, q in queues.items()
         ],
-        "disruptions": [],  # populated in Stage 4
+        "disruptions": sim.disruptions.to_list(),
         "analytics": {
             "density": round(sim.density(), 6),
             "flow": round(sim.flow(), 6),

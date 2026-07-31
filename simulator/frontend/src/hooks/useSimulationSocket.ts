@@ -31,6 +31,10 @@ export interface SocketApi {
   reset: (density: number, seed?: number, carFraction?: number) => void;
   setSpeed: (stepsPerSecond: number) => void;
   loadConfig: (config: string, opts?: { density?: number; carFraction?: number }) => void;
+  setDisruptionParams: (probs?: Record<string, number>, repairScale?: number) => void;
+  triggerDisruption: (kind: string) => void;
+  addReserved: (kind: string) => void;
+  clearDisruptions: (kind?: string) => void;
   ping: () => void;
   setArtificialDelay: (seconds: number) => void;
 }
@@ -123,6 +127,28 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
       send({ type: "set_speed", steps_per_second: stepsPerSecond }),
     [send],
   );
+  const setDisruptionParams = useCallback(
+    (probs?: Record<string, number>, repairScale?: number) =>
+      send({
+        type: "set_disruption_params",
+        ...(probs ? { probs } : {}),
+        ...(repairScale !== undefined ? { repair_scale: repairScale } : {}),
+      }),
+    [send],
+  );
+  const triggerDisruption = useCallback(
+    (kind: string) => send({ type: "trigger_disruption", kind }),
+    [send],
+  );
+  const addReserved = useCallback(
+    (kind: string) => send({ type: "add_reserved", kind }),
+    [send],
+  );
+  const clearDisruptions = useCallback(
+    (kind?: string) =>
+      send({ type: "clear_disruptions", ...(kind ? { kind } : {}) }),
+    [send],
+  );
   const ping = useCallback(
     () => send({ type: "ping", t: performance.now() }),
     [send],
@@ -144,6 +170,10 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
     reset,
     setSpeed,
     loadConfig,
+    setDisruptionParams,
+    triggerDisruption,
+    addReserved,
+    clearDisruptions,
     ping,
     setArtificialDelay,
   };

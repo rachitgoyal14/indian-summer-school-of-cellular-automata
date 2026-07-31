@@ -48,6 +48,24 @@ export interface StateJunction {
   queue: number; // backup length (vehicles queued near this junction)
 }
 
+export type DisruptionKind =
+  | "breakdown"
+  | "tree"
+  | "accident"
+  | "flood"
+  | "lock"
+  | "parking";
+
+export interface DisruptionDTO {
+  id: number;
+  kind: DisruptionKind;
+  label: string;
+  road_id: number;
+  cells: number[];
+  permanent: boolean;
+  remaining: number;
+}
+
 export interface Analytics {
   density: number;
   flow: number;
@@ -60,7 +78,7 @@ export interface StateMessage {
   steps_per_second: number;
   roads: StateRoad[];
   junctions: StateJunction[];
-  disruptions: unknown[]; // Stage 4
+  disruptions: DisruptionDTO[];
   analytics: Analytics;
 }
 

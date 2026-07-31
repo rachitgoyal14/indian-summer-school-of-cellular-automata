@@ -189,3 +189,53 @@ Or simply re-run everything headlessly: `bash simulator/scripts/verify_stage2.sh
 - [x] Congestion-propagation demonstration uses a camera-independent method (numeric queue readout + `demo_congestion_propagation.py`).
 - [x] PHASE_REPORT.md updated (this section).
 - [x] Git commit made (see git log).
+
+---
+
+## Stage 4 — Unified Disruption Mechanism (All 8 Liberty Degrees)
+
+**Date:** 2026-07-31
+**Status:** ✅ COMPLETE — all 8 brief terms live-controllable and visually distinct; Stage 1 baseline unperturbed at all-off.
+
+### What was built
+
+| File | Purpose |
+|---|---|
+| `backend/src/core/disruptions.py` | `DisruptionManager` + the 3 unified mechanisms; repair countdown; probability + manual triggers; publishes `network.blocked` |
+| `backend/src/network/network.py` | Movement rule now treats blocked cells as unavailable (Pass A/B/C); empty by default so baseline is untouched |
+| `backend/src/engine/simulation.py` | Owns a `DisruptionManager`; disruption settings persist across resets/config switches; step order = disruptions then traffic |
+| `backend/src/server/{ws_server,state_serializer}.py` | Control handlers (`set_disruption_params`, `trigger_disruption`, `add_reserved`, `clear_disruptions`); disruptions in every state push |
+| frontend `DisruptionPanel.tsx`, `RoadRenderer.ts`, `types.ts`, `App.tsx` | Live controls for all 8; per-kind colours; hidden debug summary for verification |
+| `backend/tests/test_disruptions.py` | 8 new tests |
+| `docs/evidence/stage4/*.png` | All-disruptions + cleared + zoomed-colours screenshots |
+
+### The 8 brief terms → 3 mechanisms (plan.md §4)
+
+| Brief term | Mechanism | Trigger | Colour |
+|---|---|---|---|
+| Fall car (breakdown) | A — temp-blocked **1 cell** | probability/step | red |
+| Fallen tree | A — temp-blocked **1 cell** (same mechanism, distinct label/colour) | probability/step | green |
+| Accident (two cars) | B — temp-blocked **2 adjacent cells** | probability/step | crimson |
+| Flood | B — temp-blocked **segment (10 cells)** | probability/step **or** "Flood now" | blue |
+| Repair | the **countdown** that clears A/B — always active | (Repair-speed slider scales duration) | — |
+| Locks/gears | C — **permanently-reserved** cell | manual add/clear | purple |
+| Parking | C — permanently-reserved **edge** cell | manual add/clear | slate |
+| Turn | **not a disruption** — ordinary junction routing (Stage 3) | n/a | — |
+
+So 8 brief terms are covered by 6 placeable kinds + the always-on repair countdown, over exactly 3 code mechanisms — each independently live-adjustable and colour-distinct, as plan.md §8 requires.
+
+### Validation performed (evidence)
+
+**Backend (`pytest -q` → 72 passed):** 64 prior + 8 new.
+- probability 0 → **never** triggers over 500 steps; probability 1 → triggers immediately; temporary disruption clears **exactly** on its repair schedule; permanently-reserved cell **never** self-clears over 1000 steps; a blocked cell **provably blocks movement** (vehicle stays, then advances once unblocked); `clear`/`clear-all` work.
+- **`test_stage1_baseline_unperturbed_when_all_off`** — with no disruptions the running Simulation is **bit-for-bit identical to classic Rule 184** over 200 steps and `network.blocked` stays empty the whole time (the plan.md §6 regression, re-proven with the disruption layer present).
+
+**Real browser (Playwright, `verify_stage4.mjs`) — `overall_ok: true`, 0 page errors:** each of breakdown, tree, accident (probability sliders), flood ("Flood now" button), lock and parking (add buttons) became **active and rendered**; the two permanent reservations **persisted** across 2.5 s of running while the temporary ones repaired; **Clear all** removed everything (remaining = 0). Screenshots show the distinct colours and — in the zoomed view — traffic **congestion backing up behind blockages** (flow dropped from ~0.30 to ~0.13 with disruptions active). Evidence: `docs/evidence/stage4/01…03`.
+
+### Acceptance criteria checklist
+
+- [x] `pytest -q` passes — all regression + new disruption tests (72 total).
+- [x] Stage 1 baseline confirmed unperturbed at zero disruption probability (bit-for-bit).
+- [x] All 8 brief-named disruption types confirmed working, visually distinct, and live-adjustable from the browser.
+- [x] PHASE_REPORT.md updated (this section) noting which brief terms share which mechanism.
+- [x] Git commit made (see git log).

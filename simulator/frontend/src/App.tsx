@@ -3,6 +3,7 @@
 
 import { SimulationCanvas } from "./components/SimulationCanvas";
 import { ControlPanel } from "./components/ControlPanel";
+import { DisruptionPanel } from "./components/DisruptionPanel";
 import { useSimulationSocket } from "./hooks/useSimulationSocket";
 import "./App.css";
 
@@ -10,8 +11,17 @@ export default function App() {
   const api = useSimulationSocket();
   const st = api.state;
 
+  // counts of active disruptions by kind — hidden, for automated verification
+  const disCounts: Record<string, number> = {};
+  for (const d of st?.disruptions ?? []) {
+    disCounts[d.kind] = (disCounts[d.kind] ?? 0) + 1;
+  }
+
   return (
     <div className="app">
+      <div data-testid="dis-debug" style={{ display: "none" }}>
+        {JSON.stringify(disCounts)}
+      </div>
       <header className="topbar">
         <h1>CA Rule 184 — Traffic Simulator</h1>
         <div className={`conn ${api.connected ? "up" : "down"}`}>
@@ -53,6 +63,8 @@ export default function App() {
 
         <aside className="sidebar">
           <ControlPanel api={api} />
+          <div className="divider" />
+          <DisruptionPanel api={api} />
         </aside>
       </main>
     </div>

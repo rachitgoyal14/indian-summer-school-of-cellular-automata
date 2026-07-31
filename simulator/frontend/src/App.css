@@ -291,3 +291,41 @@ select {
   color: #ffb454;
   box-shadow: 0 0 8px rgba(255, 159, 67, 0.4);
 }
+
+/* disruption panel */
+.dis-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+  flex: 0 0 auto;
+}
+.count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+button.mini {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+.dis-manual {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 12px;
+}
+.turn-note {
+  border-left: 2px solid var(--edge);
+  padding-left: 8px;
+  margin: 4px 0 14px;
+  line-height: 1.4;
+}

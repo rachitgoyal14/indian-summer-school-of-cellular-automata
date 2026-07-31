@@ -75,6 +75,9 @@ class Network:
         self.roads: dict[int, Road] = {}
         self.junctions: dict[int, Junction] = {}
         self._vid = 0  # global vehicle id counter
+        # cells made unavailable by disruptions (Stage 4). Empty by default,
+        # so with no disruptions the engine is the exact Rule 184 baseline.
+        self.blocked: dict[int, set[int]] = {}
 
     # ------------------------------------------------------------- building
     def add_road(self, road: Road) -> Road:
@@ -155,13 +158,19 @@ class Network:
         transfer_pending: list[tuple[int, Vehicle]] = []  # (road_id, vehicle)
         moved = 0
 
+        # disrupted cells behave like occupied cells: nothing may enter them.
+        blk = self.blocked
+
+        def free(rid: int, cell: int) -> bool:
+            return occ_old[rid][cell] == 0 and cell not in blk.get(rid, ())
+
         # ---- Pass A: intra-road resolution ----
         for rid, road in self.roads.items():
             L = road.length
             for v in road.vehicles:
                 nxt = v.front + 1
                 if nxt < L:
-                    if occ_old[rid][nxt] == 0:
+                    if free(rid, nxt):
                         nv = Vehicle(v.id, nxt, v.length, v.vtype)
                         _place(occ_new[rid], nv, L, road.periodic)
                         new_lists[rid].append(nv)
@@ -173,7 +182,7 @@ class Network:
                     # front at last cell -> exit behaviour
                     if road.periodic:
                         w = nxt % L
-                        if occ_old[rid][w] == 0:
+                        if free(rid, w):
                             nv = Vehicle(v.id, w, v.length, v.vtype)
                             _place(occ_new[rid], nv, L, road.periodic)
                             new_lists[rid].append(nv)
@@ -203,7 +212,8 @@ class Network:
             entry = list(range(v.length))  # cells [0 .. length-1]
             if any(c >= out.length for c in entry):
                 continue
-            if all(occ_new[out_id][c] == 0 for c in entry):
+            out_blk = blk.get(out_id, ())
+            if all(occ_new[out_id][c] == 0 and c not in out_blk for c in entry):
                 # remove from current road (free its old cells in projection)
                 new_lists[rid].remove(v)
                 _unplace(occ_new[rid], v, road.length, road.periodic)
@@ -223,7 +233,10 @@ class Network:
                 is_car = rng.random() < road.source_car_fraction
                 length = FOOTPRINTS["car"] if is_car else FOOTPRINTS["moto"]
                 entry = list(range(length))
-                if length <= road.length and all(occ_new[rid][c] == 0 for c in entry):
+                road_blk = blk.get(rid, ())
+                if length <= road.length and all(
+                    occ_new[rid][c] == 0 and c not in road_blk for c in entry
+                ):
                     for c in entry:
                         occ_new[rid][c] = 1
                     new_lists[rid].append(

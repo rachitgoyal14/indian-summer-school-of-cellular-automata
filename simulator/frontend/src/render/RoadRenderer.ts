@@ -7,7 +7,7 @@
 // transform, and works across the whole network.
 
 import { Application, Container, Graphics } from "pixi.js";
-import type { NetworkMessage, StateMessage } from "../types";
+import type { DisruptionKind, NetworkMessage, StateMessage } from "../types";
 
 const CELL_SIZE = 14; // world px per cell
 const COLORS = {
@@ -22,10 +22,22 @@ const COLORS = {
   carGlow: 0xb87316,
 };
 
+// Each disruption kind gets a distinct colour so the user is never confused
+// about which one they triggered (plan.md §8 point 3).
+export const DISRUPTION_COLORS: Record<DisruptionKind, number> = {
+  breakdown: 0xff6b6b, // red
+  tree: 0x67d982, // green
+  accident: 0xff2d55, // bright crimson
+  flood: 0x3aa0ff, // blue
+  lock: 0xb56bff, // purple
+  parking: 0x9aa7bd, // slate
+};
+
 export class RoadRenderer {
   readonly app: Application;
   private camera: Container;
   private roadLayer: Graphics;
+  private disruptionLayer: Graphics;
   private junctionLayer: Graphics;
   private vehicleLayer: Graphics;
   private network: NetworkMessage | null = null;
@@ -37,9 +49,11 @@ export class RoadRenderer {
     this.app = app;
     this.camera = new Container();
     this.roadLayer = new Graphics();
+    this.disruptionLayer = new Graphics();
     this.junctionLayer = new Graphics();
     this.vehicleLayer = new Graphics();
     this.camera.addChild(this.roadLayer);
+    this.camera.addChild(this.disruptionLayer);
     this.camera.addChild(this.junctionLayer);
     this.camera.addChild(this.vehicleLayer);
     this.app.stage.addChild(this.camera);
@@ -68,6 +82,7 @@ export class RoadRenderer {
     this.network = network;
     this.drawRoads();
     this.drawJunctions();
+    this.disruptionLayer.clear();
     this.vehicleLayer.clear();
     this.fitToView();
   }
@@ -109,6 +124,33 @@ export class RoadRenderer {
   setState(state: StateMessage) {
     if (!this.network) return;
     const roadById = new Map(this.network.roads.map((r) => [r.id, r]));
+
+    // ---- disruptions (blocked cells), coloured by kind ----
+    const d = this.disruptionLayer;
+    d.clear();
+    for (const dis of state.disruptions) {
+      const meta = roadById.get(dis.road_id);
+      if (!meta) continue;
+      const { x0, y0, dx, dy } = meta.geometry;
+      const color = DISRUPTION_COLORS[dis.kind] ?? 0xffffff;
+      for (const idx of dis.cells) {
+        const wx = (x0 + idx * dx) * CELL_SIZE;
+        const wy = (y0 + idx * dy) * CELL_SIZE;
+        d.rect(wx - 2, wy - 2, CELL_SIZE + 3, CELL_SIZE + 3).fill({
+          color,
+          alpha: 0.35,
+        }); // glow halo
+        d.rect(wx, wy, CELL_SIZE - 1, CELL_SIZE - 1).fill({ color });
+        // permanent reservations get an inner marker so they read differently
+        if (dis.permanent) {
+          d.rect(wx + CELL_SIZE / 2 - 1, wy + 2, 2, CELL_SIZE - 5).fill({
+            color: 0x0f1420,
+          });
+        }
+      }
+    }
+
+    // ---- vehicles ----
     const g = this.vehicleLayer;
     g.clear();
     for (const road of state.roads) {

@@ -150,6 +150,18 @@ class SimulationManager:
                 )
             elif t == "set_speed":
                 self.sim.set_speed(float(msg.get("steps_per_second", 12.0)))
+            elif t == "set_disruption_params":
+                # {probs: {breakdown, tree, accident, flood}, repair_scale}
+                self.sim.set_disruption_params(
+                    probs=msg.get("probs"),
+                    repair_scale=msg.get("repair_scale"),
+                )
+            elif t == "trigger_disruption":
+                self.sim.trigger_disruption(msg.get("kind", ""))
+            elif t == "add_reserved":
+                self.sim.add_reserved(msg.get("kind", ""))
+            elif t == "clear_disruptions":
+                self.sim.clear_disruptions(msg.get("kind"))
             else:
                 return None  # unknown message: ignore
 
