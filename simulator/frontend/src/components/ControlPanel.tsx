@@ -49,9 +49,30 @@ export function ControlPanel({ api }: Props) {
       </label>
 
       <div className="legend">
-        <span><i className="chip moto" /> motorbike (1 cell)</span>
-        <span><i className="chip car" /> car (2 cells)</span>
-        <span><i className="chip junc" /> junction</span>
+        <span>
+          <svg className="legend-icon" width="16" height="14" viewBox="0 0 16 14">
+            <path d="M14,7 L10,4 L5,4.5 L2,5.5 L2,8.5 L5,9.5 L10,10 Z" fill="#4ECDC4" opacity="0.9"/>
+            <circle cx="12" cy="7" r="1.5" fill="#3aaba4"/>
+            <circle cx="3.5" cy="7" r="1.5" fill="#3aaba4"/>
+          </svg>
+          motorbike (1 cell)
+        </span>
+        <span>
+          <svg className="legend-icon" width="28" height="14" viewBox="0 0 28 14">
+            <path d="M25,7 L23,3 L17,2 L10,2 L8,3.5 L8,2.5 L4,3 L2,4.5 L2,9.5 L4,11 L8,11.5 L8,10.5 L10,12 L17,12 L23,11 Z" fill="#F5A623" opacity="0.9"/>
+            <rect x="16" y="3.5" width="5" height="7" rx="0.5" fill="#c4851c" opacity="0.4"/>
+            <rect x="7" y="4" width="4" height="6" rx="0.5" fill="#c4851c" opacity="0.3"/>
+          </svg>
+          car (2 cells)
+        </span>
+        <span>
+          <svg className="legend-icon" width="16" height="14" viewBox="0 0 16 14">
+            <circle cx="8" cy="7" r="3" fill="#E8E4DD" opacity="0.8"/>
+            <rect x="2" y="6" width="12" height="2" rx="1" fill="#E8E4DD" opacity="0.4"/>
+            <rect x="7" y="1" width="2" height="12" rx="1" fill="#E8E4DD" opacity="0.4"/>
+          </svg>
+          junction
+        </span>
       </div>
 
       <div className="divider" />

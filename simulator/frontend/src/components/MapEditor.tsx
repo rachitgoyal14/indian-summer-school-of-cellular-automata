@@ -250,13 +250,19 @@ export function MapEditor({ api, network, state, renderer }: Props) {
             className={`mini ${vehicleType === "moto" ? "mode-active" : ""}`}
             onClick={() => setVehicleType("moto")}
           >
-            <i className="chip moto" /> Moto
+            <svg width="12" height="10" viewBox="0 0 16 14" style={{verticalAlign: "middle", marginRight: 3}}>
+              <path d="M14,7 L10,4 L5,4.5 L2,5.5 L2,8.5 L5,9.5 L10,10 Z" fill="#4ECDC4" opacity="0.9"/>
+            </svg>
+            Moto
           </button>
           <button
             className={`mini ${vehicleType === "car" ? "mode-active" : ""}`}
             onClick={() => setVehicleType("car")}
           >
-            <i className="chip car" /> Car
+            <svg width="20" height="10" viewBox="0 0 28 14" style={{verticalAlign: "middle", marginRight: 3}}>
+              <path d="M25,7 L23,3 L17,2 L10,2 L8,3.5 L8,2.5 L4,3 L2,4.5 L2,9.5 L4,11 L8,11.5 L8,10.5 L10,12 L17,12 L23,11 Z" fill="#F5A623" opacity="0.9"/>
+            </svg>
+            Car
           </button>
         </div>
       )}
@@ -336,9 +342,9 @@ export function MapEditor({ api, network, state, renderer }: Props) {
                 onChange={(e) => setTurnPropsStr(e.target.value)}
                 placeholder="2:0.6, 3:0.4"
                 style={{
-                  background: "var(--panel-2)",
-                  color: "var(--text)",
-                  border: "1px solid var(--edge)",
+                  background: "var(--tarmac)",
+                  color: "var(--chalk)",
+                  border: "1px solid var(--kerb)",
                   borderRadius: 6,
                   padding: "5px 8px",
                   fontSize: 13,
@@ -381,7 +387,7 @@ export function MapEditor({ api, network, state, renderer }: Props) {
           type="file"
           accept="application/json,.json"
           onChange={handleFileUpload}
-          style={{ fontSize: 12, color: "var(--muted)" }}
+          style={{ fontSize: 12, color: "var(--gravel)" }}
         />
       </label>
 
@@ -394,9 +400,9 @@ export function MapEditor({ api, network, state, renderer }: Props) {
           onChange={(e) => setLoadText(e.target.value)}
           placeholder='{"version": 1, ...}'
           style={{
-            background: "var(--panel-2)",
-            color: "var(--text)",
-            border: "1px solid var(--edge)",
+            background: "var(--tarmac)",
+            color: "var(--chalk)",
+            border: "1px solid var(--kerb)",
             borderRadius: 6,
             padding: "6px 8px",
             fontSize: 11,

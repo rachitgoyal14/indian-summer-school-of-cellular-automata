@@ -3,6 +3,10 @@
 //
 // Stage 6: adds MapEditor to the sidebar and wires the renderer instance
 // through so MapEditor can install click handlers.
+//
+// Visual polish (pulled forward from Stage 7): fixed-viewport cockpit layout,
+// tarmac-grounded palette, amber road-marking accent, Overpass/Inter/JetBrains
+// Mono typography.
 
 import { useCallback, useState } from "react";
 import { SimulationCanvas } from "./components/SimulationCanvas";
@@ -37,7 +41,7 @@ export default function App() {
         {JSON.stringify(disCounts)}
       </div>
       <header className="topbar">
-        <h1>CA Rule 184 — Traffic Simulator</h1>
+        <h1><span className="topbar-issca">ISSCA</span>CA Rule 184 — Traffic Simulator</h1>
         <div className={`conn ${api.connected ? "up" : "down"}`}>
           {api.connected ? "● connected" : "○ disconnected"}
         </div>
@@ -50,26 +54,10 @@ export default function App() {
             state={st}
             onRendererReady={handleRendererReady}
           />
-          <div className="readout">
-            <Metric label="step" value={st ? String(st.step) : "—"} />
-            <Metric
-              label="density"
-              value={st ? st.analytics.density.toFixed(3) : "—"}
-            />
-            <Metric
-              label="flow"
-              value={st ? st.analytics.flow.toFixed(3) : "—"}
-            />
-            <Metric label="running" value={st ? String(st.running) : "—"} />
-            <Metric
-              label="landscape"
-              value={st ? st.analytics.landscape : "—"}
-            />
-          </div>
 
           {st && st.junctions.length > 0 && (
             <div className="queues">
-              <span className="queues-label">junction queues:</span>
+              <span className="queues-label">junction queues</span>
               {st.junctions.map((j) => (
                 <span
                   key={j.id}
@@ -86,6 +74,8 @@ export default function App() {
         <aside className="sidebar">
           <AnalyticsPanel state={st} />
           <div className="divider" />
+          <ControlPanel api={api} />
+          <div className="divider" />
           <MapEditor
             api={api}
             network={api.network}
@@ -93,11 +83,29 @@ export default function App() {
             renderer={renderer}
           />
           <div className="divider" />
-          <ControlPanel api={api} />
-          <div className="divider" />
           <DisruptionPanel api={api} />
         </aside>
       </main>
+
+      <div className="readout">
+        <Metric label="step" value={st ? String(st.step) : "—"} />
+        <Metric
+          label="density"
+          value={st ? st.analytics.density.toFixed(3) : "—"}
+        />
+        <Metric
+          label="flow"
+          value={st ? st.analytics.flow.toFixed(3) : "—"}
+        />
+        <Metric
+          label="entropy"
+          value={st ? `${st.analytics.entropy_bits.toFixed(2)} bits` : "—"}
+        />
+        <Metric
+          label="landscape"
+          value={st ? st.analytics.landscape : "—"}
+        />
+      </div>
     </div>
   );
 }

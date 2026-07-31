@@ -6,6 +6,9 @@
 // keeps up with the ~12 Hz state stream (one lightweight canvas repaint per
 // frame, no React re-render or DOM churn per sample) and adds no chart lib to
 // the bundle.
+//
+// Visual polish: thicker lines with area fills, visible grid labels,
+// current-value markers, warmer tarmac-grounded palette.
 
 import { useEffect, useRef } from "react";
 import type { StateMessage } from "../types";
@@ -23,6 +26,20 @@ interface Sample {
 
 const CAP = 240; // samples kept (~20 s at 12 Hz)
 const LOG_MIN = 1e-3; // log-y floor so density/flow=0 is representable
+
+// palette — matches the design system
+const C = {
+  bg:       "#1a1a1a",   // tarmac
+  grid:     "#3a3a3a",   // kerb
+  gridText: "#8C8478",   // gravel
+  density:  "#4ECDC4",   // teal (motorbike accent)
+  flow:     "#67d982",   // green
+  entropy:  "#F5A623",   // amber (road marking)
+  densityFill: "rgba(78,205,196,0.10)",
+  flowFill:    "rgba(103,217,130,0.08)",
+  entropyFill: "rgba(245,166,35,0.10)",
+  divider:  "#3a3a3a",
+};
 
 export function AnalyticsPanel({ state }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -61,14 +78,14 @@ export function AnalyticsPanel({ state }: Props) {
   return (
     <div className="panel">
       <h2>Analytics</h2>
-      <canvas ref={canvasRef} className="chart" width={288} height={200} />
+      <canvas ref={canvasRef} className="chart" width={288} height={210} />
       <div className="chart-legend">
-        <span><i className="ln cyan" /> density (log)</span>
+        <span><i className="ln teal" /> density (log)</span>
         <span><i className="ln green" /> flow (log)</span>
         <span><i className="ln amber" /> entropy (0–1)</span>
       </div>
       <div className="entropy-readout">
-        <div className="metric-label">Shannon entropy (spread)</div>
+        <div className="metric-label">Shannon entropy</div>
         <div className="entropy-bar">
           <div
             className="entropy-fill"
@@ -100,45 +117,81 @@ function render(cv: HTMLCanvasElement, data: Sample[]) {
   if (!ctx) return;
   const w = cv.width;
   const h = cv.height;
-  const pad = 18;
-  const splitY = h * 0.66; // top: density/flow (log); bottom: entropy (linear)
+  const pad = 22;
+  const splitY = h * 0.64; // top: density/flow (log); bottom: entropy (linear)
 
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = "#141b2b";
+  ctx.fillStyle = C.bg;
   ctx.fillRect(0, 0, w, h);
 
-  // gridlines for the log panel at 1, 0.1, 0.01
-  ctx.strokeStyle = "#2a3448";
-  ctx.fillStyle = "#6b7891";
-  ctx.font = "9px monospace";
+  // ---- gridlines for the log panel ----
+  ctx.strokeStyle = C.grid;
+  ctx.fillStyle = C.gridText;
+  ctx.font = "500 9px 'JetBrains Mono', monospace";
   ctx.lineWidth = 1;
   for (const gv of [1, 0.1, 0.01]) {
     const y = logY(gv, splitY, pad);
     ctx.beginPath();
+    ctx.setLineDash([3, 3]);
     ctx.moveTo(pad, y);
-    ctx.lineTo(w - 2, y);
+    ctx.lineTo(w - 4, y);
     ctx.stroke();
-    ctx.fillText(String(gv), 1, y + 3);
+    ctx.setLineDash([]);
+    ctx.fillText(String(gv), 2, y + 3);
   }
-  // entropy panel baseline (0 and 1)
-  ctx.strokeStyle = "#2a3448";
+
+  // ---- divider between panels ----
+  ctx.strokeStyle = C.divider;
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(pad, splitY + pad);
-  ctx.lineTo(w - 2, splitY + pad);
-  ctx.moveTo(pad, h - pad);
-  ctx.lineTo(w - 2, h - pad);
+  ctx.moveTo(pad, splitY + 4);
+  ctx.lineTo(w - 4, splitY + 4);
   ctx.stroke();
+
+  // ---- entropy panel baseline labels ----
+  ctx.fillStyle = C.gridText;
+  ctx.font = "500 8px 'JetBrains Mono', monospace";
+  const eTop = splitY + pad;
+  const eBot = h - pad;
+  ctx.fillText("1", 5, eTop + 3);
+  ctx.fillText("0", 5, eBot + 3);
+  // gridlines for entropy
+  ctx.strokeStyle = C.grid;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(pad, eTop);
+  ctx.lineTo(w - 4, eTop);
+  ctx.moveTo(pad, eBot);
+  ctx.lineTo(w - 4, eBot);
+  ctx.stroke();
+  ctx.setLineDash([]);
 
   if (data.length < 2) return;
   const n = data.length;
-  const x = (i: number) => pad + (i / (CAP - 1)) * (w - pad - 2);
+  const x = (i: number) => pad + (i / (CAP - 1)) * (w - pad - 4);
 
-  const line = (
+  // ---- area fill + line helper ----
+  const areaLine = (
     color: string,
+    fillColor: string,
     getY: (s: Sample) => number,
+    baseY: number,
   ) => {
+    // area fill
+    ctx.fillStyle = fillColor;
+    ctx.beginPath();
+    ctx.moveTo(x(0), baseY);
+    for (let i = 0; i < n; i++) {
+      ctx.lineTo(x(i), getY(data[i]));
+    }
+    ctx.lineTo(x(n - 1), baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    // line
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = "round";
     ctx.beginPath();
     for (let i = 0; i < n; i++) {
       const px = x(i);
@@ -147,12 +200,47 @@ function render(cv: HTMLCanvasElement, data: Sample[]) {
       else ctx.lineTo(px, py);
     }
     ctx.stroke();
+
+    // current-value dot (last sample)
+    const last = data[n - 1];
+    const lx = x(n - 1);
+    const ly = getY(last);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(lx, ly, 3, 0, Math.PI * 2);
+    ctx.fill();
+    // outer ring
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(lx, ly, 5.5, 0, Math.PI * 2);
+    ctx.stroke();
   };
 
-  line("#5cc8ff", (s) => logY(s.density, splitY, pad)); // density
-  line("#67d982", (s) => logY(s.flow, splitY, pad)); // flow
-  // entropy on linear 0..1 in the bottom panel
-  const eTop = splitY + pad;
-  const eBot = h - pad;
-  line("#ffb454", (s) => eBot - s.entropy * (eBot - eTop));
+  // density
+  areaLine(
+    C.density, C.densityFill,
+    (s) => logY(s.density, splitY, pad),
+    splitY - pad,
+  );
+  // flow
+  areaLine(
+    C.flow, C.flowFill,
+    (s) => logY(s.flow, splitY, pad),
+    splitY - pad,
+  );
+  // entropy
+  areaLine(
+    C.entropy, C.entropyFill,
+    (s) => eBot - s.entropy * (eBot - eTop),
+    eBot,
+  );
+
+  // ---- panel labels ----
+  ctx.fillStyle = C.gridText;
+  ctx.font = "600 8px 'Overpass', sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("DENSITY / FLOW", w - 6, pad - 6);
+  ctx.fillText("ENTROPY", w - 6, splitY + pad - 6);
+  ctx.textAlign = "left";
 }

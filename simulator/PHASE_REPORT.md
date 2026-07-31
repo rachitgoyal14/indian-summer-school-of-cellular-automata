@@ -370,3 +370,58 @@ Note: "worst" has density spanning the full range because *low* density (near-em
 - [x] PHASE_REPORT.md updated with a Stage 6 section — this section.
 - [x] Git commit made (see git log).
 
+---
+
+## Visual / UX Polish Pass (Pulled Forward from Stage 7)
+
+**Date:** 2026-07-31
+**Status:** ✅ COMPLETE — design pass + two structural bugs fixed
+**Note:** This pass addresses Stage 7's "genuine visual/UX polish pass" item. Stage 7 should not redo this work but may refine it further during demo prep.
+
+### What changed
+
+| Area | Before | After |
+|---|---|---|
+| **Palette** | Navy-tinted blue-black (`#0b0f19`) with blue accent (`#5cc8ff`) everywhere — generic dark-mode SaaS look | Tarmac dark gray (`#1a1a1a`) with warm amber road-marking accent (`#F5A623`) used sparingly — grounded in Indian road infrastructure |
+| **Typography** | System font stack (`-apple-system, ...`) for everything | Overpass (signage font) for headers/labels, Inter for body, JetBrains Mono for numeric data readouts — three distinct roles |
+| **Layout** | Scrolling page — readout strip, junction queues, save/load pushed below fold | Fixed-viewport cockpit — `overflow: hidden` on body, stat strip docked to bottom, sidebar scrolls internally, page never scrolls |
+| **Vehicle colors** | Cyan motorbike (`#5cc8ff`), amber car (`#ffb454`) | Teal motorbike (`#4ECDC4`), amber car (`#F5A623`) — teal is distinct from the accent, amber car inherits the road-marking accent |
+| **Chart** | Three 1.5px hairlines on near-invisible dark background | 2px lines with area fills, dashed gridlines with labels, current-value dot markers, JetBrains Mono axis text, section labels |
+
+### Bug fixes
+
+1. **Default camera view (Bug 1):** On first load the network rendered as a ~2px line stretched across the full canvas. Root cause: `fitToView()` scaled to fit the entire network mathematically, but a single horizontal road with `CELL_SIZE = 14` across a ~1000px canvas yielded a sub-pixel scale. Fix: added a minimum legibility floor — `minScale = 6 / CELL_SIZE` — so each cell always renders at least 6px wide. The camera still centers the network but won't compress it below legibility.
+
+2. **Scrolling page (Bug 2):** The app was a vertically stacked flex layout inside a scrollable body. Readout strip, junction queues, and save/load controls were pushed below the viewport. Fix: `html, body, #root { overflow: hidden }`, readout strip moved outside the main layout flex to dock at the viewport bottom, sidebar gets internal `overflow-y: auto`. The page itself never scrolls; panels scroll internally when their content exceeds available height.
+
+### Disruption colors preserved
+
+The Stage 4 disruption color-coding is semantic and was not changed:
+- breakdown: `#ff6b6b` (red), tree: `#67d982` (green), accident: `#ff2d55` (crimson), flood: `#3aa0ff` (blue), lock: `#b56bff` (purple), parking: `#9aa7bd` (slate)
+
+### Design choices documented
+
+- **Signature element:** Amber lane-stripe on the topbar left edge (4px `border-left` in `--marking`) — references Indian road markings (which are yellow, not white)
+- **Section headers:** Overpass uppercase with `letter-spacing: 0.14em`, colored in amber — reads as instrument-panel labeling rather than generic card titles
+- **Palette self-critique:** Verified the new palette doesn't fall into the "near-black + single blue accent" default (the exact prior state), "warm cream + serif" default, or "broadsheet with hairlines" default described in the design skill's calibration section
+
+### Files modified
+
+| File | Changes |
+|---|---|
+| `frontend/index.html` | Added Google Fonts (Overpass, Inter, JetBrains Mono), updated `<title>` |
+| `frontend/src/App.css` | Complete rewrite: new palette, typography, fixed-viewport layout |
+| `frontend/src/App.tsx` | Layout restructured: readout docked bottom, ISSCA branding, entropy bits in readout |
+| `frontend/src/render/RoadRenderer.ts` | Tarmac palette colors, legible default zoom |
+| `frontend/src/components/AnalyticsPanel.tsx` | Chart rendering: area fills, gridlines, current-value markers, JetBrains Mono |
+| `frontend/src/components/MapEditor.tsx` | Inline style CSS variable updates |
+
+### What was NOT touched
+
+- Simulation logic (`backend/`)
+- WebSocket message handling (`useSimulationSocket.ts`)
+- Map editor control flow (`MapEditor.tsx` — only inline style variable names changed)
+- Disruption panel logic (`DisruptionPanel.tsx`)
+- Control panel logic (`ControlPanel.tsx`)
+- Type definitions (`types.ts`)
+
