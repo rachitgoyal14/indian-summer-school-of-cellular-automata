@@ -4,6 +4,7 @@
 import { SimulationCanvas } from "./components/SimulationCanvas";
 import { ControlPanel } from "./components/ControlPanel";
 import { DisruptionPanel } from "./components/DisruptionPanel";
+import { AnalyticsPanel } from "./components/AnalyticsPanel";
 import { useSimulationSocket } from "./hooks/useSimulationSocket";
 import "./App.css";
 
@@ -62,6 +63,8 @@ export default function App() {
         </section>
 
         <aside className="sidebar">
+          <AnalyticsPanel state={st} />
+          <div className="divider" />
           <ControlPanel api={api} />
           <div className="divider" />
           <DisruptionPanel api={api} />

@@ -160,6 +160,13 @@ class Simulation:
     def density(self) -> float:
         return self.network.density()
 
+    def entropy(self, window_size: int = 10) -> tuple[float, float]:
+        """(bits, normalised) Shannon entropy of the vehicle spatial spread."""
+        from src.analytics.entropy import network_entropy
+
+        occs = [r.occupancy() for r in self.network.roads.values()]
+        return network_entropy(occs, window_size=window_size)
+
     def flow(self) -> float:
         """Vehicles that advanced last step / total cells (veh/cell/step)."""
         total = sum(r.length for r in self.network.roads.values())

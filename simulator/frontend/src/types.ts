@@ -37,10 +37,17 @@ export interface VehicleDTO {
   t: VehicleType;
 }
 
+export interface Segment {
+  s: number; // start cell index
+  n: number; // segment length in cells
+  d: number; // congestion density 0..1
+}
+
 export interface StateRoad {
   id: number;
   cells: number[]; // occupancy 0/1
   vehicles: VehicleDTO[];
+  segments: Segment[]; // per-segment congestion for the heatmap
 }
 
 export interface StateJunction {
@@ -69,6 +76,8 @@ export interface DisruptionDTO {
 export interface Analytics {
   density: number;
   flow: number;
+  entropy: number; // normalised 0..1
+  entropy_bits: number;
 }
 
 export interface StateMessage {

@@ -33,14 +33,33 @@ export const DISRUPTION_COLORS: Record<DisruptionKind, number> = {
   parking: 0x9aa7bd, // slate
 };
 
+/** Congestion colour ramp: green (free) → yellow → red (jammed). d ∈ [0,1]. */
+function heatColor(d: number): number {
+  const t = Math.max(0, Math.min(1, d));
+  let r: number, g: number;
+  if (t < 0.5) {
+    // green → yellow
+    r = Math.round(510 * t); // 0..255
+    g = 200;
+  } else {
+    // yellow → red
+    r = 255;
+    g = Math.round(200 * (1 - (t - 0.5) * 2));
+  }
+  return (r << 16) | (g << 8) | 0x30;
+}
+
 export class RoadRenderer {
   readonly app: Application;
   private camera: Container;
   private roadLayer: Graphics;
+  private heatmapLayer: Graphics;
   private disruptionLayer: Graphics;
   private junctionLayer: Graphics;
   private vehicleLayer: Graphics;
   private network: NetworkMessage | null = null;
+  private lastState: StateMessage | null = null;
+  private heatmapEnabled = false;
 
   private dragging = false;
   private lastPointer = { x: 0, y: 0 };
@@ -49,10 +68,15 @@ export class RoadRenderer {
     this.app = app;
     this.camera = new Container();
     this.roadLayer = new Graphics();
+    // Layer order (bottom→top): road, heatmap tint, disruptions, junctions,
+    // vehicles. So the heatmap tints the roadbed but disruption cells (their
+    // explicit kind-colour) and vehicles always draw on top of it.
+    this.heatmapLayer = new Graphics();
     this.disruptionLayer = new Graphics();
     this.junctionLayer = new Graphics();
     this.vehicleLayer = new Graphics();
     this.camera.addChild(this.roadLayer);
+    this.camera.addChild(this.heatmapLayer);
     this.camera.addChild(this.disruptionLayer);
     this.camera.addChild(this.junctionLayer);
     this.camera.addChild(this.vehicleLayer);
@@ -82,9 +106,15 @@ export class RoadRenderer {
     this.network = network;
     this.drawRoads();
     this.drawJunctions();
+    this.heatmapLayer.clear();
     this.disruptionLayer.clear();
     this.vehicleLayer.clear();
     this.fitToView();
+  }
+
+  setHeatmapEnabled(enabled: boolean) {
+    this.heatmapEnabled = enabled;
+    this.drawHeatmap();
   }
 
   private drawRoads() {
@@ -120,10 +150,36 @@ export class RoadRenderer {
     }
   }
 
+  private drawHeatmap() {
+    const g = this.heatmapLayer;
+    g.clear();
+    if (!this.heatmapEnabled || !this.network || !this.lastState) return;
+    const roadById = new Map(this.network.roads.map((r) => [r.id, r]));
+    for (const road of this.lastState.roads) {
+      const meta = roadById.get(road.id);
+      if (!meta) continue;
+      const { x0, y0, dx, dy } = meta.geometry;
+      for (const seg of road.segments) {
+        const color = heatColor(seg.d);
+        for (let k = seg.s; k < seg.s + seg.n; k++) {
+          const wx = (x0 + k * dx) * CELL_SIZE;
+          const wy = (y0 + k * dy) * CELL_SIZE;
+          g.rect(wx, wy, CELL_SIZE - 1, CELL_SIZE - 1).fill({
+            color,
+            alpha: 0.55,
+          });
+        }
+      }
+    }
+  }
+
   // ----------------------------------------------------------------- state
   setState(state: StateMessage) {
     if (!this.network) return;
+    this.lastState = state;
     const roadById = new Map(this.network.roads.map((r) => [r.id, r]));
+
+    this.drawHeatmap();
 
     // ---- disruptions (blocked cells), coloured by kind ----
     const d = this.disruptionLayer;

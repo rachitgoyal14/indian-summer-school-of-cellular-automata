@@ -17,6 +17,7 @@ export function SimulationCanvas({ network, state }: Props) {
   const rendererRef = useRef<RoadRenderer | null>(null);
   const [ready, setReady] = useState(false);
   const [visible, setVisible] = useState<string>("—");
+  const [heatmap, setHeatmap] = useState(false);
 
   // Create the Pixi app once.
   useEffect(() => {
@@ -73,6 +74,16 @@ export function SimulationCanvas({ network, state }: Props) {
           onClick={() => rendererRef.current?.fitToView()}
         >
           Fit view
+        </button>
+        <button
+          className={`ghost-btn ${heatmap ? "active" : ""}`}
+          onClick={() => {
+            const next = !heatmap;
+            setHeatmap(next);
+            rendererRef.current?.setHeatmapEnabled(next);
+          }}
+        >
+          {heatmap ? "Heatmap ✓" : "Heatmap"}
         </button>
         <span className="hint">scroll = zoom · drag = pan</span>
       </div>

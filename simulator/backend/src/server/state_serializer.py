@@ -39,6 +39,7 @@ from __future__ import annotations
 from typing import Any
 
 from src.engine.simulation import Simulation
+from src.analytics.heatmap import segment_densities
 
 
 def serialize_network(sim: Simulation) -> dict[str, Any]:
@@ -63,6 +64,7 @@ def serialize_network(sim: Simulation) -> dict[str, Any]:
 
 def serialize_state(sim: Simulation) -> dict[str, Any]:
     queues = sim.junction_queue_lengths()
+    entropy_bits, entropy_norm = sim.entropy()
     return {
         "type": "state",
         "step": sim.step_count,
@@ -76,6 +78,8 @@ def serialize_state(sim: Simulation) -> dict[str, Any]:
                     {"f": v.front, "l": v.length, "t": v.vtype}
                     for v in r.vehicles
                 ],
+                # per-segment congestion for the heatmap overlay (Stage 5)
+                "segments": segment_densities(r.cells),
             }
             for r in sim.roads
         ],
@@ -86,5 +90,7 @@ def serialize_state(sim: Simulation) -> dict[str, Any]:
         "analytics": {
             "density": round(sim.density(), 6),
             "flow": round(sim.flow(), 6),
+            "entropy": round(entropy_norm, 6),      # normalised 0..1 (UI-friendly)
+            "entropy_bits": round(entropy_bits, 6),
         },
     }

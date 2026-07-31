@@ -120,6 +120,10 @@ body,
 .ghost-btn:hover {
   border-color: var(--accent);
 }
+.ghost-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
 .readout {
   display: flex;
@@ -328,4 +332,58 @@ button.mini {
   padding-left: 8px;
   margin: 4px 0 14px;
   line-height: 1.4;
+}
+
+/* analytics panel */
+.chart {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  background: #141b2b;
+  display: block;
+}
+.chart-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.chart-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.ln {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.ln.cyan { background: #5cc8ff; }
+.ln.green { background: #67d982; }
+.ln.amber { background: #ffb454; }
+
+.entropy-readout {
+  margin-top: 10px;
+}
+.entropy-bar {
+  height: 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 4px 0;
+}
+.entropy-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff6b6b, #ffb454, #67d982);
+  transition: width 0.2s;
+}
+.entropy-val {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }

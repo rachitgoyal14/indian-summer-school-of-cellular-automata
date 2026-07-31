@@ -239,3 +239,44 @@ So 8 brief terms are covered by 6 placeable kinds + the always-on repair countdo
 - [x] All 8 brief-named disruption types confirmed working, visually distinct, and live-adjustable from the browser.
 - [x] PHASE_REPORT.md updated (this section) noting which brief terms share which mechanism.
 - [x] Git commit made (see git log).
+
+---
+
+## Stage 5 — Live Analytics (Density, Entropy, Log Plots, Heatmap)
+
+**Date:** 2026-07-31
+**Status:** ✅ COMPLETE — density/flow log-plot, live Shannon entropy, and a toggleable heatmap all working; entropy demonstrably explains clustering.
+
+### What was built
+
+| File | Purpose |
+|---|---|
+| `backend/src/analytics/entropy.py` | `shannon_entropy` (bins → distribution → −Σp·log2p) + `network_entropy`; returns bits and a normalised 0–1 value |
+| `backend/src/analytics/heatmap.py` | `segment_densities` — per-road-segment congestion (10-cell segments) |
+| `backend/src/{engine/simulation,server/state_serializer}.py` | `Simulation.entropy()`; schema adds `analytics.entropy`/`entropy_bits` and per-road `segments` |
+| frontend `AnalyticsPanel.tsx` | Custom canvas time-series (density+flow log-scale, entropy 0–1) + entropy bar/readout |
+| frontend `RoadRenderer.ts`, `SimulationCanvas.tsx` | Toggleable heatmap overlay (green→red) + toggle button |
+| `backend/tests/test_entropy.py` | 7 new tests with hand-computed fixtures |
+| `docs/evidence/stage5/*.png` | Chart baseline, clustered chart, heatmap-on |
+
+### Design decisions
+
+- **Entropy semantics.** Road binned into `window_size`-cell bins; per-bin vehicle counts form a distribution; `H = −Σ p·log2 p`. Even spread → `H = log2(B)` (max); full cluster → `H = 0`. The UI shows the **normalised** `H/log2(B) ∈ [0,1]` so it's comparable across networks. This makes "a disruption clusters traffic → entropy drops" directly legible.
+- **Charting approach (documented, per stages.md).** A **dependency-free custom `<canvas>`** driven by a fixed-size ring buffer (240 samples ≈ 20 s) and repainted on `requestAnimationFrame`. One lightweight canvas repaint per frame, no per-sample React re-render or DOM churn, no chart library added to the bundle — trivially keeps up with the ~12 Hz stream. Density and flow are on a shared log-y axis (gridlines at 1, 0.1, 0.01, floor 1e-3); entropy is a linear 0–1 track below.
+- **Heatmap priority (documented).** Layer order bottom→top is road → **heatmap tint** → disruptions → junctions → vehicles. So the heatmap tints the roadbed but a disrupted cell always keeps its explicit kind-colour and vehicles always draw on top; the heatmap never hides a disruption or a vehicle. Overlay is off by default and toggled from the canvas overlay.
+
+### Validation performed (evidence)
+
+**Backend (`pytest -q` → 79 passed):** 72 prior + 7 new. Hand-computed entropy fixtures (window 10, length 40 → 4 bins): even spread → **exactly 2.0 bits / 1.0 norm**; fully clustered → **0.0**; half-and-half → **exactly 1.0 bit / 0.5 norm**; empty → 0; a general spread-vs-clustered inequality; network pooling; and segment-density shapes/values.
+
+**Real browser (Playwright, `verify_stage5.mjs`) — `overall_ok: true`, 0 page errors:** the live chart and entropy readout update continuously; **entropy dropped from 0.949 (evenly-spread baseline) to 0.77 after heavy disruptions clustered the traffic** — the interpretable behaviour plan.md §8.4 asks for; the **heatmap overlay toggled and changed the canvas**. In the heatmap-on screenshot the green (free) / red (jammed) segments line up with where vehicles are piled behind blockages (flow crushed to ~0.01), cross-checking the heatmap against the directly-visible congestion. Evidence: `docs/evidence/stage5/01…03`.
+
+**Entropy across scenarios (documented observations):** (1) free-flow ring, ρ=0.3 → entropy ≈ 0.95 (near-uniform spread); (2) same ring with breakdowns+accidents+floods active → ≈ 0.77 and falling as pile-ups form; (3) heavier flooding drives it lower still as traffic concentrates into the free stretches between blockages. Entropy tracks spatial clustering exactly as intended.
+
+### Acceptance criteria checklist
+
+- [x] `pytest -q` passes — all regression + new entropy tests (79 total).
+- [x] Live density, entropy, log-plot, and heatmap all working in the browser without visibly degrading smoothness.
+- [x] Heatmap cross-checked against visible congestion and confirmed consistent.
+- [x] PHASE_REPORT.md updated (this section) including entropy observations and the charting choice.
+- [x] Git commit made (see git log).
