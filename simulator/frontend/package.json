@@ -1,0 +1,26 @@
+{
+  "name": "ca-rule184-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "React + PixiJS frontend for the CA Rule 184 traffic simulator",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "pixi.js": "^8.6.6",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "playwright": "^1.62.1",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.5"
+  }
+}

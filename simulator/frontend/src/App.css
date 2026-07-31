@@ -1,0 +1,220 @@
+:root {
+  --bg: #0b0f19;
+  --panel: #151b2b;
+  --panel-2: #1c2438;
+  --edge: #2a3448;
+  --text: #e6edf6;
+  --muted: #8a97ad;
+  --accent: #5cc8ff;
+  --accent-2: #7ee787;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--edge);
+}
+
+.topbar h1 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.conn {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.conn.up {
+  color: var(--accent-2);
+}
+.conn.down {
+  color: #ff6b6b;
+}
+
+.layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.canvas-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.pixi-host {
+  position: absolute;
+  inset: 0;
+}
+
+.canvas-overlay {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  pointer-events: none;
+}
+.canvas-overlay > * {
+  pointer-events: auto;
+}
+
+.badge {
+  background: rgba(21, 27, 43, 0.85);
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ghost-btn {
+  background: rgba(21, 27, 43, 0.85);
+  border: 1px solid var(--edge);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ghost-btn:hover {
+  border-color: var(--accent);
+}
+
+.readout {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border-top: 1px solid var(--edge);
+}
+
+.metric {
+  flex: 1;
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.metric-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.metric-value {
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar {
+  width: 320px;
+  background: var(--panel);
+  border-left: 1px solid var(--edge);
+  overflow-y: auto;
+}
+
+.panel {
+  padding: 16px;
+}
+.panel h2 {
+  font-size: 14px;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.panel h3 {
+  font-size: 13px;
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+button {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.field input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.field .sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.divider {
+  height: 1px;
+  background: var(--edge);
+  margin: 8px 0 16px;
+}
