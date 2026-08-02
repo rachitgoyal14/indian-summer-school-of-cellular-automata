@@ -161,6 +161,7 @@ export function SimulationCanvas({ network, state, onRendererReady, loading = fa
         <button
           className="ghost-btn"
           onClick={() => rendererRef.current?.fitToView()}
+          title="Reset view to show all roads (keyboard: 0)"
         >
           Fit view
         </button>
@@ -184,7 +185,7 @@ export function SimulationCanvas({ network, state, onRendererReady, loading = fa
         >
           {navGraph ? "Nav Graph ✓" : "Nav Graph"}
         </button>
-        <span className="hint">scroll = zoom · drag = pan</span>
+        <span className="hint">drag to pan · scroll to zoom · double-click to zoom in · +/- keys · 0 = fit</span>
       </div>
     </div>
   );

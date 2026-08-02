@@ -1,51 +1,52 @@
 // RoadRenderer.ts — PixiJS scene for the simulation, decoupled from React.
 //
-// Stage 3: renders multiple connected roads laid out in 2D (each cell at
-// (x0 + k·dx, y0 + k·dy)), junctions as distinct nodes, and footprint-aware
-// vehicles (motorbike = 1 cell, car = 2 cells) coloured and sized by type.
-// Camera (scroll zoom toward cursor + drag pan) is a single container
-// transform, and works across the whole network.
+// Renders single-lane roads as realistic asphalt strips with gravel shoulders
+// and white edge markings. Junctions are drawn as smooth asphalt pads.
+// Vehicles (motorbike 1-cell, car 2-cell) are pre-rendered top-down sprites.
 //
-// Vehicle glyph pass: pre-rendered top-down vehicle silhouettes as textures,
-// drawn via a pooled Sprite layer instead of re-drawing Graphics paths each
-// tick. Roads get asphalt material and lane-marking dashes. Junctions get a
-// crossroads icon instead of a plain diamond.
+// Camera: scroll-zoom toward cursor, drag-pan with grab cursor, double-click
+// zoom, and keyboard shortcuts (+/- zoom, 0 fit-to-view).
 
 import { Application, Container, Graphics, Sprite, Texture } from "pixi.js";
 import type { DisruptionKind, NetworkMessage, StateMessage } from "../types";
 
 /** Result of mapping a canvas click in edit mode. */
 export interface EditClick {
-  gridX: number; // grid cell coords (for placing a new road)
+  gridX: number;
   gridY: number;
-  road: { roadId: number; cell: number } | null; // nearest road cell, if close
+  road: { roadId: number; cell: number } | null;
 }
 
 const CELL_SIZE = 14; // world px per cell
+
+// Road cross-section widths (world px)
+const ROAD_WIDTH = CELL_SIZE + 2;       // main asphalt surface
+const SHOULDER_WIDTH = ROAD_WIDTH + 5;  // gravel shoulder beneath asphalt
+const EDGE_INSET = ROAD_WIDTH / 2 - 0.5;// offset for white edge lines from center
+
 const COLORS = {
-  background: 0x1a1a1a,  // tarmac dark
-  road: 0x4a4a4a,        // bitumen surface — much lighter for clear visibility
-  roadShoulder: 0x333333, // road shoulder — visible contrast with background
-  // (lane marking colour removed — single-lane roads, no centerline)
-  junction: 0xe8e4dd,     // chalk
-  junctionEdge: 0x8c8478, // gravel
-  moto: 0x4ecdc4,        // teal — visible on tarmac, distinct from amber
-  motoGlow: 0x2a8a84,
-  car: 0xf5a623,         // amber road-marking yellow
-  carGlow: 0xa06b10,
-  rulerTick: 0x444444,   // cell index ruler ticks
-  rulerText: 0x666666,   // cell index ruler labels
+  background: 0x1e1e1e,   // dark ground — slightly warmer than pure black
+  asphalt:    0x505050,    // main road surface — mid-gray asphalt
+  shoulder:   0x3a3a3a,    // gravel shoulder — visible contrast
+  edgeLine:   0xcccccc,    // white road-edge markings
+  junctionPad:0x555555,    // intersection asphalt pad
+  junctionRim:0x444444,    // subtle darker rim around junction pad
+  moto:       0x4ecdc4,    // teal
+  motoGlow:   0x2a8a84,
+  car:        0xf5a623,    // amber
+  carGlow:    0xa06b10,
+  rulerTick:  0x444444,
+  rulerText:  0x666666,
 };
 
-// Each disruption kind gets a distinct colour so the user is never confused
-// about which one they triggered (plan.md §8 point 3).
+// Disruption colors
 export const DISRUPTION_COLORS: Record<DisruptionKind, number> = {
-  breakdown: 0xff6b6b, // red
-  tree: 0x67d982, // green
-  accident: 0xff2d55, // bright crimson
-  flood: 0x3aa0ff, // blue
-  lock: 0xb56bff, // purple
-  parking: 0x9aa7bd, // slate
+  breakdown: 0xff6b6b,
+  tree: 0x67d982,
+  accident: 0xff2d55,
+  flood: 0x3aa0ff,
+  lock: 0xb56bff,
+  parking: 0x9aa7bd,
 };
 
 /** Congestion colour ramp: green (free) → yellow → red (jammed). d ∈ [0,1]. */
@@ -53,11 +54,9 @@ function heatColor(d: number): number {
   const t = Math.max(0, Math.min(1, d));
   let r: number, g: number;
   if (t < 0.5) {
-    // green → yellow
-    r = Math.round(510 * t); // 0..255
+    r = Math.round(510 * t);
     g = 200;
   } else {
-    // yellow → red
     r = 255;
     g = Math.round(200 * (1 - (t - 0.5) * 2));
   }
@@ -65,72 +64,60 @@ function heatColor(d: number): number {
 }
 
 // ----------------------------------------------------------------- vehicle shapes
-// Draw vehicle silhouettes pointing RIGHT (+x direction) at a generous size,
-// then generateTexture once. At draw time, Sprites are tinted + rotated.
 
 /** Draw a top-down motorbike silhouette into a Graphics. 1 cell wide. */
 function drawMotoShape(g: Graphics, cs: number) {
-  // Motorbike pointing right: slim tapered body, two wheel hints.
-  // Drawn at cs × cs bounding box, centered vertically.
   const cx = cs / 2;
   const cy = cs / 2;
   const bodyW = cs * 0.78;
   const bodyH = cs * 0.32;
 
-  // body: tapered front, flatter rear
-  g.moveTo(cx + bodyW * 0.5, cy)                        // nose (pointed)
-    .lineTo(cx + bodyW * 0.15, cy - bodyH * 0.5)        // upper front
-    .lineTo(cx - bodyW * 0.35, cy - bodyH * 0.45)       // upper mid
-    .lineTo(cx - bodyW * 0.5, cy - bodyH * 0.3)         // upper rear
-    .lineTo(cx - bodyW * 0.5, cy + bodyH * 0.3)         // lower rear
-    .lineTo(cx - bodyW * 0.35, cy + bodyH * 0.45)       // lower mid
-    .lineTo(cx + bodyW * 0.15, cy + bodyH * 0.5)        // lower front
+  g.moveTo(cx + bodyW * 0.5, cy)
+    .lineTo(cx + bodyW * 0.15, cy - bodyH * 0.5)
+    .lineTo(cx - bodyW * 0.35, cy - bodyH * 0.45)
+    .lineTo(cx - bodyW * 0.5, cy - bodyH * 0.3)
+    .lineTo(cx - bodyW * 0.5, cy + bodyH * 0.3)
+    .lineTo(cx - bodyW * 0.35, cy + bodyH * 0.45)
+    .lineTo(cx + bodyW * 0.15, cy + bodyH * 0.5)
     .closePath()
     .fill({ color: 0xffffff });
 
-  // front wheel hint — small circle at front
   g.circle(cx + bodyW * 0.38, cy, bodyH * 0.22)
     .fill({ color: 0xcccccc });
-
-  // rear wheel hint — small circle at rear
   g.circle(cx - bodyW * 0.42, cy, bodyH * 0.22)
     .fill({ color: 0xcccccc });
 }
 
 /** Draw a top-down car silhouette into a Graphics. Spans footprint × 1 cell. */
 function drawCarShape(g: Graphics, cs: number, footprint: number) {
-  // Car pointing right: wider body, windshield notch, asymmetric front/rear.
-  const w = cs * footprint - 1; // total width of the multi-cell vehicle
-  const h = cs * 0.72;         // wider than motorbike
+  const w = cs * footprint - 1;
+  const h = cs * 0.72;
   const cx = w / 2;
   const cy = cs / 2;
 
-  // main body
   const noseX = cx + w * 0.48;
   const rearX = cx - w * 0.50;
   const topY = cy - h * 0.50;
   const botY = cy + h * 0.50;
 
-  // body outline: rounded front, boxier rear
-  g.moveTo(noseX, cy)                              // nose point (slightly rounded)
-    .lineTo(noseX - w * 0.06, topY + h * 0.15)     // upper front curve
-    .lineTo(cx + w * 0.20, topY)                    // hood top edge
-    .lineTo(cx - w * 0.05, topY)                    // windshield top
-    .lineTo(cx - w * 0.15, topY + h * 0.08)        // windshield notch step down
-    .lineTo(cx - w * 0.15, topY)                    // roof top
-    .lineTo(rearX + w * 0.05, topY + h * 0.05)     // rear top
-    .lineTo(rearX, topY + h * 0.15)                 // rear upper corner
-    .lineTo(rearX, botY - h * 0.15)                 // rear lower corner
-    .lineTo(rearX + w * 0.05, botY - h * 0.05)     // rear bottom
-    .lineTo(cx - w * 0.15, botY)                    // roof bottom
-    .lineTo(cx - w * 0.15, botY - h * 0.08)        // windshield notch (bottom)
-    .lineTo(cx - w * 0.05, botY)                    // windshield bottom
-    .lineTo(cx + w * 0.20, botY)                    // hood bottom edge
-    .lineTo(noseX - w * 0.06, botY - h * 0.15)     // lower front curve
+  g.moveTo(noseX, cy)
+    .lineTo(noseX - w * 0.06, topY + h * 0.15)
+    .lineTo(cx + w * 0.20, topY)
+    .lineTo(cx - w * 0.05, topY)
+    .lineTo(cx - w * 0.15, topY + h * 0.08)
+    .lineTo(cx - w * 0.15, topY)
+    .lineTo(rearX + w * 0.05, topY + h * 0.05)
+    .lineTo(rearX, topY + h * 0.15)
+    .lineTo(rearX, botY - h * 0.15)
+    .lineTo(rearX + w * 0.05, botY - h * 0.05)
+    .lineTo(cx - w * 0.15, botY)
+    .lineTo(cx - w * 0.15, botY - h * 0.08)
+    .lineTo(cx - w * 0.05, botY)
+    .lineTo(cx + w * 0.20, botY)
+    .lineTo(noseX - w * 0.06, botY - h * 0.15)
     .closePath()
     .fill({ color: 0xffffff });
 
-  // windshield line — dark notch
   g.moveTo(cx + w * 0.16, topY + h * 0.12)
     .lineTo(cx - w * 0.04, topY + h * 0.12)
     .lineTo(cx - w * 0.04, botY - h * 0.12)
@@ -138,50 +125,12 @@ function drawCarShape(g: Graphics, cs: number, footprint: number) {
     .closePath()
     .fill({ color: 0x888888, alpha: 0.5 });
 
-  // rear window — smaller dark area
   g.moveTo(cx - w * 0.18, topY + h * 0.18)
     .lineTo(cx - w * 0.30, topY + h * 0.18)
     .lineTo(cx - w * 0.30, botY - h * 0.18)
     .lineTo(cx - w * 0.18, botY - h * 0.18)
     .closePath()
     .fill({ color: 0x888888, alpha: 0.4 });
-}
-
-
-// ----------------------------------------------------------------- junction icon
-/** Draw a crossroads icon into a Graphics at given center. */
-function drawJunctionIcon(g: Graphics, cx: number, cy: number, cs: number) {
-  const arm = cs * 0.65;
-  const thick = cs * 0.28;
-  const half = thick / 2;
-
-  // center circle
-  g.circle(cx, cy, cs * 0.25)
-    .fill({ color: COLORS.junction })
-    .stroke({ color: COLORS.junctionEdge, width: 1 });
-
-  // four arms (cross shape)
-  // horizontal bar
-  g.roundRect(cx - arm, cy - half, arm * 2, thick, 2)
-    .fill({ color: COLORS.junction, alpha: 0.5 });
-  // vertical bar
-  g.roundRect(cx - half, cy - arm, thick, arm * 2, 2)
-    .fill({ color: COLORS.junction, alpha: 0.5 });
-
-  // small direction arrows at arm tips (subtle)
-  const arrowSz = cs * 0.15;
-  for (const [ax, ay, angle] of [
-    [cx + arm - 1, cy, 0],           // right
-    [cx - arm + 1, cy, Math.PI],     // left
-    [cx, cy - arm + 1, -Math.PI/2],  // up
-    [cx, cy + arm - 1, Math.PI/2],   // down
-  ] as [number, number, number][]) {
-    g.moveTo(ax + Math.cos(angle) * arrowSz, ay + Math.sin(angle) * arrowSz)
-      .lineTo(ax + Math.cos(angle + 2.4) * arrowSz * 0.6, ay + Math.sin(angle + 2.4) * arrowSz * 0.6)
-      .lineTo(ax + Math.cos(angle - 2.4) * arrowSz * 0.6, ay + Math.sin(angle - 2.4) * arrowSz * 0.6)
-      .closePath()
-      .fill({ color: COLORS.junctionEdge });
-  }
 }
 
 
@@ -200,11 +149,9 @@ export class RoadRenderer {
   private heatmapEnabled = false;
   private navGraphEnabled = false;
 
-  // pre-rendered vehicle textures (generated once)
   private motoTexture: Texture | null = null;
   private carTexture: Texture | null = null;
 
-  // sprite pool for vehicles
   private vehicleSprites: Sprite[] = [];
 
   private dragging = false;
@@ -223,7 +170,7 @@ export class RoadRenderer {
     this.vehicleContainer = new Container();
     this.rulerLayer = new Graphics();
 
-    // Layer order (bottom→top): road surface, nav graph overlay, heatmap, disruptions, junctions, vehicles, ruler
+    // Layer order (bottom→top)
     this.camera.addChild(this.roadLayer);
     this.camera.addChild(this.navGraphLayer);
     this.camera.addChild(this.heatmapLayer);
@@ -257,13 +204,10 @@ export class RoadRenderer {
   }
 
   // ----------------------------------------------------------------- textures
-  /** Pre-render vehicle silhouettes to textures (called once after app.init). */
   private generateVehicleTextures() {
-    // Motorbike: draw at 4x CELL_SIZE for high quality, downscale via sprite
     const scale = 4;
     const cs = CELL_SIZE * scale;
 
-    // Motorbike texture
     const motoG = new Graphics();
     drawMotoShape(motoG, cs);
     this.motoTexture = this.app.renderer.generateTexture({
@@ -272,7 +216,6 @@ export class RoadRenderer {
     });
     motoG.destroy();
 
-    // Car texture (2-cell footprint)
     const carG = new Graphics();
     drawCarShape(carG, cs, 2);
     this.carTexture = this.app.renderer.generateTexture({
@@ -282,7 +225,6 @@ export class RoadRenderer {
     carG.destroy();
   }
 
-  /** Get or create a pooled sprite. */
   private getSprite(index: number): Sprite {
     if (index < this.vehicleSprites.length) {
       const s = this.vehicleSprites[index];
@@ -296,7 +238,6 @@ export class RoadRenderer {
     return s;
   }
 
-  /** Hide all unused pooled sprites. */
   private hideExtraSprites(usedCount: number) {
     for (let i = usedCount; i < this.vehicleSprites.length; i++) {
       this.vehicleSprites[i].visible = false;
@@ -326,6 +267,11 @@ export class RoadRenderer {
     this.drawNavGraph();
   }
 
+  // ----------------------------------------------------------------- road drawing
+  // Layered cross-section for each road segment:
+  //   1. Gravel shoulder (widest, dark)
+  //   2. Asphalt surface (mid-gray)
+  //   3. White edge markings (thin lines along both sides)
   private drawRoads() {
     const g = this.roadLayer;
     g.clear();
@@ -334,23 +280,39 @@ export class RoadRenderer {
     for (const road of this.network.roads) {
       const { x0, y0, dx, dy } = road.geometry;
 
-      // Calculate true 2D segment start and end points in world coordinates (px)
-      // Cell 0 center:
       const p0x = (x0 + 0.5 * dx) * CELL_SIZE;
       const p0y = (y0 + 0.5 * dy) * CELL_SIZE;
-      // Cell (length-1) center:
       const p1x = (x0 + (road.length - 0.5) * dx) * CELL_SIZE;
       const p1y = (y0 + (road.length - 0.5) * dy) * CELL_SIZE;
 
-      // 1. Road Shoulder (dark gray contrast background, width: CELL_SIZE + 6px)
+      // 1. Gravel shoulder
       g.moveTo(p0x, p0y)
         .lineTo(p1x, p1y)
-        .stroke({ color: COLORS.roadShoulder, width: CELL_SIZE + 6, cap: "round", join: "round" });
+        .stroke({ color: COLORS.shoulder, width: SHOULDER_WIDTH, cap: "round", join: "round" });
 
-      // 2. Main Asphalt Road Surface (smooth bitumen, width: CELL_SIZE px)
+      // 2. Asphalt surface
       g.moveTo(p0x, p0y)
         .lineTo(p1x, p1y)
-        .stroke({ color: COLORS.road, width: CELL_SIZE, cap: "round", join: "round" });
+        .stroke({ color: COLORS.asphalt, width: ROAD_WIDTH, cap: "round", join: "round" });
+
+      // 3. White edge markings — thin solid lines along each edge
+      const roadLen = Math.hypot(p1x - p0x, p1y - p0y);
+      if (roadLen > 2) {
+        const angle = Math.atan2(p1y - p0y, p1x - p0x);
+        // Perpendicular unit vector
+        const px = -Math.sin(angle);
+        const py = Math.cos(angle);
+
+        // Left edge line
+        g.moveTo(p0x + px * EDGE_INSET, p0y + py * EDGE_INSET)
+          .lineTo(p1x + px * EDGE_INSET, p1y + py * EDGE_INSET)
+          .stroke({ color: COLORS.edgeLine, width: 0.8, alpha: 0.45 });
+
+        // Right edge line
+        g.moveTo(p0x - px * EDGE_INSET, p0y - py * EDGE_INSET)
+          .lineTo(p1x - px * EDGE_INSET, p1y - py * EDGE_INSET)
+          .stroke({ color: COLORS.edgeLine, width: 0.8, alpha: 0.45 });
+      }
     }
   }
 
@@ -367,12 +329,10 @@ export class RoadRenderer {
       const p1x = (x0 + (road.length - 0.5) * dx) * CELL_SIZE;
       const p1y = (y0 + (road.length - 0.5) * dy) * CELL_SIZE;
 
-      // Draw navigation graph centerline (dashed orange path)
       g.moveTo(p0x, p0y)
         .lineTo(p1x, p1y)
         .stroke({ color: 0xff9500, width: 2, alpha: 0.8 });
 
-      // Draw node dots at cell centers
       for (let k = 0; k < road.length; k++) {
         const cx = (x0 + (k + 0.5) * dx) * CELL_SIZE;
         const cy = (y0 + (k + 0.5) * dy) * CELL_SIZE;
@@ -381,14 +341,29 @@ export class RoadRenderer {
     }
   }
 
+  // ----------------------------------------------------------------- junctions
+  // Draw a smooth asphalt pad at each junction — looks like a real intersection.
   private drawJunctions() {
     const g = this.junctionLayer;
     g.clear();
     if (!this.network) return;
+
     for (const j of this.network.junctions) {
-      const cxp = j.x * CELL_SIZE + CELL_SIZE / 2;
-      const cyp = j.y * CELL_SIZE + CELL_SIZE / 2;
-      drawJunctionIcon(g, cxp, cyp, CELL_SIZE);
+      const cx = j.x * CELL_SIZE + CELL_SIZE / 2;
+      const cy = j.y * CELL_SIZE + CELL_SIZE / 2;
+      const pad = ROAD_WIDTH * 0.7;
+
+      // Outer rim (gravel edge around the intersection)
+      g.circle(cx, cy, pad + 2)
+        .fill({ color: COLORS.junctionRim });
+
+      // Main asphalt pad
+      g.circle(cx, cy, pad)
+        .fill({ color: COLORS.junctionPad });
+
+      // Subtle center dot — helps visually locate the node
+      g.circle(cx, cy, 2)
+        .fill({ color: COLORS.edgeLine, alpha: 0.3 });
     }
   }
 
@@ -402,19 +377,16 @@ export class RoadRenderer {
     const { x0, y0, dx, dy } = road.geometry;
     const isHoriz = Math.abs(dx) >= Math.abs(dy);
 
-    // ticks every 10 cells, labels every 20
     for (let k = 0; k < road.length; k += 10) {
       const wx = (x0 + (k + 0.5) * dx) * CELL_SIZE;
       const wy = (y0 + (k + 0.5) * dy) * CELL_SIZE;
 
       if (isHoriz) {
-        // tick above the road
         const tickTop = wy - 10;
         const tickH = k % 20 === 0 ? 6 : 3;
         g.moveTo(wx, tickTop).lineTo(wx, tickTop + tickH)
           .stroke({ color: COLORS.rulerTick, width: 0.8 });
       } else {
-        // tick to the left of the road
         const tickLeft = wx - 10;
         const tickW = k % 20 === 0 ? 6 : 3;
         g.moveTo(tickLeft, wy).lineTo(tickLeft + tickW, wy)
@@ -453,7 +425,7 @@ export class RoadRenderer {
 
     this.drawHeatmap();
 
-    // ---- disruptions (blocked cells), coloured by kind ----
+    // ---- disruptions ----
     const d = this.disruptionLayer;
     d.clear();
     for (const dis of state.disruptions) {
@@ -464,7 +436,7 @@ export class RoadRenderer {
       for (const idx of dis.cells) {
         const cx = (x0 + (idx + 0.5) * dx) * CELL_SIZE;
         const cy = (y0 + (idx + 0.5) * dy) * CELL_SIZE;
-        d.circle(cx, cy, CELL_SIZE * 0.55).fill({ color, alpha: 0.35 }); // glow halo
+        d.circle(cx, cy, CELL_SIZE * 0.55).fill({ color, alpha: 0.35 });
         d.circle(cx, cy, CELL_SIZE * 0.4).fill({ color });
         if (dis.permanent) {
           d.circle(cx, cy, CELL_SIZE * 0.15).fill({ color: 0x1a1a1a });
@@ -472,7 +444,7 @@ export class RoadRenderer {
       }
     }
 
-    // ---- vehicles (sprite-based with pre-rendered silhouettes) ----
+    // ---- vehicles ----
     let spriteIdx = 0;
 
     for (const road of state.roads) {
@@ -480,8 +452,6 @@ export class RoadRenderer {
       if (!meta) continue;
       const { x0, y0, dx, dy } = meta.geometry;
       const L = meta.length;
-
-      // Compute direction angle for this road
       const angle = Math.atan2(dy, dx);
 
       for (const v of road.vehicles) {
@@ -491,17 +461,10 @@ export class RoadRenderer {
 
         if (!tex) continue;
 
-        // Compute center position of the full vehicle footprint
-        // front cell = v.f, footprint = v.l cells behind it
         const frontIdx = v.f;
         const rearOffset = v.l - 1;
-
-        // For single-cell vehicles, center is just the front cell
-        // For multi-cell, center is midpoint of front and rear
         let centerIdx = frontIdx - rearOffset / 2;
-        // Handle ring wrapping for the center calculation
         if (meta.periodic && frontIdx - rearOffset < 0) {
-          // vehicle wraps around the ring — compute via unwrapped then re-wrap
           const unwrappedRear = frontIdx - rearOffset;
           centerIdx = frontIdx - rearOffset / 2;
           if (unwrappedRear < 0) {
@@ -509,24 +472,18 @@ export class RoadRenderer {
           }
         }
 
-        // Place the vehicle exactly on the road centerline.
-        // Road centers use (x0 + (k+0.5)*dx)*CELL_SIZE — the old formula
-        // unconditionally added CELL_SIZE/2 to both axes which caused a
-        // half-cell perpendicular offset.
         const cx = (x0 + (centerIdx + 0.5) * dx) * CELL_SIZE;
         const cy = (y0 + (centerIdx + 0.5) * dy) * CELL_SIZE;
 
-        // Glow sprite (slightly larger, dimmer)
+        // Glow sprite
         const glow = this.getSprite(spriteIdx++);
         glow.texture = tex;
         glow.tint = glowTint;
         glow.alpha = 0.4;
         glow.rotation = angle;
         glow.position.set(cx, cy);
-        // Scale: texture was drawn at 4x, we want it to fit footprint cells
         const texScale = 1 / 4;
-        const glowExtra = 1.15;
-        glow.scale.set(texScale * glowExtra);
+        glow.scale.set(texScale * 1.15);
 
         // Main body sprite
         const body = this.getSprite(spriteIdx++);
@@ -545,23 +502,35 @@ export class RoadRenderer {
   // ----------------------------------------------------------------- camera
   private installCameraControls() {
     const canvas = this.app.canvas;
+
+    // --- cursor: grab / grabbing ---
+    canvas.style.cursor = "grab";
+
+    // --- scroll zoom (toward cursor) ---
     canvas.addEventListener("wheel", (e: WheelEvent) => {
       e.preventDefault();
-      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      // Smoother zoom: smaller step factor for trackpads / fine-grained scrolls
+      const raw = Math.abs(e.deltaY) > 50 ? 1.12 : 1.06;
+      const factor = e.deltaY < 0 ? raw : 1 / raw;
       this.zoomAt(e.offsetX, e.offsetY, factor);
     });
+
+    // --- drag pan ---
     canvas.addEventListener("pointerdown", (e: PointerEvent) => {
       this.dragging = true;
       this.lastPointer = { x: e.offsetX, y: e.offsetY };
       this.downPos = { x: e.offsetX, y: e.offsetY };
       canvas.setPointerCapture(e.pointerId);
+      if (!this.editClickHandler) canvas.style.cursor = "grabbing";
     });
+
     canvas.addEventListener("pointermove", (e: PointerEvent) => {
       if (!this.dragging) return;
       this.camera.x += e.offsetX - this.lastPointer.x;
       this.camera.y += e.offsetY - this.lastPointer.y;
       this.lastPointer = { x: e.offsetX, y: e.offsetY };
     });
+
     const endDrag = (e: PointerEvent) => {
       this.dragging = false;
       try {
@@ -569,7 +538,7 @@ export class RoadRenderer {
       } catch {
         /* already released */
       }
-      // a click (negligible movement) in edit mode → map to a location
+      canvas.style.cursor = this.editClickHandler ? "crosshair" : "grab";
       const moved = Math.hypot(e.offsetX - this.downPos.x, e.offsetY - this.downPos.y);
       if (moved < 6 && this.editClickHandler) {
         this.editClickHandler(this.mapClick(e.offsetX, e.offsetY));
@@ -577,14 +546,36 @@ export class RoadRenderer {
     };
     canvas.addEventListener("pointerup", endDrag);
     canvas.addEventListener("pointercancel", endDrag);
+
+    // --- double-click: zoom in (shift+double-click: zoom out) ---
+    canvas.addEventListener("dblclick", (e: MouseEvent) => {
+      e.preventDefault();
+      const factor = e.shiftKey ? 0.5 : 2;
+      this.zoomAt(e.offsetX, e.offsetY, factor);
+    });
+
+    // --- keyboard: +/- zoom, 0 fit-to-view ---
+    // Make canvas focusable so it receives key events
+    canvas.tabIndex = 0;
+    canvas.style.outline = "none";
+    canvas.addEventListener("keydown", (e: KeyboardEvent) => {
+      const w = this.app.renderer.width;
+      const h = this.app.renderer.height;
+      if (e.key === "=" || e.key === "+") {
+        this.zoomAt(w / 2, h / 2, 1.25);
+      } else if (e.key === "-" || e.key === "_") {
+        this.zoomAt(w / 2, h / 2, 1 / 1.25);
+      } else if (e.key === "0") {
+        this.fitToView();
+      }
+    });
   }
 
   setEditClickHandler(fn: ((loc: EditClick) => void) | null) {
     this.editClickHandler = fn;
-    this.app.canvas.style.cursor = fn ? "crosshair" : "default";
+    this.app.canvas.style.cursor = fn ? "crosshair" : "grab";
   }
 
-  /** Map a screen click to grid coords + the nearest road cell (if close). */
   private mapClick(sx: number, sy: number): EditClick {
     const scale = this.camera.scale.x;
     const worldX = (sx - this.camera.x) / scale;
@@ -607,7 +598,6 @@ export class RoadRenderer {
         }
       }
     }
-    // only accept a road hit if within ~1.5 cells (in world units)
     const road = best && bestDist < CELL_SIZE * 1.5 ? best : null;
     return { gridX, gridY, road };
   }
@@ -621,7 +611,6 @@ export class RoadRenderer {
     this.camera.y = sy - worldY * newScale;
   }
 
-  /** World-space bounding box over all roads + junctions (in px). */
   private bounds() {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     const acc = (wx: number, wy: number) => {
@@ -640,43 +629,28 @@ export class RoadRenderer {
     return { minX, minY, maxX, maxY };
   }
 
-  /** Reset the camera so the whole network fits with a margin.
-   *  BUG 1 FIX: ensures a minimum rendered cell size of 6px so vehicles
-   *  are legible on first load — not just mathematically "fitting" into
-   *  a sub-pixel line across the full canvas width.
-   */
+  /** Reset camera so the entire network fits comfortably. */
   fitToView() {
     const { minX, minY, maxX, maxY } = this.bounds();
     const w = this.app.renderer.width;
     const h = this.app.renderer.height;
-    const margin = 60;
+    const margin = 80;
     const bw = Math.max(maxX - minX, CELL_SIZE);
     const bh = Math.max(maxY - minY, CELL_SIZE);
-    // Scale that fits the entire network into the viewport
     const fitScale = Math.min((w - margin) / bw, (h - margin) / bh);
-    // Minimum scale: each cell must render at least 6px wide on screen
     const minCellPx = 6;
     const minScale = minCellPx / CELL_SIZE;
-    // Use the larger of fit-scale and min-legibility-scale,
-    // clamped to reasonable bounds
     const s = Math.min(Math.max(Math.max(fitScale, minScale), 0.1), 6);
     this.camera.scale.set(s);
-    // Center the network in the viewport
     this.camera.x = (w - bw * s) / 2 - minX * s;
     this.camera.y = (h - bh * s) / 2 - minY * s;
   }
 
-  /**
-   * Which cell indices of road 0 are within the viewport — proves the camera
-   * stays in sync with the underlying array (Stage 2c debug readout).
-   */
   getVisibleCellRange(): { roadId: number; min: number; max: number } | null {
     if (!this.network || this.network.roads.length === 0) return null;
     const road = this.network.roads[0];
     const { x0, dx, dy } = road.geometry;
     const scale = this.camera.scale.x;
-    // Project the road's principal axis. For horizontal roads use x; for
-    // vertical use y. (dx,dy ∈ {-1,0,1}.)
     const horizontal = Math.abs(dx) >= Math.abs(dy);
     const camPos = horizontal ? this.camera.x : this.camera.y;
     const span = horizontal ? this.app.renderer.width : this.app.renderer.height;
