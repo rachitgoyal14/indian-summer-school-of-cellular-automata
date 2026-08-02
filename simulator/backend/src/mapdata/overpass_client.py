@@ -85,15 +85,15 @@ def fetch_roads(
 
 
 OVERPASS_ENDPOINTS = [
-    "https://overpass.kumi.systems/api/interpreter",
     "https://overpass-api.de/api/interpreter",
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
 ]
 USER_AGENT = "CA-Rule184-TrafficSim/1.0 (academic-research)"
 
 
-def _raw_overpass_query(query: str, timeout: int = 70) -> dict[str, Any] | None:
-    """Send a query to Overpass API endpoints (with fallback to mirrors)."""
+def _raw_overpass_query(query: str, timeout: int = 25) -> dict[str, Any] | None:
+    """Send a query to Overpass API endpoints (with fast fallback to mirrors)."""
     encoded = urllib.parse.urlencode({"data": query}).encode("utf-8")
     
     for endpoint in OVERPASS_ENDPOINTS:
@@ -105,7 +105,7 @@ def _raw_overpass_query(query: str, timeout: int = 70) -> dict[str, Any] | None:
         )
         try:
             logger.info("Sending query to Overpass endpoint: %s", endpoint)
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            with urllib.request.urlopen(req, timeout=15) as resp:
                 return json.loads(resp.read().decode())
         except urllib.error.HTTPError as exc:
             body = ""
