@@ -23,6 +23,7 @@ export function SimulationCanvas({ network, state, onRendererReady, loading = fa
   const [ready, setReady] = useState(false);
   const [visible, setVisible] = useState<string>("—");
   const [heatmap, setHeatmap] = useState(false);
+  const [navGraph, setNavGraph] = useState(false);
 
   // Create the Pixi app once.
   useEffect(() => {
@@ -103,6 +104,16 @@ export function SimulationCanvas({ network, state, onRendererReady, loading = fa
           }}
         >
           {heatmap ? "Heatmap ✓" : "Heatmap"}
+        </button>
+        <button
+          className={`ghost-btn ${navGraph ? "active" : ""}`}
+          onClick={() => {
+            const next = !navGraph;
+            setNavGraph(next);
+            rendererRef.current?.setNavGraphEnabled(next);
+          }}
+        >
+          {navGraph ? "Nav Graph ✓" : "Nav Graph"}
         </button>
         <span className="hint">scroll = zoom · drag = pan</span>
       </div>

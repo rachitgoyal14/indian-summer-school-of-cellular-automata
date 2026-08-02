@@ -26,7 +26,7 @@ const COLORS = {
   background: 0x1a1a1a,  // tarmac dark
   road: 0x4a4a4a,        // bitumen surface — much lighter for clear visibility
   roadShoulder: 0x333333, // road shoulder — visible contrast with background
-  laneMarking: 0xffcc00,  // bright yellow lane markings — highly visible
+  // (lane marking colour removed — single-lane roads, no centerline)
   junction: 0xe8e4dd,     // chalk
   junctionEdge: 0x8c8478, // gravel
   moto: 0x4ecdc4,        // teal — visible on tarmac, distinct from amber
@@ -189,6 +189,7 @@ export class RoadRenderer {
   readonly app: Application;
   private camera: Container;
   private roadLayer: Graphics;
+  private navGraphLayer: Graphics;
   private heatmapLayer: Graphics;
   private disruptionLayer: Graphics;
   private junctionLayer: Graphics;
@@ -197,6 +198,7 @@ export class RoadRenderer {
   private network: NetworkMessage | null = null;
   private lastState: StateMessage | null = null;
   private heatmapEnabled = false;
+  private navGraphEnabled = false;
 
   // pre-rendered vehicle textures (generated once)
   private motoTexture: Texture | null = null;
@@ -214,15 +216,16 @@ export class RoadRenderer {
     this.app = app;
     this.camera = new Container();
     this.roadLayer = new Graphics();
-    // Layer order (bottom→top): road, heatmap tint, disruptions, junctions,
-    // vehicles, ruler. So the heatmap tints the roadbed but disruption cells
-    // (their explicit kind-colour) and vehicles always draw on top of it.
+    this.navGraphLayer = new Graphics();
     this.heatmapLayer = new Graphics();
     this.disruptionLayer = new Graphics();
     this.junctionLayer = new Graphics();
     this.vehicleContainer = new Container();
     this.rulerLayer = new Graphics();
+
+    // Layer order (bottom→top): road surface, nav graph overlay, heatmap, disruptions, junctions, vehicles, ruler
     this.camera.addChild(this.roadLayer);
+    this.camera.addChild(this.navGraphLayer);
     this.camera.addChild(this.heatmapLayer);
     this.camera.addChild(this.disruptionLayer);
     this.camera.addChild(this.junctionLayer);
@@ -304,6 +307,7 @@ export class RoadRenderer {
   setNetwork(network: NetworkMessage) {
     this.network = network;
     this.drawRoads();
+    this.drawNavGraph();
     this.drawJunctions();
     this.drawRuler();
     this.heatmapLayer.clear();
@@ -317,6 +321,11 @@ export class RoadRenderer {
     this.drawHeatmap();
   }
 
+  setNavGraphEnabled(enabled: boolean) {
+    this.navGraphEnabled = enabled;
+    this.drawNavGraph();
+  }
+
   private drawRoads() {
     const g = this.roadLayer;
     g.clear();
@@ -324,55 +333,50 @@ export class RoadRenderer {
 
     for (const road of this.network.roads) {
       const { x0, y0, dx, dy } = road.geometry;
-      const isHoriz = Math.abs(dx) >= Math.abs(dy);
 
-      // ---- road shoulder (wider strip behind the cells for material presence) ----
-      const shoulderPad = 3; // px of shoulder on each side
-      const startWx = x0 * CELL_SIZE;
-      const startWy = y0 * CELL_SIZE;
-      const endWx = (x0 + (road.length - 1) * dx) * CELL_SIZE;
-      const endWy = (y0 + (road.length - 1) * dy) * CELL_SIZE;
+      // Calculate true 2D segment start and end points in world coordinates (px)
+      // Cell 0 center:
+      const p0x = (x0 + 0.5 * dx) * CELL_SIZE;
+      const p0y = (y0 + 0.5 * dy) * CELL_SIZE;
+      // Cell (length-1) center:
+      const p1x = (x0 + (road.length - 0.5) * dx) * CELL_SIZE;
+      const p1y = (y0 + (road.length - 0.5) * dy) * CELL_SIZE;
 
-      if (isHoriz) {
-        const minX = Math.min(startWx, endWx) - shoulderPad;
-        const maxX = Math.max(startWx, endWx) + CELL_SIZE + shoulderPad;
-        const baseY = startWy - shoulderPad;
-        g.roundRect(minX, baseY, maxX - minX, CELL_SIZE + shoulderPad * 2, 3)
-          .fill({ color: COLORS.roadShoulder });
-      } else {
-        const baseX = startWx - shoulderPad;
-        const minY = Math.min(startWy, endWy) - shoulderPad;
-        const maxY = Math.max(startWy, endWy) + CELL_SIZE + shoulderPad;
-        g.roundRect(baseX, minY, CELL_SIZE + shoulderPad * 2, maxY - minY, 3)
-          .fill({ color: COLORS.roadShoulder });
-      }
+      // 1. Road Shoulder (dark gray contrast background, width: CELL_SIZE + 6px)
+      g.moveTo(p0x, p0y)
+        .lineTo(p1x, p1y)
+        .stroke({ color: COLORS.roadShoulder, width: CELL_SIZE + 6, cap: "round", join: "round" });
 
-      // ---- cell tiles (the actual road surface) ----
+      // 2. Main Asphalt Road Surface (smooth bitumen, width: CELL_SIZE px)
+      g.moveTo(p0x, p0y)
+        .lineTo(p1x, p1y)
+        .stroke({ color: COLORS.road, width: CELL_SIZE, cap: "round", join: "round" });
+    }
+  }
+
+  private drawNavGraph() {
+    const g = this.navGraphLayer;
+    g.clear();
+    if (!this.navGraphEnabled || !this.network) return;
+
+    for (const road of this.network.roads) {
+      const { x0, y0, dx, dy } = road.geometry;
+
+      const p0x = (x0 + 0.5 * dx) * CELL_SIZE;
+      const p0y = (y0 + 0.5 * dy) * CELL_SIZE;
+      const p1x = (x0 + (road.length - 0.5) * dx) * CELL_SIZE;
+      const p1y = (y0 + (road.length - 0.5) * dy) * CELL_SIZE;
+
+      // Draw navigation graph centerline (dashed orange path)
+      g.moveTo(p0x, p0y)
+        .lineTo(p1x, p1y)
+        .stroke({ color: 0xff9500, width: 2, alpha: 0.8 });
+
+      // Draw node dots at cell centers
       for (let k = 0; k < road.length; k++) {
-        const wx = (x0 + k * dx) * CELL_SIZE;
-        const wy = (y0 + k * dy) * CELL_SIZE;
-        g.rect(wx, wy, CELL_SIZE - 1, CELL_SIZE - 1)
-          .fill({ color: COLORS.road });
-      }
-
-      // ---- lane-marking dashes (every 4 cells) ----
-      for (let k = 0; k < road.length; k++) {
-        if (k % 4 !== 0) continue;
-        const wx = (x0 + k * dx) * CELL_SIZE;
-        const wy = (y0 + k * dy) * CELL_SIZE;
-        if (isHoriz) {
-          // horizontal road: short vertical dash at left edge of cell
-          const dashH = CELL_SIZE * 0.3;
-          const dashW = 2;
-          g.rect(wx - 0.5, wy + (CELL_SIZE - dashH) / 2, dashW, dashH)
-            .fill({ color: COLORS.laneMarking, alpha: 0.8 });
-        } else {
-          // vertical road: short horizontal dash at top edge of cell
-          const dashW = CELL_SIZE * 0.3;
-          const dashH = 2;
-          g.rect(wx + (CELL_SIZE - dashW) / 2, wy - 0.5, dashW, dashH)
-            .fill({ color: COLORS.laneMarking, alpha: 0.8 });
-        }
+        const cx = (x0 + (k + 0.5) * dx) * CELL_SIZE;
+        const cy = (y0 + (k + 0.5) * dy) * CELL_SIZE;
+        g.circle(cx, cy, 2.5).fill({ color: 0xffcc00, alpha: 0.9 });
       }
     }
   }
@@ -392,7 +396,7 @@ export class RoadRenderer {
   private drawRuler() {
     const g = this.rulerLayer;
     g.clear();
-    if (!this.network || this.network.roads.length === 0) return;
+    if (!this.navGraphEnabled || !this.network || this.network.roads.length === 0) return;
 
     const road = this.network.roads[0];
     const { x0, y0, dx, dy } = road.geometry;
@@ -400,8 +404,8 @@ export class RoadRenderer {
 
     // ticks every 10 cells, labels every 20
     for (let k = 0; k < road.length; k += 10) {
-      const wx = (x0 + k * dx) * CELL_SIZE + CELL_SIZE / 2;
-      const wy = (y0 + k * dy) * CELL_SIZE;
+      const wx = (x0 + (k + 0.5) * dx) * CELL_SIZE;
+      const wy = (y0 + (k + 0.5) * dy) * CELL_SIZE;
 
       if (isHoriz) {
         // tick above the road
@@ -413,7 +417,7 @@ export class RoadRenderer {
         // tick to the left of the road
         const tickLeft = wx - 10;
         const tickW = k % 20 === 0 ? 6 : 3;
-        g.moveTo(tickLeft, wy + CELL_SIZE / 2).lineTo(tickLeft + tickW, wy + CELL_SIZE / 2)
+        g.moveTo(tickLeft, wy).lineTo(tickLeft + tickW, wy)
           .stroke({ color: COLORS.rulerTick, width: 0.8 });
       }
     }
@@ -430,14 +434,13 @@ export class RoadRenderer {
       const { x0, y0, dx, dy } = meta.geometry;
       for (const seg of road.segments) {
         const color = heatColor(seg.d);
-        for (let k = seg.s; k < seg.s + seg.n; k++) {
-          const wx = (x0 + k * dx) * CELL_SIZE;
-          const wy = (y0 + k * dy) * CELL_SIZE;
-          g.rect(wx, wy, CELL_SIZE - 1, CELL_SIZE - 1).fill({
-            color,
-            alpha: 0.55,
-          });
-        }
+        const p0x = (x0 + (seg.s + 0.5) * dx) * CELL_SIZE;
+        const p0y = (y0 + (seg.s + 0.5) * dy) * CELL_SIZE;
+        const p1x = (x0 + (seg.s + seg.n - 0.5) * dx) * CELL_SIZE;
+        const p1y = (y0 + (seg.s + seg.n - 0.5) * dy) * CELL_SIZE;
+        g.moveTo(p0x, p0y)
+          .lineTo(p1x, p1y)
+          .stroke({ color, width: CELL_SIZE - 2, alpha: 0.55, cap: "round" });
       }
     }
   }
@@ -459,18 +462,12 @@ export class RoadRenderer {
       const { x0, y0, dx, dy } = meta.geometry;
       const color = DISRUPTION_COLORS[dis.kind] ?? 0xffffff;
       for (const idx of dis.cells) {
-        const wx = (x0 + idx * dx) * CELL_SIZE;
-        const wy = (y0 + idx * dy) * CELL_SIZE;
-        d.rect(wx - 2, wy - 2, CELL_SIZE + 3, CELL_SIZE + 3).fill({
-          color,
-          alpha: 0.35,
-        }); // glow halo
-        d.rect(wx, wy, CELL_SIZE - 1, CELL_SIZE - 1).fill({ color });
-        // permanent reservations get an inner marker so they read differently
+        const cx = (x0 + (idx + 0.5) * dx) * CELL_SIZE;
+        const cy = (y0 + (idx + 0.5) * dy) * CELL_SIZE;
+        d.circle(cx, cy, CELL_SIZE * 0.55).fill({ color, alpha: 0.35 }); // glow halo
+        d.circle(cx, cy, CELL_SIZE * 0.4).fill({ color });
         if (dis.permanent) {
-          d.rect(wx + CELL_SIZE / 2 - 1, wy + 2, 2, CELL_SIZE - 5).fill({
-            color: 0x1a1a1a,
-          });
+          d.circle(cx, cy, CELL_SIZE * 0.15).fill({ color: 0x1a1a1a });
         }
       }
     }
@@ -512,8 +509,12 @@ export class RoadRenderer {
           }
         }
 
-        const cx = (x0 + centerIdx * dx) * CELL_SIZE + CELL_SIZE / 2;
-        const cy = (y0 + centerIdx * dy) * CELL_SIZE + CELL_SIZE / 2;
+        // Place the vehicle exactly on the road centerline.
+        // Road centers use (x0 + (k+0.5)*dx)*CELL_SIZE — the old formula
+        // unconditionally added CELL_SIZE/2 to both axes which caused a
+        // half-cell perpendicular offset.
+        const cx = (x0 + (centerIdx + 0.5) * dx) * CELL_SIZE;
+        const cy = (y0 + (centerIdx + 0.5) * dy) * CELL_SIZE;
 
         // Glow sprite (slightly larger, dimmer)
         const glow = this.getSprite(spriteIdx++);
