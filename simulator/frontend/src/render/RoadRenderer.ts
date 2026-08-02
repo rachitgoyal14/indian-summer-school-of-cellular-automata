@@ -24,9 +24,9 @@ export interface EditClick {
 const CELL_SIZE = 14; // world px per cell
 const COLORS = {
   background: 0x1a1a1a,  // tarmac dark
-  road: 0x2e2e2e,        // bitumen surface — slightly lighter for material presence
-  roadShoulder: 0x222222, // road shoulder — between bg and road
-  laneMarking: 0x555548,  // lane dashes — warm subtle yellow-gray
+  road: 0x4a4a4a,        // bitumen surface — much lighter for clear visibility
+  roadShoulder: 0x333333, // road shoulder — visible contrast with background
+  laneMarking: 0xffcc00,  // bright yellow lane markings — highly visible
   junction: 0xe8e4dd,     // chalk
   junctionEdge: 0x8c8478, // gravel
   moto: 0x4ecdc4,        // teal — visible on tarmac, distinct from amber
@@ -365,13 +365,13 @@ export class RoadRenderer {
           const dashH = CELL_SIZE * 0.3;
           const dashW = 2;
           g.rect(wx - 0.5, wy + (CELL_SIZE - dashH) / 2, dashW, dashH)
-            .fill({ color: COLORS.laneMarking, alpha: 0.5 });
+            .fill({ color: COLORS.laneMarking, alpha: 0.8 });
         } else {
           // vertical road: short horizontal dash at top edge of cell
           const dashW = CELL_SIZE * 0.3;
           const dashH = 2;
           g.rect(wx + (CELL_SIZE - dashW) / 2, wy - 0.5, dashW, dashH)
-            .fill({ color: COLORS.laneMarking, alpha: 0.5 });
+            .fill({ color: COLORS.laneMarking, alpha: 0.8 });
         }
       }
     }

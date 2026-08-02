@@ -14,9 +14,10 @@ interface Props {
   network: NetworkMessage | null;
   state: StateMessage | null;
   onRendererReady?: (r: RoadRenderer | null) => void;
+  loading?: boolean;
 }
 
-export function SimulationCanvas({ network, state, onRendererReady }: Props) {
+export function SimulationCanvas({ network, state, onRendererReady, loading = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<RoadRenderer | null>(null);
   const [ready, setReady] = useState(false);
@@ -73,6 +74,12 @@ export function SimulationCanvas({ network, state, onRendererReady }: Props) {
   return (
     <div className="canvas-wrap">
       <div ref={containerRef} className="pixi-host" />
+      {loading && (
+        <div className="canvas-loading-overlay">
+          <div className="loading-spinner"></div>
+          <div className="loading-text">Importing map from OpenStreetMap...</div>
+        </div>
+      )}
       <div className="canvas-overlay">
         <span className="badge">visible: {visible}</span>
         <button

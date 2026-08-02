@@ -9,9 +9,10 @@ import type { SocketApi } from "../hooks/useSimulationSocket";
 
 interface Props {
   api: SocketApi;
+  onLoadingChange?: (loading: boolean) => void;
 }
 
-export function RegionSearch({ api }: Props) {
+export function RegionSearch({ api, onLoadingChange }: Props) {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
@@ -24,11 +25,28 @@ export function RegionSearch({ api }: Props) {
 
   const handleSearch = () => {
     if (!query.trim() || loading) return;
+    console.log(`[RegionSearch] Starting import for: ${query.trim()}`);
     setLoading(true);
+    onLoadingChange?.(true);
     setResult(null);
+    
+    // Set a timeout in case the backend doesn't respond
+    const timeout = setTimeout(() => {
+      console.log("[RegionSearch] Import timed out after 60s");
+      setLoading(false);
+      onLoadingChange?.(false);
+      setResult({
+        ok: false,
+        error: "Import timed out after 60 seconds. The OpenStreetMap API may be overloaded. Please try again.",
+      });
+    }, 60000); // 60 second timeout
+    
     api.importRegion(query.trim(), (res) => {
+      console.log("[RegionSearch] Import result received:", res);
+      clearTimeout(timeout);
       setResult(res);
       setLoading(false);
+      onLoadingChange?.(false);
     });
   };
 

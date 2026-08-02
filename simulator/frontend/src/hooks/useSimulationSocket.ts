@@ -95,9 +95,15 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
           return;
         }
         if (msg.type === "import_result") {
+          console.log("[WebSocket] Received import_result:", msg);
           const cb = importCbRef.current;
           importCbRef.current = null;
-          if (cb) cb(msg as ImportResultMessage);
+          if (cb) {
+            console.log("[WebSocket] Invoking import callback");
+            cb(msg as ImportResultMessage);
+          } else {
+            console.warn("[WebSocket] No callback registered for import_result");
+          }
           return;
         }
         if (msg.type === "network") {

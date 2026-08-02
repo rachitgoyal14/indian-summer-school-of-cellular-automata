@@ -30,6 +30,18 @@ export default function App() {
     [],
   );
 
+  // Map import loading state
+  const [mapLoading, setMapLoading] = useState(false);
+  const handleLoadingChange = useCallback((loading: boolean) => {
+    setMapLoading(loading);
+  }, []);
+
+  // Map import loading state
+  const [mapLoading, setMapLoading] = useState(false);
+  const handleLoadingChange = useCallback((loading: boolean) => {
+    setMapLoading(loading);
+  }, []);
+
   // counts of active disruptions by kind — hidden, for automated verification
   const disCounts: Record<string, number> = {};
   for (const d of st?.disruptions ?? []) {
@@ -54,6 +66,7 @@ export default function App() {
             network={api.network}
             state={st}
             onRendererReady={handleRendererReady}
+            loading={mapLoading}
           />
 
           {st && st.junctions.length > 0 && (
@@ -77,7 +90,7 @@ export default function App() {
           <div className="divider" />
           <ControlPanel api={api} />
           <div className="divider" />
-          <RegionSearch api={api} />
+          <RegionSearch api={api} onLoadingChange={handleLoadingChange} />
           <div className="divider" />
           <MapEditor
             api={api}

@@ -1,0 +1,78 @@
+
+============================================================
+ANALYZING: IIT BHU Varanasi
+============================================================
+Step 1: Geocoding 'IIT BHU Varanasi'...
+  → Bounding box: (25.25657885, 82.98853465, 25.26257885, 82.99453465)
+Step 2: Fetching OSM data...
+  → OSM nodes: 357
+  → OSM ways: 63
+Step 3: Translating to Network...
+  → Roads: 243
+  → Junctions: 107
+  → Total cells: 3647
+
+Step 4: First 10 junction coordinates (node ID, lat/lon approximation):
+  J  0: x=   277.6m, y=   480.8m
+  J  1: x=  -163.6m, y=    44.7m
+  J  2: x=   116.0m, y=   -97.6m
+  J  3: x=  -227.3m, y=  -136.3m
+  J  4: x=   -41.3m, y=   223.5m
+  J  5: x=  -294.3m, y=   426.2m
+  J  6: x=   -25.4m, y=   455.6m
+  J  7: x=  -209.9m, y=   359.6m
+  J  8: x=    48.0m, y=   315.9m
+  J  9: x=   296.8m, y=   129.7m
+
+============================================================
+ANALYZING: IIEST Shibpur
+============================================================
+Step 1: Geocoding 'IIEST Shibpur'...
+  → Bounding box: (22.552203749999997, 88.3006014, 22.558203749999997, 88.3112149)
+Step 2: Fetching OSM data...
+  → OSM nodes: 493
+  → OSM ways: 68
+Step 3: Translating to Network...
+  → Roads: 226
+  → Junctions: 107
+  → Total cells: 3926
+
+Step 4: First 10 junction coordinates (node ID, lat/lon approximation):
+  J  0: x=  -399.0m, y=  -191.8m
+  J  1: x=    62.8m, y=   335.6m
+  J  2: x=  -506.8m, y=  -114.5m
+  J  3: x=   663.9m, y=     2.8m
+  J  4: x=  -258.9m, y=  -194.2m
+  J  5: x=   722.5m, y=  -165.6m
+  J  7: x=  -974.6m, y=  -766.4m
+  J  8: x=  -457.5m, y=  -151.3m
+  J  9: x=  -477.5m, y=  -137.5m
+  J 10: x=  -521.5m, y=  -311.1m
+
+============================================================
+COMPARISON:
+============================================================
+
+IIT BHU Varanasi:
+  Bounding box: (25.25657885, 82.98853465, 25.26257885, 82.99453465)
+  OSM nodes: 357
+  OSM ways: 63
+  Roads: 243
+  Junctions: 107
+  Total cells: 3647
+
+IIEST Shibpur:
+  Bounding box: (22.552203749999997, 88.3006014, 22.558203749999997, 88.3112149)
+  OSM nodes: 493
+  OSM ways: 68
+  Roads: 226
+  Junctions: 107
+  Total cells: 3926
+
+⚠️  WARNING: Both regions produced EXACTLY 107 junctions!
+    This is suspicious and requires investigation.
+    ✓ Bounding boxes are different (geocoding works correctly).
+    ✓ Junction coordinates are completely different.
+       This may be a genuine coincidence (needs code review).
+
+✓ OSM raw data is different (expected).
