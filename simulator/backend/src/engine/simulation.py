@@ -267,6 +267,54 @@ class Simulation:
         self._mark_custom()
         return True
 
+    # ------------------------------------------------------------------ region import (Stage 8)
+    def import_region(self, place_name: str) -> dict[str, Any]:
+        """
+        Import a real-world road network from OSM for the given place name.
+
+        Returns a status dict with keys:
+            ok: bool, error: str|None, roads: int, junctions: int, total_cells: int
+        """
+        from src.mapdata.geocode import geocode
+        from src.mapdata.overpass_client import fetch_roads
+        from src.mapdata.osm_to_network import osm_to_network
+
+        bbox = geocode(place_name)
+        if bbox is None:
+            return {"ok": False, "error": f"Could not geocode '{place_name}'"}
+
+        south, west, north, east = bbox
+        osm_data = fetch_roads(south, west, north, east)
+        if osm_data is None:
+            return {"ok": False, "error": "Overpass API request failed"}
+
+        net = osm_to_network(
+            osm_data,
+            source_rate=0.3,
+            car_fraction=self.car_fraction,
+        )
+
+        if not net.roads:
+            return {"ok": False, "error": "No roads found in the specified region"}
+
+        self.network = net
+        self.config = "custom"
+        self.step_count = 0
+        self._last_moved = 0
+        self._rng = np.random.default_rng(self.seed)
+        self._scenario_structure = self._structure_snapshot()
+        self.disruptions = DisruptionManager(self.network)
+        self._apply_disruption_settings()
+
+        return {
+            "ok": True,
+            "error": None,
+            "roads": len(net.roads),
+            "junctions": len(net.junctions),
+            "total_cells": sum(r.length for r in net.roads.values()),
+        }
+
+
     # ------------------------------------------------------------------ analytics
     def density(self) -> float:
         return self.network.density()

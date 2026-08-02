@@ -105,4 +105,14 @@ export interface ScenarioMessage {
   data: unknown;
 }
 
-export type ServerMessage = NetworkMessage | StateMessage | PongMessage | ScenarioMessage;
+/** Sent by the backend after an import_region request (Stage 8). */
+export interface ImportResultMessage {
+  type: "import_result";
+  ok: boolean;
+  error?: string;
+  roads?: number;
+  junctions?: number;
+  total_cells?: number;
+}
+
+export type ServerMessage = NetworkMessage | StateMessage | PongMessage | ScenarioMessage | ImportResultMessage;

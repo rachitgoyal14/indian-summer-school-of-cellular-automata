@@ -14,6 +14,7 @@ import { ControlPanel } from "./components/ControlPanel";
 import { DisruptionPanel } from "./components/DisruptionPanel";
 import { AnalyticsPanel } from "./components/AnalyticsPanel";
 import { MapEditor } from "./components/MapEditor";
+import { RegionSearch } from "./components/RegionSearch";
 import { useSimulationSocket } from "./hooks/useSimulationSocket";
 import type { RoadRenderer } from "./render/RoadRenderer";
 import "./App.css";
@@ -75,6 +76,8 @@ export default function App() {
           <AnalyticsPanel state={st} />
           <div className="divider" />
           <ControlPanel api={api} />
+          <div className="divider" />
+          <RegionSearch api={api} />
           <div className="divider" />
           <MapEditor
             api={api}

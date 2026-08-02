@@ -188,12 +188,17 @@ class SimulationManager:
             elif t == "set_turn":
                 props = {int(k): float(v) for k, v in (msg.get("proportions") or {}).items()}
                 self.sim.set_turn(int(msg.get("junction_id")), int(msg.get("in_road")), props)
+            elif t == "import_region":
+                place_name = msg.get("place_name", "")
+                result = self.sim.import_region(place_name)
+                # Send the import result back to all clients
+                await self.broadcast({"type": "import_result", **result})
             else:
                 return None  # unknown message: ignore
 
         # Reflect the mutation to everyone immediately for responsiveness.
         structural = t in (
-            "reset", "load_config", "load_scenario",
+            "reset", "load_config", "load_scenario", "import_region",
             "add_road", "remove_road", "set_turn",
         )
         if structural:

@@ -1,0 +1,17 @@
+{
+  "passed": 2,
+  "total": 2,
+  "overall_ok": true,
+  "results": [
+    {
+      "name": "RegionSearch UI renders (input + button)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Region import completed: canvas/readout active",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

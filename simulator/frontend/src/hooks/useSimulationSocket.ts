@@ -8,7 +8,7 @@
 // a reset, which legitimately restarts step at 0), so it clears the guard.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { NetworkMessage, ScenarioMessage, ServerMessage, StateMessage } from "../types";
+import type { ImportResultMessage, NetworkMessage, ScenarioMessage, ServerMessage, StateMessage } from "../types";
 
 function defaultWsUrl(): string {
   // Same-origin in dev (Vite proxies /ws → backend). Override with ?ws=...
@@ -43,6 +43,7 @@ export interface SocketApi {
   setTurn: (junctionId: number, inRoad: number, proportions: Record<number, number>) => void;
   saveScenario: (cb: (data: unknown) => void) => void;
   loadScenario: (data: unknown) => void;
+  importRegion: (placeName: string, cb: (result: ImportResultMessage) => void) => void;
   ping: () => void;
   setArtificialDelay: (seconds: number) => void;
 }
@@ -59,6 +60,8 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
   const lastStepRef = useRef<number>(-1);
   // one-shot callback for a save_scenario reply
   const scenarioCbRef = useRef<((data: unknown) => void) | null>(null);
+  // one-shot callback for an import_region reply (Stage 8)
+  const importCbRef = useRef<((data: ImportResultMessage) => void) | null>(null);
 
   const send = useCallback((msg: Record<string, unknown>) => {
     const ws = wsRef.current;
@@ -89,6 +92,12 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
           const cb = scenarioCbRef.current;
           scenarioCbRef.current = null;
           if (cb) cb((msg as ScenarioMessage).data);
+          return;
+        }
+        if (msg.type === "import_result") {
+          const cb = importCbRef.current;
+          importCbRef.current = null;
+          if (cb) cb(msg as ImportResultMessage);
           return;
         }
         if (msg.type === "network") {
@@ -200,6 +209,13 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
     (data: unknown) => send({ type: "load_scenario", data }),
     [send],
   );
+  const importRegion = useCallback(
+    (placeName: string, cb: (result: ImportResultMessage) => void) => {
+      importCbRef.current = cb;
+      send({ type: "import_region", place_name: placeName });
+    },
+    [send],
+  );
   const ping = useCallback(
     () => send({ type: "ping", t: performance.now() }),
     [send],
@@ -232,6 +248,7 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
     setTurn,
     saveScenario,
     loadScenario,
+    importRegion,
     ping,
     setArtificialDelay,
   };

@@ -565,3 +565,62 @@ button.mode-active {
 .landscape-text-trivial { color: #67d982; }
 .landscape-text-average { color: #F5A623; }
 .landscape-text-worst   { color: #ff6b6b; }
+
+/* ============================================================
+   REGION SEARCH (Stage 8)
+   ============================================================ */
+
+.region-search {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.region-input-row {
+  display: flex;
+  gap: 6px;
+}
+
+.region-input {
+  flex: 1;
+  background: var(--tarmac);
+  color: var(--chalk);
+  border: 1px solid var(--kerb);
+  border-radius: 4px;
+  padding: 7px 10px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.region-input:focus {
+  border-color: var(--marking);
+}
+.region-input::placeholder {
+  color: var(--gravel);
+  opacity: 0.7;
+}
+
+.region-btn {
+  white-space: nowrap;
+  padding: 7px 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.region-result {
+  font-family: var(--font-data);
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--kerb);
+  background: var(--tarmac);
+}
+.region-ok {
+  color: #67d982;
+  border-color: rgba(103, 217, 130, 0.3);
+}
+.region-err {
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, 0.3);
+}
