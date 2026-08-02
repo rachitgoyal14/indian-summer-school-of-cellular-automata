@@ -77,8 +77,7 @@ export function RegionSearch({ api, onLoadingChange }: Props) {
           </button>
         </div>
         <div className="field sub">
-          Enter a place name or campus. The map will be fetched from
-          OpenStreetMap in real time.
+          Search any place, campus, or neighborhood to import its road network.
         </div>
         {result && (
           <div

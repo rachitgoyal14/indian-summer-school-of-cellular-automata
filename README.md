@@ -4,7 +4,7 @@
 
 ### Real-Time Cellular Automata Traffic Simulator with OpenStreetMap Region Import & Docker Deployment
 
-[![Docker](https://img.shields.io/badge/docker-ready-blue?logo=docker&logoColor=white)](#-quick-start-with-docker)
+[![Docker](https://img.shields.io/badge/docker-ready-blue?logo=docker&logoColor=white)](#quick-start-with-docker)
 [![Python](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18%2B-61DAFB?logo=react&logoColor=black)](https://react.dev/)
@@ -15,11 +15,11 @@
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Key Features](#key-features)
-- [⚡ Quick Start with Docker](#-quick-start-with-docker)
+- [Quick Start with Docker](#quick-start-with-docker)
 - [Repository Structure](#repository-structure)
 - [Local Development Setup](#local-development-setup)
 - [OpenStreetMap Region Import](#openstreetmap-region-import)
@@ -43,15 +43,15 @@ The system features:
 
 ## Key Features
 
-- 🏎️ **Rule 184 Multi-Vehicle Simulation**: Simulates motorcycles, cars, buses, and trucks with distinct cell footprints and speeds.
-- 🗺️ **OpenStreetMap Import**: Search any place (e.g. *"IIT BHU Varanasi"*, *"IIEST Shibpur"*) to fetch real road geometries and convert them to simulation networks.
-- 🚧 **Dynamic Disruptions**: Trigger vehicle breakdowns, fallen trees, accidents, or waterlogging in real time to observe congestion propagation.
-- 📊 **Real-Time Analytics**: Live computation of spatial traffic density, flow rates, Shannon entropy, and thermodynamic landscape classification.
-- 🐳 **Containerized Deployment**: One-command launch using `docker compose up --build`.
+- **Rule 184 Multi-Vehicle Simulation**: Simulates motorcycles, cars, buses, and trucks with distinct cell footprints and speeds.
+- **OpenStreetMap Import**: Search any place (e.g. *"IIT BHU Varanasi"*, *"IIEST Shibpur"*) to fetch real road geometries and convert them to simulation networks.
+- **Dynamic Disruptions**: Trigger vehicle breakdowns, fallen trees, accidents, or waterlogging in real time to observe congestion propagation.
+- **Real-Time Analytics**: Live computation of spatial traffic density, flow rates, Shannon entropy, and thermodynamic landscape classification.
+- **Containerized Deployment**: One-command launch using `docker compose up --build`.
 
 ---
 
-## ⚡ Quick Start with Docker
+## Quick Start with Docker
 
 Run the entire application (Backend + Frontend) with a single command:
 

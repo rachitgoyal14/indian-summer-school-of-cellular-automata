@@ -63,7 +63,7 @@ html, body, #root {
   font-family: var(--font-display);
   font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   margin: 0;
   color: var(--chalk);
@@ -267,22 +267,22 @@ html, body, #root {
 
 .panel h2 {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--marking);
+  text-transform: none;
+  letter-spacing: 0.04em;
+  color: var(--chalk);
   margin: 0 0 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--kerb);
+  padding-left: 8px;
+  border-left: 2px solid var(--marking);
 }
 
 .panel h3 {
   font-family: var(--font-display);
   font-size: 11px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  text-transform: none;
+  letter-spacing: 0.02em;
   color: var(--gravel);
   margin: 0 0 8px;
 }
@@ -292,7 +292,7 @@ button {
   background: var(--tarmac);
   color: var(--chalk);
   border: 1px solid var(--kerb);
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 7px 12px;
   font-family: var(--font-body);
   font-size: 12px;
@@ -315,7 +315,7 @@ button:disabled {
 button.mini {
   padding: 4px 8px;
   font-size: 11px;
-  border-radius: 3px;
+  border-radius: 5px;
 }
 
 .btn-row {
@@ -341,9 +341,11 @@ button.mini {
   cursor: pointer;
 }
 .field .sub {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--gravel);
   line-height: 1.4;
+  opacity: 0.7;
+  font-style: italic;
 }
 
 select {
@@ -364,7 +366,8 @@ select:focus {
 .divider {
   height: 1px;
   background: var(--kerb);
-  margin: 6px 0 10px;
+  margin: 10px 0 12px;
+  opacity: 0.5;
 }
 
 /* ---- legend (vehicle types) ---- */
@@ -626,7 +629,7 @@ button.mode-active {
 }
 
 /* ========================================================================== */
-/* Canvas Loading Overlay                                                     */
+/* Canvas Loading Overlay — Map-themed animation                              */
 /* ========================================================================== */
 
 .canvas-loading-overlay {
@@ -635,14 +638,14 @@ button.mode-active {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(12, 14, 20, 0.82);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(10, 12, 18, 0.88);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  animation: overlayFadeIn 0.25s ease-out;
+  animation: overlayFadeIn 0.35s ease-out;
 }
 
 @keyframes overlayFadeIn {
@@ -651,86 +654,173 @@ button.mode-active {
 }
 
 .loading-card {
-  background: rgba(22, 25, 34, 0.94);
-  border: 1px solid rgba(245, 166, 35, 0.35);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(245, 166, 35, 0.15);
-  border-radius: 14px;
-  padding: 36px 44px;
+  background: linear-gradient(170deg, rgba(26, 28, 38, 0.96), rgba(18, 20, 28, 0.98));
+  border: 1px solid rgba(245, 166, 35, 0.2);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.7),
+    0 0 40px rgba(245, 166, 35, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  padding: 32px 36px 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  max-width: 440px;
+  max-width: 420px;
   width: 90%;
-  text-align: center;
 }
 
-.loading-spinner {
-  width: 48px;
-  height: 48px;
-  border: 3px solid rgba(245, 166, 35, 0.2);
-  border-top-color: var(--marking, #f5a623);
-  border-radius: 50%;
-  animation: spin 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-text {
-  margin-top: 20px;
-  font-family: var(--font-label);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--marking, #f5a623);
-  text-transform: uppercase;
-}
-
-.loading-bar-track {
+/* ---- animated map SVG scene ---- */
+.loading-map-scene {
   width: 100%;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 3px;
-  margin-top: 20px;
+  max-width: 320px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 12px 8px;
   overflow: hidden;
-  position: relative;
 }
 
-.loading-bar-fill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 40%;
-  background: linear-gradient(90deg, #f5a623, #ff7b00, #f5a623);
-  background-size: 200% 100%;
-  border-radius: 3px;
-  box-shadow: 0 0 10px rgba(245, 166, 35, 0.6);
-  animation: loadingBarMove 1.5s ease-in-out infinite;
+.loading-map-svg {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
-@keyframes loadingBarMove {
-  0% {
-    left: -40%;
-    width: 30%;
-  }
-  50% {
-    left: 35%;
-    width: 60%;
-  }
-  100% {
-    left: 100%;
-    width: 30%;
-  }
+/* grid dots — wave-fade-in */
+.loading-grid-dot {
+  fill: rgba(140, 132, 120, 0.15);
+  animation: gridDotPulse 3s ease-in-out infinite;
+}
+
+@keyframes gridDotPulse {
+  0%, 100% { opacity: 0.2; r: 0.8; }
+  50% { opacity: 0.6; r: 1.2; }
+}
+
+/* road lines — draw-on effect via stroke-dashoffset */
+.loading-road-line {
+  fill: none;
+  stroke: rgba(74, 74, 74, 0.9);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+  animation: drawRoad 2.8s ease-in-out forwards infinite;
+}
+.loading-road-line.road-1 { animation-delay: 0s; }
+.loading-road-line.road-2 { animation-delay: 0.5s; }
+.loading-road-line.road-3 { animation-delay: 1.0s; }
+.loading-road-line.road-4 { animation-delay: 1.5s; }
+
+@keyframes drawRoad {
+  0%   { stroke-dashoffset: 400; opacity: 0.3; }
+  40%  { stroke-dashoffset: 0;   opacity: 1; }
+  70%  { stroke-dashoffset: 0;   opacity: 1; }
+  100% { stroke-dashoffset: 0;   opacity: 0.4; }
+}
+
+/* junction nodes — pop in after road lines arrive */
+.loading-junction {
+  fill: #E8E4DD;
+  opacity: 0;
+  animation: junctionAppear 2.8s ease-out forwards infinite;
+}
+
+@keyframes junctionAppear {
+  0%, 30% { opacity: 0; r: 0; }
+  50%     { opacity: 1; r: 4; }
+  65%     { opacity: 1; r: 3.5; }
+  100%    { opacity: 0.5; r: 3; }
+}
+
+/* pulsing location pin */
+.loading-pin {
+  animation: pinFloat 3s ease-in-out infinite;
+}
+
+@keyframes pinFloat {
+  0%, 100% { transform: translate(100px, 55px) translateY(0); }
+  50%      { transform: translate(100px, 55px) translateY(-3px); }
+}
+
+.loading-pin-pulse {
+  fill: none;
+  stroke: rgba(245, 166, 35, 0.35);
+  stroke-width: 1;
+  animation: pinPulseRing 2s ease-out infinite;
+}
+.loading-pin-pulse.pulse-2 {
+  animation-delay: 0.8s;
+}
+
+@keyframes pinPulseRing {
+  0%   { r: 4; opacity: 0.8; stroke-width: 2; }
+  100% { r: 18; opacity: 0; stroke-width: 0.5; }
+}
+
+/* ---- text elements ---- */
+.loading-text {
+  font-family: var(--font-display, 'Overpass', sans-serif);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--chalk, #E8E4DD);
+  margin-bottom: 18px;
+}
+
+/* ---- phase step indicators ---- */
+.loading-phases {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.loading-phase {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 11.5px;
+  color: rgba(140, 132, 120, 0.45);
+  padding: 3px 0;
+  transition: color 0.4s, opacity 0.4s;
+}
+
+.loading-phase.active {
+  color: var(--marking, #F5A623);
+}
+
+.loading-phase.done {
+  color: rgba(103, 217, 130, 0.6);
+}
+
+.loading-phase-dot {
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+  font-weight: 700;
+  transition: color 0.3s;
+}
+
+.loading-phase.active .loading-phase-dot {
+  color: var(--marking, #F5A623);
+  animation: phaseArrowPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes phaseArrowPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 .loading-subtext {
-  margin-top: 12px;
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
-  letter-spacing: 0.02em;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.01em;
 }
 

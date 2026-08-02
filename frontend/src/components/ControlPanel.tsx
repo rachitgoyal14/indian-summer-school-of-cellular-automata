@@ -77,7 +77,7 @@ export function ControlPanel({ api }: Props) {
 
       <div className="divider" />
 
-      <h2>Controls</h2>
+      <h2>Playback</h2>
 
       <div className="btn-row">
         {running ? (
@@ -105,7 +105,7 @@ export function ControlPanel({ api }: Props) {
           onMouseUp={() => api.reset(density, undefined, carFraction)}
         />
         <span className="sub">
-          {ringLike ? "release to reset with this density" : "seeds ring lanes; open lanes fill from sources"}
+          {ringLike ? "Drag to adjust, release to apply" : "Adjusts initial vehicle density"}
         </span>
       </label>
 
@@ -124,7 +124,7 @@ export function ControlPanel({ api }: Props) {
               : api.loadConfig(config, { density, carFraction })
           }
         />
-        <span className="sub">share of vehicles that are cars (2 cells)</span>
+        <span className="sub">Proportion of 2-cell cars vs 1-cell motorbikes</span>
       </label>
 
       <label className="field">
@@ -145,7 +145,7 @@ export function ControlPanel({ api }: Props) {
 
       <div className="divider" />
 
-      <h3>Latency test</h3>
+      <h3>Network diagnostics</h3>
       <div className="btn-row">
         <button onClick={api.ping}>Ping</button>
         <span className="badge">
@@ -167,7 +167,7 @@ export function ControlPanel({ api }: Props) {
           }}
         />
         <span className="sub">
-          inject delay, then confirm the step counter never jumps backward
+          Simulates network latency for testing
         </span>
       </label>
       <div className="badge">stale states dropped: {api.staleDropped}</div>

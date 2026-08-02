@@ -17,6 +17,86 @@ interface Props {
   loading?: boolean;
 }
 
+const LOADING_PHASES = [
+  "Geocoding location…",
+  "Fetching roads from OpenStreetMap…",
+  "Parsing street network graph…",
+  "Building node topology…",
+  "Generating simulation grid…",
+];
+
+function LoadingOverlay() {
+  const [phase, setPhase] = useState(0);
+  const [dots, setDots] = useState("");
+
+  useEffect(() => {
+    const iv = setInterval(() => setPhase((p) => (p + 1) % LOADING_PHASES.length), 3200);
+    return () => clearInterval(iv);
+  }, []);
+
+  useEffect(() => {
+    const iv = setInterval(() => setDots((d) => (d.length >= 3 ? "" : d + ".")), 500);
+    return () => clearInterval(iv);
+  }, []);
+
+  return (
+    <div className="canvas-loading-overlay">
+      <div className="loading-card">
+        {/* Animated map illustration */}
+        <div className="loading-map-scene">
+          <svg viewBox="0 0 200 120" className="loading-map-svg">
+            {/* Grid of faint dots — represents the area being mapped */}
+            {Array.from({ length: 7 }, (_, r) =>
+              Array.from({ length: 10 }, (_, c) => (
+                <circle
+                  key={`${r}-${c}`}
+                  cx={15 + c * 19}
+                  cy={12 + r * 16}
+                  r="1"
+                  className="loading-grid-dot"
+                  style={{ animationDelay: `${(r * 10 + c) * 60}ms` }}
+                />
+              ))
+            )}
+            {/* Road lines being drawn */}
+            <path d="M20,30 L80,30 L80,75 L160,75" className="loading-road-line road-1" />
+            <path d="M40,15 L40,60 L120,60 L120,110" className="loading-road-line road-2" />
+            <path d="M10,55 L60,55 L100,35 L180,35" className="loading-road-line road-3" />
+            <path d="M90,10 L90,45 L150,45 L150,95" className="loading-road-line road-4" />
+            {/* Junction dots — appear after roads */}
+            <circle cx="80" cy="30" r="3.5" className="loading-junction" style={{ animationDelay: "1.2s" }} />
+            <circle cx="80" cy="75" r="3.5" className="loading-junction" style={{ animationDelay: "1.6s" }} />
+            <circle cx="40" cy="60" r="3.5" className="loading-junction" style={{ animationDelay: "1.4s" }} />
+            <circle cx="120" cy="60" r="3.5" className="loading-junction" style={{ animationDelay: "1.8s" }} />
+            <circle cx="90" cy="45" r="3.5" className="loading-junction" style={{ animationDelay: "2.0s" }} />
+            {/* Pulsing location pin */}
+            <g className="loading-pin" transform="translate(100,55)">
+              <circle cx="0" cy="0" r="12" className="loading-pin-pulse" />
+              <circle cx="0" cy="0" r="6" className="loading-pin-pulse pulse-2" />
+              <path d="M0,-8 C-4.5,-8 -8,-4.5 -8,0 C-8,5 0,12 0,12 C0,12 8,5 8,0 C8,-4.5 4.5,-8 0,-8Z" fill="#F5A623" />
+              <circle cx="0" cy="-1" r="2.5" fill="#1a1a1a" />
+            </g>
+          </svg>
+        </div>
+
+        <div className="loading-text">Importing map{dots}</div>
+
+        {/* Phase indicator */}
+        <div className="loading-phases">
+          {LOADING_PHASES.map((text, i) => (
+            <div key={i} className={`loading-phase ${i === phase ? "active" : i < phase ? "done" : ""}`}>
+              <span className="loading-phase-dot">{i < phase ? "✓" : i === phase ? "›" : "·"}</span>
+              {text}
+            </div>
+          ))}
+        </div>
+
+        <div className="loading-subtext">This usually takes 5–15 seconds</div>
+      </div>
+    </div>
+  );
+}
+
 export function SimulationCanvas({ network, state, onRendererReady, loading = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<RoadRenderer | null>(null);
@@ -75,18 +155,7 @@ export function SimulationCanvas({ network, state, onRendererReady, loading = fa
   return (
     <div className="canvas-wrap">
       <div ref={containerRef} className="pixi-host" />
-      {loading && (
-        <div className="canvas-loading-overlay">
-          <div className="loading-card">
-            <div className="loading-spinner"></div>
-            <div className="loading-text">Importing map from OpenStreetMap...</div>
-            <div className="loading-bar-track">
-              <div className="loading-bar-fill"></div>
-            </div>
-            <div className="loading-subtext">Fetching street networks & node topology</div>
-          </div>
-        </div>
-      )}
+      {loading && <LoadingOverlay />}
       <div className="canvas-overlay">
         <span className="badge">visible: {visible}</span>
         <button

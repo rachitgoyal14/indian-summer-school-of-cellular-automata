@@ -51,7 +51,7 @@ export function DisruptionPanel({ api }: Props) {
 
   return (
     <div className="panel">
-      <h2>Disruptions (liberty degrees)</h2>
+      <h2>Disruptions</h2>
 
       {PROB_KINDS.map(({ kind, label }) => (
         <label className="field" key={kind}>
@@ -100,7 +100,7 @@ export function DisruptionPanel({ api }: Props) {
           }}
         />
         <span className="sub">
-          blockage duration × {repair.toFixed(1)} (lower = repairs faster)
+          Multiplier: {repair.toFixed(1)}× — lower values clear blockages sooner
         </span>
       </label>
 
@@ -138,8 +138,7 @@ export function DisruptionPanel({ api }: Props) {
       </div>
 
       <div className="sub turn-note">
-        <strong>Turn (change of direction):</strong> not a disruption — handled
-        by junction routing (see configurations above).
+        <strong>Turns</strong> are handled by junction routing, not disruptions.
       </div>
 
       <div className="btn-row">
