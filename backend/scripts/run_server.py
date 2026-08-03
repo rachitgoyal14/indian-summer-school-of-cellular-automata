@@ -29,7 +29,7 @@ import uvicorn  # noqa: E402
 
 
 def main() -> None:
-    host = os.environ.get("CA_HOST", "127.0.0.1")
+    host = os.environ.get("CA_HOST", "0.0.0.0")
     port = int(os.environ.get("CA_PORT", "8000"))
     uvicorn.run("src.server.ws_server:app", host=host, port=port, reload=False)
 

@@ -18,14 +18,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the entire backend source
 COPY . .
 
-# Expose the port the app runs on
-EXPOSE 8000
-
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 ENV CA_HOST=0.0.0.0
-ENV CA_PORT=8000
 
-# Command to run the server
-CMD ["python", "scripts/run_server.py"]
+# Railway injects PORT dynamically - map it to CA_PORT for the backend script
+# Default to 8000 for local development if PORT is not set
+CMD sh -c 'CA_PORT=${PORT:-8000} python scripts/run_server.py'

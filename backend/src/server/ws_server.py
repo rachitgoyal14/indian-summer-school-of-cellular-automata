@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import os
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator
 
@@ -223,10 +224,19 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="CA Rule 184 Traffic Simulator", lifespan=lifespan)
 
-# The React dev server runs on a different origin; allow it for local dev.
+# CORS configuration for cross-origin requests (e.g., Vercel frontend → Railway backend)
+# ALLOWED_ORIGINS env var should be a comma-separated list of allowed origins.
+# Default to "*" for initial testing, but lock down to specific Vercel domain(s) in production.
+allowed_origins_str = os.environ.get("ALLOWED_ORIGINS", "*")
+allowed_origins = (
+    [origin.strip() for origin in allowed_origins_str.split(",")]
+    if allowed_origins_str != "*"
+    else ["*"]
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

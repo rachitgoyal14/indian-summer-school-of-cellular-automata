@@ -11,10 +11,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ImportResultMessage, NetworkMessage, ScenarioMessage, ServerMessage, StateMessage } from "../types";
 
 function defaultWsUrl(): string {
-  // Same-origin in dev (Vite proxies /ws → backend). Override with ?ws=...
+  // In production (Vercel), use the environment variable pointing to Railway backend
+  // In development, use same-origin (Vite proxies /ws → backend)
+  // Can override with ?ws=... query param for testing
   const params = new URLSearchParams(window.location.search);
   const override = params.get("ws");
   if (override) return override;
+
+  // Check for Vite environment variable first (production deployment)
+  const envWsUrl = import.meta.env.VITE_BACKEND_WS_URL;
+  if (envWsUrl) return envWsUrl;
+
+  // Fallback to same-origin for local dev (Vite proxy handles this)
   const proto = window.location.protocol === "https:" ? "wss" : "ws";
   return `${proto}://${window.location.host}/ws`;
 }
