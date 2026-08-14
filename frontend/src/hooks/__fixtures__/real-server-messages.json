@@ -1,0 +1,2892 @@
+{
+ "network": {
+  "type": "network",
+  "config": "grid",
+  "roads": [
+   {
+    "id": 0,
+    "length": 40,
+    "geometry": {
+     "x0": -40.0,
+     "y0": -0.23333333333333334,
+     "dx": 1,
+     "dy": 0
+    },
+    "periodic": false,
+    "street_id": "h0_0",
+    "lane_index": 0
+   },
+   {
+    "id": 1,
+    "length": 40,
+    "geometry": {
+     "x0": -40.0,
+     "y0": 0.23333333333333334,
+     "dx": 1,
+     "dy": 0
+    },
+    "periodic": false,
+    "street_id": "h0_0",
+    "lane_index": 1
+   },
+   {
+    "id": 2,
+    "length": 40,
+    "geometry": {
+     "x0": 0.0,
+     "y0": -0.23333333333333334,
+     "dx": 1,
+     "dy": 0
+    },
+    "periodic": false,
+    "street_id": "h0_1",
+    "lane_index": 0
+   },
+   {
+    "id": 3,
+    "length": 40,
+    "geometry": {
+     "x0": 0.0,
+     "y0": 0.23333333333333334,
+     "dx": 1,
+     "dy": 0
+    },
+    "periodic": false,
+    "street_id": "h0_1",
+    "lane_index": 1
+   },
+   {
+    "id": 4,
+    "length": 40,
+    "geometry": {
+     "x0": 40.0,
+     "y0": -0.23333333333333334,
+     "dx": 1,
+     "dy": 0
+    },
+    "periodic": false,
+    "street_id": "h0_2",
+    "lane_index": 0
+   },
+   {
+    "id": 5,
+    "length": 40,
+    "geometry": {
+     "x0": 40.0,
+     "y0": 0.23333333333333334,
+     "dx": 1,
+     "dy": 0
+    },
+    "periodic": false,
+    "street_id": "h0_2",
+    "lane_index": 1
+   },
+   {
+    "id": 6,
+    "length": 40,
+    "geometry": {
+     "x0": -40.0,
+     "y0": 39.766666666666666,
+     "dx": 1,
+     "dy": 0
+    },
+    "periodic": false,
+    "street_id": "h1_0",
+    "lane_index": 0
+   },
+   {
+    "id": 7,
+    "length": 40,
+    "geometry": {
+     "x0": -40.0,
+     "y0": 40.233333333333334,
+     "dx": 1,
+     "dy": 0
+    },
+    "periodic": false,
+    "street_id": "h1_0",
+    "lane_index": 1
+   },
+   {
+    "id": 8,
+    "length": 40,
+    "geometry": {
+     "x0": 0.0,
+     "y0": 39.766666666666666,
+     "dx": 1,
+     "dy": 0
+    },
+    "periodic": false,
+    "street_id": "h1_1",
+    "lane_index": 0
+   },
+   {
+    "id": 9,
+    "length": 40,
+    "geometry": {
+     "x0": 0.0,
+     "y0": 40.233333333333334,
+     "dx": 1,
+     "dy": 0
+    },
+    "periodic": false,
+    "street_id": "h1_1",
+    "lane_index": 1
+   },
+   {
+    "id": 10,
+    "length": 40,
+    "geometry": {
+     "x0": 40.0,
+     "y0": 39.766666666666666,
+     "dx": 1,
+     "dy": 0
+    },
+    "periodic": false,
+    "street_id": "h1_2",
+    "lane_index": 0
+   },
+   {
+    "id": 11,
+    "length": 40,
+    "geometry": {
+     "x0": 40.0,
+     "y0": 40.233333333333334,
+     "dx": 1,
+     "dy": 0
+    },
+    "periodic": false,
+    "street_id": "h1_2",
+    "lane_index": 1
+   },
+   {
+    "id": 12,
+    "length": 40,
+    "geometry": {
+     "x0": 0.23333333333333334,
+     "y0": -40.0,
+     "dx": 0,
+     "dy": 1
+    },
+    "periodic": false,
+    "street_id": "v0_0",
+    "lane_index": 0
+   },
+   {
+    "id": 13,
+    "length": 40,
+    "geometry": {
+     "x0": -0.23333333333333334,
+     "y0": -40.0,
+     "dx": 0,
+     "dy": 1
+    },
+    "periodic": false,
+    "street_id": "v0_0",
+    "lane_index": 1
+   },
+   {
+    "id": 14,
+    "length": 40,
+    "geometry": {
+     "x0": 0.23333333333333334,
+     "y0": 0.0,
+     "dx": 0,
+     "dy": 1
+    },
+    "periodic": false,
+    "street_id": "v0_1",
+    "lane_index": 0
+   },
+   {
+    "id": 15,
+    "length": 40,
+    "geometry": {
+     "x0": -0.23333333333333334,
+     "y0": 0.0,
+     "dx": 0,
+     "dy": 1
+    },
+    "periodic": false,
+    "street_id": "v0_1",
+    "lane_index": 1
+   },
+   {
+    "id": 16,
+    "length": 40,
+    "geometry": {
+     "x0": 0.23333333333333334,
+     "y0": 40.0,
+     "dx": 0,
+     "dy": 1
+    },
+    "periodic": false,
+    "street_id": "v0_2",
+    "lane_index": 0
+   },
+   {
+    "id": 17,
+    "length": 40,
+    "geometry": {
+     "x0": -0.23333333333333334,
+     "y0": 40.0,
+     "dx": 0,
+     "dy": 1
+    },
+    "periodic": false,
+    "street_id": "v0_2",
+    "lane_index": 1
+   },
+   {
+    "id": 18,
+    "length": 40,
+    "geometry": {
+     "x0": 40.233333333333334,
+     "y0": -40.0,
+     "dx": 0,
+     "dy": 1
+    },
+    "periodic": false,
+    "street_id": "v1_0",
+    "lane_index": 0
+   },
+   {
+    "id": 19,
+    "length": 40,
+    "geometry": {
+     "x0": 39.766666666666666,
+     "y0": -40.0,
+     "dx": 0,
+     "dy": 1
+    },
+    "periodic": false,
+    "street_id": "v1_0",
+    "lane_index": 1
+   },
+   {
+    "id": 20,
+    "length": 40,
+    "geometry": {
+     "x0": 40.233333333333334,
+     "y0": 0.0,
+     "dx": 0,
+     "dy": 1
+    },
+    "periodic": false,
+    "street_id": "v1_1",
+    "lane_index": 0
+   },
+   {
+    "id": 21,
+    "length": 40,
+    "geometry": {
+     "x0": 39.766666666666666,
+     "y0": 0.0,
+     "dx": 0,
+     "dy": 1
+    },
+    "periodic": false,
+    "street_id": "v1_1",
+    "lane_index": 1
+   },
+   {
+    "id": 22,
+    "length": 40,
+    "geometry": {
+     "x0": 40.233333333333334,
+     "y0": 40.0,
+     "dx": 0,
+     "dy": 1
+    },
+    "periodic": false,
+    "street_id": "v1_2",
+    "lane_index": 0
+   },
+   {
+    "id": 23,
+    "length": 40,
+    "geometry": {
+     "x0": 39.766666666666666,
+     "y0": 40.0,
+     "dx": 0,
+     "dy": 1
+    },
+    "periodic": false,
+    "street_id": "v1_2",
+    "lane_index": 1
+   }
+  ],
+  "junctions": [
+   {
+    "id": 0,
+    "x": 0,
+    "y": 0
+   },
+   {
+    "id": 1,
+    "x": 40,
+    "y": 0
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "y": 40
+   },
+   {
+    "id": 3,
+    "x": 40,
+    "y": 40
+   }
+  ],
+  "streets": [
+   {
+    "id": "h0_0",
+    "baseline": {
+     "x0": -40,
+     "y0": 0,
+     "x1": 0,
+     "y1": 0
+    },
+    "lane_width": 0.4666666666666667,
+    "n_forward": 2,
+    "n_backward": 0,
+    "lanes": [
+     {
+      "road_id": 0,
+      "lane_index": 0,
+      "direction": "forward",
+      "left_road_id": null,
+      "right_road_id": 1
+     },
+     {
+      "road_id": 1,
+      "lane_index": 1,
+      "direction": "forward",
+      "left_road_id": 0,
+      "right_road_id": null
+     }
+    ]
+   },
+   {
+    "id": "h0_1",
+    "baseline": {
+     "x0": 0,
+     "y0": 0,
+     "x1": 40,
+     "y1": 0
+    },
+    "lane_width": 0.4666666666666667,
+    "n_forward": 2,
+    "n_backward": 0,
+    "lanes": [
+     {
+      "road_id": 2,
+      "lane_index": 0,
+      "direction": "forward",
+      "left_road_id": null,
+      "right_road_id": 3
+     },
+     {
+      "road_id": 3,
+      "lane_index": 1,
+      "direction": "forward",
+      "left_road_id": 2,
+      "right_road_id": null
+     }
+    ]
+   },
+   {
+    "id": "h0_2",
+    "baseline": {
+     "x0": 40,
+     "y0": 0,
+     "x1": 80,
+     "y1": 0
+    },
+    "lane_width": 0.4666666666666667,
+    "n_forward": 2,
+    "n_backward": 0,
+    "lanes": [
+     {
+      "road_id": 4,
+      "lane_index": 0,
+      "direction": "forward",
+      "left_road_id": null,
+      "right_road_id": 5
+     },
+     {
+      "road_id": 5,
+      "lane_index": 1,
+      "direction": "forward",
+      "left_road_id": 4,
+      "right_road_id": null
+     }
+    ]
+   },
+   {
+    "id": "h1_0",
+    "baseline": {
+     "x0": -40,
+     "y0": 40,
+     "x1": 0,
+     "y1": 40
+    },
+    "lane_width": 0.4666666666666667,
+    "n_forward": 2,
+    "n_backward": 0,
+    "lanes": [
+     {
+      "road_id": 6,
+      "lane_index": 0,
+      "direction": "forward",
+      "left_road_id": null,
+      "right_road_id": 7
+     },
+     {
+      "road_id": 7,
+      "lane_index": 1,
+      "direction": "forward",
+      "left_road_id": 6,
+      "right_road_id": null
+     }
+    ]
+   },
+   {
+    "id": "h1_1",
+    "baseline": {
+     "x0": 0,
+     "y0": 40,
+     "x1": 40,
+     "y1": 40
+    },
+    "lane_width": 0.4666666666666667,
+    "n_forward": 2,
+    "n_backward": 0,
+    "lanes": [
+     {
+      "road_id": 8,
+      "lane_index": 0,
+      "direction": "forward",
+      "left_road_id": null,
+      "right_road_id": 9
+     },
+     {
+      "road_id": 9,
+      "lane_index": 1,
+      "direction": "forward",
+      "left_road_id": 8,
+      "right_road_id": null
+     }
+    ]
+   },
+   {
+    "id": "h1_2",
+    "baseline": {
+     "x0": 40,
+     "y0": 40,
+     "x1": 80,
+     "y1": 40
+    },
+    "lane_width": 0.4666666666666667,
+    "n_forward": 2,
+    "n_backward": 0,
+    "lanes": [
+     {
+      "road_id": 10,
+      "lane_index": 0,
+      "direction": "forward",
+      "left_road_id": null,
+      "right_road_id": 11
+     },
+     {
+      "road_id": 11,
+      "lane_index": 1,
+      "direction": "forward",
+      "left_road_id": 10,
+      "right_road_id": null
+     }
+    ]
+   },
+   {
+    "id": "v0_0",
+    "baseline": {
+     "x0": 0,
+     "y0": -40,
+     "x1": 0,
+     "y1": 0
+    },
+    "lane_width": 0.4666666666666667,
+    "n_forward": 2,
+    "n_backward": 0,
+    "lanes": [
+     {
+      "road_id": 12,
+      "lane_index": 0,
+      "direction": "forward",
+      "left_road_id": null,
+      "right_road_id": 13
+     },
+     {
+      "road_id": 13,
+      "lane_index": 1,
+      "direction": "forward",
+      "left_road_id": 12,
+      "right_road_id": null
+     }
+    ]
+   },
+   {
+    "id": "v0_1",
+    "baseline": {
+     "x0": 0,
+     "y0": 0,
+     "x1": 0,
+     "y1": 40
+    },
+    "lane_width": 0.4666666666666667,
+    "n_forward": 2,
+    "n_backward": 0,
+    "lanes": [
+     {
+      "road_id": 14,
+      "lane_index": 0,
+      "direction": "forward",
+      "left_road_id": null,
+      "right_road_id": 15
+     },
+     {
+      "road_id": 15,
+      "lane_index": 1,
+      "direction": "forward",
+      "left_road_id": 14,
+      "right_road_id": null
+     }
+    ]
+   },
+   {
+    "id": "v0_2",
+    "baseline": {
+     "x0": 0,
+     "y0": 40,
+     "x1": 0,
+     "y1": 80
+    },
+    "lane_width": 0.4666666666666667,
+    "n_forward": 2,
+    "n_backward": 0,
+    "lanes": [
+     {
+      "road_id": 16,
+      "lane_index": 0,
+      "direction": "forward",
+      "left_road_id": null,
+      "right_road_id": 17
+     },
+     {
+      "road_id": 17,
+      "lane_index": 1,
+      "direction": "forward",
+      "left_road_id": 16,
+      "right_road_id": null
+     }
+    ]
+   },
+   {
+    "id": "v1_0",
+    "baseline": {
+     "x0": 40,
+     "y0": -40,
+     "x1": 40,
+     "y1": 0
+    },
+    "lane_width": 0.4666666666666667,
+    "n_forward": 2,
+    "n_backward": 0,
+    "lanes": [
+     {
+      "road_id": 18,
+      "lane_index": 0,
+      "direction": "forward",
+      "left_road_id": null,
+      "right_road_id": 19
+     },
+     {
+      "road_id": 19,
+      "lane_index": 1,
+      "direction": "forward",
+      "left_road_id": 18,
+      "right_road_id": null
+     }
+    ]
+   },
+   {
+    "id": "v1_1",
+    "baseline": {
+     "x0": 40,
+     "y0": 0,
+     "x1": 40,
+     "y1": 40
+    },
+    "lane_width": 0.4666666666666667,
+    "n_forward": 2,
+    "n_backward": 0,
+    "lanes": [
+     {
+      "road_id": 20,
+      "lane_index": 0,
+      "direction": "forward",
+      "left_road_id": null,
+      "right_road_id": 21
+     },
+     {
+      "road_id": 21,
+      "lane_index": 1,
+      "direction": "forward",
+      "left_road_id": 20,
+      "right_road_id": null
+     }
+    ]
+   },
+   {
+    "id": "v1_2",
+    "baseline": {
+     "x0": 40,
+     "y0": 40,
+     "x1": 40,
+     "y1": 80
+    },
+    "lane_width": 0.4666666666666667,
+    "n_forward": 2,
+    "n_backward": 0,
+    "lanes": [
+     {
+      "road_id": 22,
+      "lane_index": 0,
+      "direction": "forward",
+      "left_road_id": null,
+      "right_road_id": 23
+     },
+     {
+      "road_id": 23,
+      "lane_index": 1,
+      "direction": "forward",
+      "left_road_id": 22,
+      "right_road_id": null
+     }
+    ]
+   }
+  ]
+ },
+ "state": {
+  "type": "state",
+  "step": 1,
+  "running": false,
+  "steps_per_second": 12.0,
+  "mode": "live",
+  "lane_change_prob": 0.35,
+  "rear_safety_gap": 0,
+  "lane_change_require_gain": true,
+  "lane_changes": 0,
+  "roads": [
+   {
+    "id": 0,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 1,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 2,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 3,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 4,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 5,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 6,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 7,
+    "cells": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [
+     {
+      "f": 0,
+      "l": 1,
+      "t": "moto"
+     }
+    ],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.1
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 8,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 9,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 10,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 12,
+    "cells": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [
+     {
+      "f": 0,
+      "l": 1,
+      "t": "moto"
+     }
+    ],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.1
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 13,
+    "cells": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [
+     {
+      "f": 0,
+      "l": 1,
+      "t": "moto"
+     }
+    ],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.1
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 14,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 15,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 16,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 18,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 19,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 20,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 21,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   },
+   {
+    "id": 23,
+    "cells": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "vehicles": [],
+    "segments": [
+     {
+      "s": 0,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 10,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 20,
+      "n": 10,
+      "d": 0.0
+     },
+     {
+      "s": 30,
+      "n": 10,
+      "d": 0.0
+     }
+    ]
+   }
+  ],
+  "junctions": [
+   {
+    "id": 0,
+    "queue": 0
+   },
+   {
+    "id": 1,
+    "queue": 0
+   },
+   {
+    "id": 2,
+    "queue": 0
+   },
+   {
+    "id": 3,
+    "queue": 0
+   }
+  ],
+  "disruptions": [],
+  "analytics": {
+   "density": 0.003125,
+   "flow": 0.0,
+   "entropy": 0.240694,
+   "entropy_bits": 1.584963,
+   "blocked_fraction": 0.0,
+   "avg_queue": 0.0,
+   "lane_changes": 0,
+   "landscape": "trivial"
+  }
+ },
+ "scenario_result": {
+  "type": "scenario_result",
+  "mode": "batch",
+  "network": {
+   "type": "network",
+   "config": "grid",
+   "roads": [
+    {
+     "id": 0,
+     "length": 30,
+     "geometry": {
+      "x0": -30.0,
+      "y0": 0.0,
+      "dx": 1,
+      "dy": 0
+     },
+     "periodic": false,
+     "street_id": null,
+     "lane_index": 0
+    },
+    {
+     "id": 1,
+     "length": 30,
+     "geometry": {
+      "x0": 0.0,
+      "y0": 0.0,
+      "dx": 1,
+      "dy": 0
+     },
+     "periodic": false,
+     "street_id": null,
+     "lane_index": 0
+    },
+    {
+     "id": 2,
+     "length": 30,
+     "geometry": {
+      "x0": 30.0,
+      "y0": 0.0,
+      "dx": 1,
+      "dy": 0
+     },
+     "periodic": false,
+     "street_id": null,
+     "lane_index": 0
+    },
+    {
+     "id": 3,
+     "length": 30,
+     "geometry": {
+      "x0": -30.0,
+      "y0": 30.0,
+      "dx": 1,
+      "dy": 0
+     },
+     "periodic": false,
+     "street_id": null,
+     "lane_index": 0
+    },
+    {
+     "id": 4,
+     "length": 30,
+     "geometry": {
+      "x0": 0.0,
+      "y0": 30.0,
+      "dx": 1,
+      "dy": 0
+     },
+     "periodic": false,
+     "street_id": null,
+     "lane_index": 0
+    },
+    {
+     "id": 5,
+     "length": 30,
+     "geometry": {
+      "x0": 30.0,
+      "y0": 30.0,
+      "dx": 1,
+      "dy": 0
+     },
+     "periodic": false,
+     "street_id": null,
+     "lane_index": 0
+    },
+    {
+     "id": 6,
+     "length": 30,
+     "geometry": {
+      "x0": 0.0,
+      "y0": -30.0,
+      "dx": 0,
+      "dy": 1
+     },
+     "periodic": false,
+     "street_id": null,
+     "lane_index": 0
+    },
+    {
+     "id": 7,
+     "length": 30,
+     "geometry": {
+      "x0": 0.0,
+      "y0": 0.0,
+      "dx": 0,
+      "dy": 1
+     },
+     "periodic": false,
+     "street_id": null,
+     "lane_index": 0
+    },
+    {
+     "id": 8,
+     "length": 30,
+     "geometry": {
+      "x0": 0.0,
+      "y0": 30.0,
+      "dx": 0,
+      "dy": 1
+     },
+     "periodic": false,
+     "street_id": null,
+     "lane_index": 0
+    },
+    {
+     "id": 9,
+     "length": 30,
+     "geometry": {
+      "x0": 30.0,
+      "y0": -30.0,
+      "dx": 0,
+      "dy": 1
+     },
+     "periodic": false,
+     "street_id": null,
+     "lane_index": 0
+    },
+    {
+     "id": 10,
+     "length": 30,
+     "geometry": {
+      "x0": 30.0,
+      "y0": 0.0,
+      "dx": 0,
+      "dy": 1
+     },
+     "periodic": false,
+     "street_id": null,
+     "lane_index": 0
+    },
+    {
+     "id": 11,
+     "length": 30,
+     "geometry": {
+      "x0": 30.0,
+      "y0": 30.0,
+      "dx": 0,
+      "dy": 1
+     },
+     "periodic": false,
+     "street_id": null,
+     "lane_index": 0
+    }
+   ],
+   "junctions": [
+    {
+     "id": 0,
+     "x": 0,
+     "y": 0
+    },
+    {
+     "id": 1,
+     "x": 30,
+     "y": 0
+    },
+    {
+     "id": 2,
+     "x": 0,
+     "y": 30
+    },
+    {
+     "id": 3,
+     "x": 30,
+     "y": 30
+    }
+   ],
+   "streets": []
+  },
+  "trajectory": [
+   {
+    "step": 0,
+    "density": 0.0,
+    "flow": 0.0,
+    "entropy": 0.0,
+    "entropy_bits": 0.0,
+    "blocked_fraction": 0.0,
+    "avg_queue": 0.0,
+    "landscape": "trivial",
+    "lane_changes": 0,
+    "spawned": 0,
+    "exited": 0,
+    "vehicles": 0
+   },
+   {
+    "step": 1,
+    "density": 0.002778,
+    "flow": 0.0,
+    "entropy": -0.0,
+    "entropy_bits": -0.0,
+    "blocked_fraction": 0.0,
+    "avg_queue": 0.0,
+    "landscape": "trivial",
+    "lane_changes": 0,
+    "spawned": 1,
+    "exited": 0,
+    "vehicles": 1
+   },
+   {
+    "step": 2,
+    "density": 0.005556,
+    "flow": 0.002778,
+    "entropy": 0.193426,
+    "entropy_bits": 1.0,
+    "blocked_fraction": 0.0,
+    "avg_queue": 0.0,
+    "landscape": "trivial",
+    "lane_changes": 0,
+    "spawned": 1,
+    "exited": 0,
+    "vehicles": 2
+   }
+  ],
+  "snapshots": [
+   {
+    "step": 0,
+    "roads": [
+     {
+      "id": 0,
+      "vehicles": [],
+      "segments": [
+       {
+        "s": 0,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 10,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 20,
+        "n": 10,
+        "d": 0.0
+       }
+      ]
+     },
+     {
+      "id": 1,
+      "vehicles": [],
+      "segments": [
+       {
+        "s": 0,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 10,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 20,
+        "n": 10,
+        "d": 0.0
+       }
+      ]
+     },
+     {
+      "id": 2,
+      "vehicles": [],
+      "segments": [
+       {
+        "s": 0,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 10,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 20,
+        "n": 10,
+        "d": 0.0
+       }
+      ]
+     },
+     {
+      "id": 3,
+      "vehicles": [],
+      "segments": [
+       {
+        "s": 0,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 10,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 20,
+        "n": 10,
+        "d": 0.0
+       }
+      ]
+     },
+     {
+      "id": 4,
+      "vehicles": [],
+      "segments": [
+       {
+        "s": 0,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 10,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 20,
+        "n": 10,
+        "d": 0.0
+       }
+      ]
+     },
+     {
+      "id": 5,
+      "vehicles": [],
+      "segments": [
+       {
+        "s": 0,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 10,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 20,
+        "n": 10,
+        "d": 0.0
+       }
+      ]
+     },
+     {
+      "id": 6,
+      "vehicles": [],
+      "segments": [
+       {
+        "s": 0,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 10,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 20,
+        "n": 10,
+        "d": 0.0
+       }
+      ]
+     },
+     {
+      "id": 7,
+      "vehicles": [],
+      "segments": [
+       {
+        "s": 0,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 10,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 20,
+        "n": 10,
+        "d": 0.0
+       }
+      ]
+     },
+     {
+      "id": 8,
+      "vehicles": [],
+      "segments": [
+       {
+        "s": 0,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 10,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 20,
+        "n": 10,
+        "d": 0.0
+       }
+      ]
+     },
+     {
+      "id": 9,
+      "vehicles": [],
+      "segments": [
+       {
+        "s": 0,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 10,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 20,
+        "n": 10,
+        "d": 0.0
+       }
+      ]
+     },
+     {
+      "id": 10,
+      "vehicles": [],
+      "segments": [
+       {
+        "s": 0,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 10,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 20,
+        "n": 10,
+        "d": 0.0
+       }
+      ]
+     },
+     {
+      "id": 11,
+      "vehicles": [],
+      "segments": [
+       {
+        "s": 0,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 10,
+        "n": 10,
+        "d": 0.0
+       },
+       {
+        "s": 20,
+        "n": 10,
+        "d": 0.0
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "summary": {
+   "steps": 20,
+   "records": 21,
+   "peak_flow": 0.069444,
+   "mean_flow": 0.032143,
+   "steady_state_flow": 0.051263,
+   "min_entropy": 0.0,
+   "max_entropy": 0.572365,
+   "final_density": 0.091667,
+   "final_landscape": "trivial",
+   "peak_avg_queue": 0.75,
+   "total_lane_changes": 0,
+   "total_spawned": 27,
+   "total_exited": 0,
+   "events_fired": [],
+   "elapsed_seconds": 0.0028
+  },
+  "final_state": {
+   "__trimmed__": true,
+   "roads": [],
+   "junctions": []
+  }
+ },
+ "scenario_error": {
+  "type": "scenario_error",
+  "code": "INVALID_CONFIG",
+  "message": "'seed' is required so the run is reproducible",
+  "error": "'seed' is required so the run is reproducible"
+ }
+}

@@ -7,8 +7,20 @@
 // jump backward in time. A "network" message begins a new epoch (e.g. after
 // a reset, which legitimately restarts step at 0), so it clears the guard.
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { ImportResultMessage, NetworkMessage, ScenarioMessage, ServerMessage, StateMessage } from "../types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type {
+  ImportResultMessage,
+  LaneChangeParams,
+  NetworkMessage,
+  NetworkStreet,
+  ScenarioErrorMessage,
+  ScenarioMessage,
+  ScenarioRequest,
+  ScenarioResultMessage,
+  ServerMessage,
+  SimulationMode,
+  StateMessage,
+} from "../types";
 
 function defaultWsUrl(): string {
   // In production (Vercel), use the environment variable pointing to Railway backend
@@ -54,6 +66,29 @@ export interface SocketApi {
   importRegion: (placeName: string, cb: (result: ImportResultMessage) => void) => void;
   ping: () => void;
   setArtificialDelay: (seconds: number) => void;
+
+  // --- Multi-lane streets (Stage 12) ---
+  /** Lane groupings from the latest `network` message; [] when single-lane. */
+  streets: NetworkStreet[];
+
+  // --- Lane-change parameters ---
+  /** Current P(lane change), read back from the server's state messages. */
+  laneChangeProb: number;
+  /** Lateral transfers reported on the most recent tick. */
+  laneChanges: number;
+  /** Whether the latest state came from the live loop or a batch result. */
+  mode: SimulationMode;
+  /** Partial update: send only the fields you want changed. */
+  setLaneChangeParams: (params: LaneChangeParams) => void;
+
+  // --- Batch scenarios ---
+  /** True from the moment `runScenario` is sent until a reply or disconnect. */
+  scenarioRunning: boolean;
+  scenarioResult: ScenarioResultMessage | null;
+  scenarioError: ScenarioErrorMessage | null;
+  runScenario: (scenario: ScenarioRequest) => void;
+  clearScenarioResult: () => void;
+  clearScenarioError: () => void;
 }
 
 export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
@@ -63,6 +98,11 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
   const [state, setState] = useState<StateMessage | null>(null);
   const [rttMs, setRttMs] = useState<number | null>(null);
   const [staleDropped, setStaleDropped] = useState(0);
+  // Batch scenario slices. `running` is the spinner/disable flag; it must clear
+  // on either reply *and* on disconnect, or the UI stays stuck forever.
+  const [scenarioRunning, setScenarioRunning] = useState(false);
+  const [scenarioResult, setScenarioResult] = useState<ScenarioResultMessage | null>(null);
+  const [scenarioError, setScenarioError] = useState<ScenarioErrorMessage | null>(null);
 
   // Guard state kept in refs so it never triggers re-renders.
   const lastStepRef = useRef<number>(-1);
@@ -87,11 +127,13 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
       ws.onopen = () => setConnected(true);
 
       ws.onclose = () => {
+        if (closed) return; // unmounting: don't touch state we no longer own
         setConnected(false);
-        if (!closed) {
-          // Simple fixed-interval reconnect so a server restart self-heals.
-          reconnectTimer = window.setTimeout(connect, 1000);
-        }
+        // A batch reply can never arrive over a dead socket, so release the
+        // flag rather than leaving the UI spinning on a request that is gone.
+        setScenarioRunning(false);
+        // Simple fixed-interval reconnect so a server restart self-heals.
+        reconnectTimer = window.setTimeout(connect, 1000);
       };
 
       ws.onmessage = (ev) => {
@@ -112,6 +154,20 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
           } else {
             console.warn("[WebSocket] No callback registered for import_result");
           }
+          return;
+        }
+        if (msg.type === "scenario_result") {
+          // A new run replaces the previous result and clears any stale error.
+          setScenarioRunning(false);
+          setScenarioError(null);
+          setScenarioResult(msg as ScenarioResultMessage);
+          return;
+        }
+        if (msg.type === "scenario_error") {
+          // Surfaced as its own state, never swallowed: the user asked for a
+          // run and is entitled to know exactly why it did not happen.
+          setScenarioRunning(false);
+          setScenarioError(msg as ScenarioErrorMessage);
           return;
         }
         if (msg.type === "network") {
@@ -239,6 +295,45 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
     [send],
   );
 
+  // --- Stage 12: lane-change parameters and batch scenarios ---
+  const setLaneChangeParams = useCallback(
+    (params: LaneChangeParams) =>
+      // Only the keys actually supplied go on the wire, so a partial update
+      // stays partial and never resets a parameter the caller did not mention.
+      send({
+        type: "set_lane_change_params",
+        ...(params.probability !== undefined ? { probability: params.probability } : {}),
+        ...(params.rear_safety_gap !== undefined
+          ? { rear_safety_gap: params.rear_safety_gap }
+          : {}),
+        ...(params.require_gain !== undefined ? { require_gain: params.require_gain } : {}),
+      }),
+    [send],
+  );
+
+  const runScenario = useCallback(
+    (scenario: ScenarioRequest) => {
+      // Flag first: the button must go busy on click, not on server ack. Any
+      // previous error is dropped here so the user never reads a stale one
+      // next to a run that is currently in flight.
+      setScenarioRunning(true);
+      setScenarioError(null);
+      send({ type: "run_scenario", scenario });
+    },
+    [send],
+  );
+
+  const clearScenarioResult = useCallback(() => setScenarioResult(null), []);
+  const clearScenarioError = useCallback(() => setScenarioError(null), []);
+
+  // A server with no street support omits the block entirely; a single-lane
+  // network sends an empty one. Both collapse to [] so callers never branch.
+  const streets = useMemo(() => network?.streets ?? [], [network]);
+
+  const laneChangeProb = state?.lane_change_prob ?? 0;
+  const laneChanges = state?.lane_changes ?? state?.analytics?.lane_changes ?? 0;
+  const mode: SimulationMode = state?.mode ?? "live";
+
   return {
     connected,
     network,
@@ -265,5 +360,16 @@ export function useSimulationSocket(url: string = defaultWsUrl()): SocketApi {
     importRegion,
     ping,
     setArtificialDelay,
+    streets,
+    laneChangeProb,
+    laneChanges,
+    mode,
+    setLaneChangeParams,
+    scenarioRunning,
+    scenarioResult,
+    scenarioError,
+    runScenario,
+    clearScenarioResult,
+    clearScenarioError,
   };
 }
