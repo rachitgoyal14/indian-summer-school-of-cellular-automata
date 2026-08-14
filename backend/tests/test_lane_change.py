@@ -488,9 +488,12 @@ def test_prob_survives_scenario_roundtrip():
 
 def test_websocket_control_channel():
     from fastapi.testclient import TestClient
-    from src.server.ws_server import app, manager
+    # reach the manager through the module: test_server.py rebinds
+    # `ws_server.manager`, so a by-value import goes stale mid-session
+    from src.server import ws_server
+    from src.server.ws_server import app
 
-    manager.sim = Simulation(config="one_way", density=0.2, seed=1)
+    ws_server.manager.sim = Simulation(config="one_way", density=0.2, seed=1)
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
         ws.receive_json()  # network
         ws.receive_json()  # state
@@ -518,6 +521,6 @@ def test_websocket_control_channel():
         assert state["lane_change_prob"] == 0.35
         assert state["lane_change_require_gain"] is False
 
-    assert manager.sim.network.lane_change_prob == 0.35
-    assert manager.sim.network.rear_safety_gap == 2
-    assert manager.sim.network.lane_change_require_gain is False
+    assert ws_server.manager.sim.network.lane_change_prob == 0.35
+    assert ws_server.manager.sim.network.rear_safety_gap == 2
+    assert ws_server.manager.sim.network.lane_change_require_gain is False

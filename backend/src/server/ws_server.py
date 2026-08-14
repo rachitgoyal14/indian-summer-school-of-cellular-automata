@@ -21,9 +21,11 @@ Client → server control messages
   {"type": "reset", "density": 0.3, "seed": 1}   rebuild initial state
   {"type": "set_speed", "steps_per_second": 20}  change tick rate
   {"type": "set_lane_change_params",             lateral-transfer settings; any
-   "prob": 0.3, "rear_gap": 1,                   subset of the three keys may be
-   "require_gain": true}                         sent (partial update)
-  {"type": "set_lane_change_prob", "p": 0.3}     older alias for "prob" alone
+   "probability": 0.3, "rear_safety_gap": 1,     subset of the three keys may be
+   "require_gain": true}                         sent (partial update). The
+                                                 short aliases "prob"/"rear_gap"
+                                                 are accepted too.
+  {"type": "set_lane_change_prob", "p": 0.3}     older alias for "probability"
   {"type": "ping", "t": 1234.5}                  → server replies {"type":"pong","t":1234.5}
   {"type": "set_delay", "seconds": 0.2}          artificial per-send delay (latency testing)
   {"type": "run_scenario", "scenario": {...}}    batch "what-if" run; replies to the
@@ -54,6 +56,26 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.engine.simulation import Simulation
 from src.engine.scenario_runner import ScenarioError, run_scenario
 from src.server.state_serializer import serialize_network, serialize_state
+
+
+def _first(msg: dict[str, Any], *keys: str) -> Any:
+    """First key present in `msg`, so partial updates stay partial."""
+    for key in keys:
+        if msg.get(key) is not None:
+            return msg[key]
+    return None
+
+
+def _scenario_error(message: str, code: str) -> dict[str, Any]:
+    """
+    A batch failure the client can branch on.
+
+    `code` is the stable tag (`ALREADY_RUNNING`, `INVALID_CONFIG`,
+    `OVERSIZED_REQUEST`, `INTERNAL_ERROR`); `message` is for humans. `error`
+    repeats the message so a client written against the first cut still works.
+    """
+    return {"type": "scenario_error", "code": code,
+            "message": message, "error": message}
 
 
 class SimulationManager:
@@ -140,22 +162,34 @@ class SimulationManager:
         show a busy state between `run_scenario` and its reply.
         """
         if self._batch_running:
-            return {
-                "type": "scenario_error",
-                "error": "a scenario is already running; wait for it to finish",
-            }
+            return _scenario_error(
+                "a scenario is already running; wait for it to finish",
+                "ALREADY_RUNNING",
+            )
         self._batch_running = True
         try:
             # to_thread keeps the event loop — and the live tick — responsive
             result = await asyncio.to_thread(run_scenario, spec)
         except ScenarioError as exc:
-            return {"type": "scenario_error", "error": str(exc)}
+            return _scenario_error(str(exc), exc.code)
         except Exception as exc:  # a bad scenario must never kill the server
-            return {"type": "scenario_error",
-                    "error": f"scenario failed: {type(exc).__name__}: {exc}"}
+            return _scenario_error(
+                f"scenario failed: {type(exc).__name__}: {exc}", "INTERNAL_ERROR"
+            )
         finally:
             self._batch_running = False
-        return {"type": "scenario_result", **result}
+
+        # `final_state` is a scenario dict, ready for load_scenario. `network`
+        # is the same world in the live "network" message shape, so the client
+        # can render the result without special-casing a second schema.
+        preview = Simulation()
+        preview.apply_scenario(result["final_state"])
+        return {
+            "type": "scenario_result",
+            "mode": "batch",
+            "network": serialize_network(preview),
+            **result,
+        }
 
     # ------------------------------------------------------------- controls
     async def handle_message(self, msg: dict[str, Any]) -> dict[str, Any] | None:
@@ -199,11 +233,14 @@ class SimulationManager:
                     lane_change_require_gain=msg.get("lane_change_require_gain"),
                 )
             elif t == "set_lane_change_params":
-                # partial update: only the keys present are changed
+                # Partial update: only the keys present are changed. Both the
+                # long names and the short aliases are accepted so neither
+                # spelling of the client is wrong.
                 self.sim.set_lane_change_params(
-                    prob=msg.get("prob"),
-                    rear_gap=msg.get("rear_gap"),
-                    require_gain=msg.get("require_gain"),
+                    prob=_first(msg, "probability", "prob"),
+                    rear_gap=_first(msg, "rear_safety_gap", "rear_gap"),
+                    require_gain=_first(msg, "require_gain",
+                                        "lane_change_require_gain"),
                 )
             elif t == "set_lane_change_prob":
                 # kept for older clients; equivalent to set_lane_change_params

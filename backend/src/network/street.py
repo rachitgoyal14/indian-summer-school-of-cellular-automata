@@ -116,11 +116,43 @@ class Street:
     links are rewired on every mutation, so the group is always consistent.
     """
 
-    def __init__(self, id: str, lanes: Iterable[Lane] = ()) -> None:
+    def __init__(
+        self,
+        id: str,
+        lanes: Iterable[Lane] = (),
+        baseline: tuple[float, float, float, float] | None = None,
+        lane_width: float = 0.0,
+    ) -> None:
         self.id = str(id)
+        # The street's centreline as (x0, y0, x1, y1), and the lane width the
+        # lanes were offset by. Recorded by the builders rather than inferred,
+        # so the renderer can draw one road surface with markings on it instead
+        # of reverse-engineering a centreline from N offset lanes.
+        self.baseline = baseline
+        self.lane_width = float(lane_width)
         self._lanes: list[Lane] = []
         for lane in lanes:
             self.add_lane(lane)
+
+    def baseline_geometry(self) -> dict[str, float] | None:
+        """
+        The centreline as `{x0, y0, x1, y1}`, or a best effort from a lane.
+
+        Streets built by hand (tests, map edits) carry no baseline; falling
+        back to the first lane keeps the renderer from having to special-case
+        them, at the cost of being off by half the street's width.
+        """
+        if self.baseline is not None:
+            x0, y0, x1, y1 = self.baseline
+            return {"x0": x0, "y0": y0, "x1": x1, "y1": y1}
+        if not self._lanes:
+            return None
+        road = self._lanes[0].road
+        return {
+            "x0": road.x0, "y0": road.y0,
+            "x1": road.x0 + road.dx * road.length,
+            "y1": road.y0 + road.dy * road.length,
+        }
 
     # ------------------------------------------------------------- building
     @classmethod

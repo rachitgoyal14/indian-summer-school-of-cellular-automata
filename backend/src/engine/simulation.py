@@ -53,6 +53,9 @@ class Simulation:
         self.build_kwargs = build_kwargs or {}
 
         self.running = True
+        # "live" for the streaming simulation the server ticks; the batch
+        # runner labels its own result "batch" rather than mutating this.
+        self.mode = "live"
         self.step_count = 0
         self._last_moved = 0
         self._rng = np.random.default_rng(seed)
@@ -362,12 +365,26 @@ class Simulation:
         self.disruptions = DisruptionManager(self.network)
         self._apply_disruption_settings()
 
+        # Street-level lane reporting, so the UI can say "imported 123
+        # streets, 0 multi-lane" rather than only counting roads. A street is
+        # "multi-lane" when it has more than one lane in a single direction —
+        # a two-way street with one lane each way is not.
+        widths = [
+            max(len(s.lanes_in_direction("forward")),
+                len(s.lanes_in_direction("backward")))
+            for s in net.streets.values()
+        ]
         return {
             "ok": True,
             "error": None,
             "roads": len(net.roads),
             "junctions": len(net.junctions),
             "total_cells": sum(r.length for r in net.roads.values()),
+            "streets": len(net.streets),
+            "multi_lane_streets": sum(1 for w in widths if w > 1),
+            "max_lanes_per_direction": max(widths, default=0),
+            "two_way_streets": sum(1 for s in net.streets.values()
+                                   if s.is_two_way()),
         }
 
 

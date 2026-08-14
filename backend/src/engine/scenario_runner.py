@@ -87,7 +87,18 @@ SCHEDULE_ACTIONS = {
 
 
 class ScenarioError(ValueError):
-    """An invalid scenario specification. Carries a client-safe message."""
+    """
+    An invalid scenario specification. Carries a client-safe message.
+
+    `code` is a stable machine-readable tag the frontend can branch on without
+    parsing prose: `INVALID_CONFIG` for anything malformed, `OVERSIZED_REQUEST`
+    when the run would exceed the result ceilings. The server adds
+    `ALREADY_RUNNING` when a batch is in flight.
+    """
+
+    def __init__(self, message: str, code: str = "INVALID_CONFIG") -> None:
+        super().__init__(message)
+        self.code = code
 
 
 # --------------------------------------------------------------------- spec
@@ -137,12 +148,14 @@ def validate(spec: dict[str, Any]) -> dict[str, Any]:
     if steps // record_every + 1 > MAX_RECORDS:
         raise ScenarioError(
             f"trajectory would hold more than {MAX_RECORDS} records; "
-            f"raise 'record_every'"
+            f"raise 'record_every'",
+            code="OVERSIZED_REQUEST",
         )
     if snapshot_every and steps // snapshot_every + 1 > MAX_SNAPSHOTS:
         raise ScenarioError(
             f"run would hold more than {MAX_SNAPSHOTS} vehicle snapshots; "
-            f"raise 'snapshot_every' or set it to 0"
+            f"raise 'snapshot_every' or set it to 0",
+            code="OVERSIZED_REQUEST",
         )
 
     if spec.get("seed") is None:

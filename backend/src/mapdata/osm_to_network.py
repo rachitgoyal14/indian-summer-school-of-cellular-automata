@@ -288,7 +288,12 @@ def osm_to_network(
         if n_slots <= 0:
             continue
 
-        street = Street(seg["street_id"])
+        street = Street(
+            seg["street_id"],
+            baseline=(seg["x0"], seg["y0"],
+                      seg["x0"] + base_dx * nc, seg["y0"] + base_dy * nc),
+            lane_width=LANE_WIDTH_M,
+        )
         # (direction, count, origin, step, head junction, tail junction)
         groups = (
             (FORWARD, n_fwd, (seg["x0"], seg["y0"]),

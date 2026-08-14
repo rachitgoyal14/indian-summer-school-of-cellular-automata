@@ -31,7 +31,10 @@ from src.engine.scenario_runner import (
 )
 from src.engine.simulation import Simulation
 from src.network.street import FORWARD, Street
-from src.server.ws_server import app, manager
+# NOTE: reach the manager through the module. test_server.py rebinds
+# `ws_server.manager`, so a by-value import goes stale mid-session.
+from src.server import ws_server
+from src.server.ws_server import app
 
 
 # --------------------------------------------------------------------- helpers
@@ -403,8 +406,8 @@ def test_large_network_runs_in_time():
 
 # ------------------------------------------------------------------- websocket
 def test_websocket_run_scenario():
-    manager.sim = Simulation(config="one_way", density=0.2, seed=1)
-    manager.sim.pause()
+    ws_server.manager.sim = Simulation(config="one_way", density=0.2, seed=1)
+    ws_server.manager.sim.pause()
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
         ws.receive_json()  # network
         ws.receive_json()  # state
@@ -422,16 +425,16 @@ def test_websocket_run_scenario():
         state = ws.receive_json()
         assert state["type"] == "state" and state["step"] == 40
 
-    assert manager.sim.step_count == 40
+    assert ws_server.manager.sim.step_count == 40
 
 
 def test_websocket_scenario_error_does_not_kill_the_server():
-    manager.sim = Simulation(config="one_way", density=0.2, seed=1)
-    manager.sim.pause()
+    ws_server.manager.sim = Simulation(config="one_way", density=0.2, seed=1)
+    ws_server.manager.sim.pause()
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
         ws.receive_json()
         ws.receive_json()
-        before = manager.sim.to_scenario()
+        before = ws_server.manager.sim.to_scenario()
 
         ws.send_json({"type": "run_scenario",
                       "scenario": {"config": "grid", "batch": {"steps": 10}}})
@@ -442,7 +445,7 @@ def test_websocket_scenario_error_does_not_kill_the_server():
         # the socket and the live simulation are both still healthy
         ws.send_json({"type": "ping", "t": 1.5})
         assert ws.receive_json() == {"type": "pong", "t": 1.5}
-        assert manager.sim.to_scenario() == before
+        assert ws_server.manager.sim.to_scenario() == before
 
 
 def test_live_stream_continues_during_a_batch_run():
@@ -452,8 +455,8 @@ def test_live_stream_continues_during_a_batch_run():
     — every other message it sees is an ordinary *live* state, never one of
     the batch's 400 internal steps.
     """
-    manager.sim = Simulation(config="grid", density=0.3, seed=2)
-    manager.sim.set_speed(60.0)
+    ws_server.manager.sim = Simulation(config="grid", density=0.3, seed=2)
+    ws_server.manager.sim.set_speed(60.0)
     with TestClient(app) as client, \
             client.websocket_connect("/ws") as a, \
             client.websocket_connect("/ws") as b:
@@ -489,12 +492,12 @@ def test_live_stream_continues_during_a_batch_run():
             {m.get("type") for m in seen}
         # live ticks during the run, not 400 batch broadcasts
         assert len(seen) < 100, f"{len(seen)} messages arrived during the batch"
-        assert all(m["step"] <= manager.sim.step_count for m in seen)
+        assert all(m["step"] <= ws_server.manager.sim.step_count for m in seen)
 
 
 def test_websocket_rejects_a_concurrent_batch():
-    manager.sim = Simulation(config="one_way", density=0.2, seed=1)
-    manager.sim.pause()
+    ws_server.manager.sim = Simulation(config="one_way", density=0.2, seed=1)
+    ws_server.manager.sim.pause()
     with TestClient(app) as client, \
             client.websocket_connect("/ws") as a, \
             client.websocket_connect("/ws") as b:

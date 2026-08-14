@@ -62,6 +62,8 @@ def save_scenario(sim) -> dict[str, Any]:
     streets = [
         {
             "id": s.id,
+            "baseline": list(s.baseline) if s.baseline is not None else None,
+            "lane_width": s.lane_width,
             "lanes": [
                 {"road_id": lane.road.id, "lane_index": lane.lane_index,
                  "direction": lane.direction}
@@ -137,7 +139,12 @@ def network_from_scenario(data: dict[str, Any]) -> Network:
                                   turns=turns, lane_links=lane_links))
     # `streets` is absent from pre-Stage-9 scenarios; those load as before.
     for sd in data.get("streets", []):
-        street = Street(str(sd["id"]))
+        baseline = sd.get("baseline")
+        street = Street(
+            str(sd["id"]),
+            baseline=tuple(baseline) if baseline else None,
+            lane_width=float(sd.get("lane_width", 0.0)),
+        )
         for ld in sd["lanes"]:
             street.add_lane(Lane(
                 road=net.roads[int(ld["road_id"])],

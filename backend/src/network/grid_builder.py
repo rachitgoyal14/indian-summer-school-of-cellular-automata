@@ -157,7 +157,11 @@ def build_grid(rows: int = 2, cols: int = 2, seg: int = 40,
     ) -> None:
         """Add one slot's lanes as a Street (or a bare Road when lanes == 1)."""
         nonlocal rid
-        street = Street(name) if lanes > 1 else None
+        street = Street(
+            name,
+            baseline=(x0, y0, x0 + dx * seg, y0 + dy * seg),
+            lane_width=LANE_WIDTH_CELLS,
+        ) if lanes > 1 else None
         ids: list[int] = []
         for i in range(lanes):
             # lanes == 1 sits exactly on the baseline, so the single-lane grid

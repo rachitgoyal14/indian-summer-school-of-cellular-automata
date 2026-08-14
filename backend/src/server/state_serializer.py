@@ -42,6 +42,39 @@ from src.engine.simulation import Simulation
 from src.analytics.heatmap import segment_densities
 
 
+def serialize_streets(sim: Simulation) -> list[dict[str, Any]]:
+    """
+    The lane groupings, so the renderer can draw one road surface per street
+    with lane markings on it instead of inferring adjacency from N nearly
+    overlapping road lines.
+
+    Empty for a single-lane network — a client that ignores this key still
+    renders every lane as its own road, which is what it did before.
+    """
+    streets = []
+    for street in sim.network.streets_ordered():
+        streets.append({
+            "id": street.id,
+            "baseline": street.baseline_geometry(),
+            "lane_width": street.lane_width,
+            "n_forward": len(street.lanes_in_direction("forward")),
+            "n_backward": len(street.lanes_in_direction("backward")),
+            "lanes": [
+                {
+                    "road_id": lane.road.id,
+                    "lane_index": lane.lane_index,
+                    "direction": lane.direction,
+                    "left_road_id": (lane.left_lane.road.id
+                                     if lane.left_lane else None),
+                    "right_road_id": (lane.right_lane.road.id
+                                      if lane.right_lane else None),
+                }
+                for lane in street.all_lanes()
+            ],
+        })
+    return streets
+
+
 def serialize_network(sim: Simulation) -> dict[str, Any]:
     return {
         "type": "network",
@@ -52,6 +85,9 @@ def serialize_network(sim: Simulation) -> dict[str, Any]:
                 "length": r.length,
                 "geometry": r.geometry(),
                 "periodic": r.periodic,
+                # which street this lane belongs to, if any (null = plain road)
+                "street_id": r.street_id,
+                "lane_index": r.lane_index,
             }
             for r in sim.roads
         ],
@@ -59,6 +95,7 @@ def serialize_network(sim: Simulation) -> dict[str, Any]:
             {"id": j.id, "x": j.x, "y": j.y}
             for j in sim.network.junctions.values()
         ],
+        "streets": serialize_streets(sim),
     }
 
 
@@ -70,9 +107,14 @@ def serialize_state(sim: Simulation) -> dict[str, Any]:
         "step": sim.step_count,
         "running": sim.running,
         "steps_per_second": sim.steps_per_second,
+        # "live" while the tick loop is streaming; a batch result is labelled
+        # "batch" at its own top level, so the UI can tell the two apart.
+        "mode": sim.mode,
         "lane_change_prob": sim.lane_change_prob,
         "rear_safety_gap": sim.rear_safety_gap,
         "lane_change_require_gain": sim.lane_change_require_gain,
+        # lateral transfers on this step; also mirrored inside "analytics"
+        "lane_changes": sim.lane_changes(),
         "roads": [
             {
                 "id": r.id,
