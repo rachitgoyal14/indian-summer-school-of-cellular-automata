@@ -20,6 +20,12 @@ export interface NetworkRoad {
   lane_index?: number;
   /** Street name from OSM, when the import had one. Used for map labels. */
   name?: string;
+  /**
+   * Projected polyline this lane follows, in the same units as `geometry`.
+   * Absent or shorter than 3 points means a straight road, and the renderer
+   * walks `x0 + k*(dx, dy)` as before.
+   */
+  path?: Array<[number, number]>;
 }
 
 export interface NetworkJunction {

@@ -66,6 +66,10 @@ class Road:
     # human-readable name from OSM (`name=*`), for map labels. Purely
     # descriptive — nothing in the engine reads it.
     name: str = ""
+    # Projected polyline this lane follows, [(x, y), ...] in the same units as
+    # x0/y0. Empty means a straight road: the renderer walks x0 + k*(dx, dy).
+    # Populated by the OSM importer so curved ways stay curved (Stage 16).
+    path: list[tuple[float, float]] = field(default_factory=list)
 
     def occupancy(self) -> np.ndarray:
         occ = np.zeros(self.length, dtype=np.int8)

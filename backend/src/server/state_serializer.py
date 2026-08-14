@@ -89,6 +89,8 @@ def serialize_network(sim: Simulation) -> dict[str, Any]:
                 "street_id": r.street_id,
                 "lane_index": r.lane_index,
                 "name": r.name,
+                # polyline for curved roads; [] = straight (Stage 16)
+                "path": [[round(x, 2), round(y, 2)] for x, y in r.path],
             }
             for r in sim.roads
         ],

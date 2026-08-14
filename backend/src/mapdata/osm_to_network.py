@@ -50,6 +50,8 @@ from src.core.junction import Junction
 from src.network.network import Network, Road
 from src.network.lane_geometry import (
     LANE_WIDTH_M,
+    perpendicular_right,
+    slot_offset,
     offset_origin,
     street_slot,
 )
@@ -57,6 +59,9 @@ from src.network.street import BACKWARD, FORWARD, Street
 from src.mapdata.cell_scale import meters_to_cells, haversine, MIN_CELLS
 
 logger = logging.getLogger(__name__)
+
+#: cap on stored polyline points per lane, to bound the network message
+MAX_PATH_POINTS = 50
 
 ONEWAY_TRUE = ("yes", "1", "true", "-1")
 
@@ -251,6 +256,16 @@ def osm_to_network(
             dx = (x1 - x0) / n_cells
             dy = (y1 - y0) / n_cells
 
+            # The projected node chain, kept so curved ways can be drawn as
+            # curves instead of a chord between their endpoints. Subsampled so
+            # a long, densely-noded way cannot bloat the network message.
+            chain = [project(nodes[n]["lat"], nodes[n]["lon"])
+                     for n in seg_nodes if n in nodes]
+            if len(chain) > MAX_PATH_POINTS:
+                stride = (len(chain) - 1) / (MAX_PATH_POINTS - 1)
+                chain = [chain[min(len(chain) - 1, round(i * stride))]
+                         for i in range(MAX_PATH_POINTS)]
+
             seg_info = {
                 "start_jid": start_jid,
                 "end_jid": end_jid,
@@ -263,6 +278,7 @@ def osm_to_network(
                 "n_forward": n_forward,
                 "n_backward": n_backward,
                 "street_id": f"w{way.get('id')}_s{seg_i}",
+                "path": chain,
             }
             segments.append(seg_info)
 
@@ -309,10 +325,14 @@ def osm_to_network(
                 lx, ly = offset_origin(
                     ox, oy, base_dx, base_dy, slot, n_slots, LANE_WIDTH_M
                 )
+                lane_path = _offset_path(
+                    seg["path"], slot, n_slots, LANE_WIDTH_M,
+                    reverse=direction == BACKWARD,
+                )
                 road = Road(
                     id=rid, length=nc, x0=lx, y0=ly, dx=ddx, dy=ddy,
                     periodic=False, head_junction=head, tail_junction=tail,
-                    name=seg["name"],
+                    name=seg["name"], path=lane_path,
                 )
                 street.add_road(road, direction=direction, lane_index=i)
                 junction_incoming[head].append(rid)
@@ -436,6 +456,34 @@ def osm_to_network(
         n_roads, n_junctions, total_cells,
     )
     return net
+
+
+def _offset_path(
+    chain: list[tuple[float, float]],
+    slot: int,
+    n_slots: int,
+    lane_width: float,
+    reverse: bool,
+) -> list[tuple[float, float]]:
+    """
+    Shift a segment's node chain sideways onto one lane's slot.
+
+    Each point moves along the local perpendicular, taken from the direction of
+    its neighbours so the offset follows the bend rather than one global chord.
+    A chain of fewer than 2 points describes nothing, and a straight 2-point
+    chain adds nothing the (x0, y0, dx, dy) fields do not already say, so both
+    return empty and the renderer falls back to a straight road.
+    """
+    if len(chain) < 3:
+        return []
+    off = slot_offset(slot, n_slots, lane_width)
+    out: list[tuple[float, float]] = []
+    for i, (x, y) in enumerate(chain):
+        ax, ay = chain[max(0, i - 1)]
+        bx, by = chain[min(len(chain) - 1, i + 1)]
+        px, py = perpendicular_right(bx - ax, by - ay)
+        out.append((x + px * off, y + py * off))
+    return out[::-1] if reverse else out
 
 
 def _group_by_street(net: Network, road_ids: list[int]) -> list[list[int]]:

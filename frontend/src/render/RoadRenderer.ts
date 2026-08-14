@@ -20,6 +20,7 @@
 import { Application, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import type { NetworkMessage, NetworkRoad, NetworkStreet, StateMessage } from "../types";
 import { DAY_THEME, DISRUPTION_COLORS, type Theme } from "./theme";
+import { cumulative, midPath, offsetPath, sampleAt, smooth, type Pt } from "./polyline";
 
 export { DISRUPTION_COLORS };
 
@@ -128,6 +129,10 @@ export class RoadRenderer {
   private editClickHandler: ((loc: EditClick) => void) | null = null;
   /** Extent of the last network, so an unchanged map keeps the user's view. */
   private lastExtent: string | null = null;
+  /** road id → its centreline in world px; cleared with each new network. */
+  private pathCache = new Map<number, { pts: Pt[]; acc: number[] }>();
+  /** Scale the labels were last laid out at; they only depend on zoom. */
+  private lastLabelScale = -1;
 
   private constructor(app: Application) {
     this.app = app;
@@ -192,7 +197,7 @@ export class RoadRenderer {
     this.drawMarkings();
     this.drawNavGraph();
     this.drawHeatmap();
-    this.drawLabels();
+    this.drawLabels(true);
     if (this.lastState) this.setState(this.lastState);
   }
 
@@ -238,6 +243,7 @@ export class RoadRenderer {
   // ----------------------------------------------------------------- network
   setNetwork(network: NetworkMessage) {
     this.network = network;
+    this.pathCache.clear();
     this.streetOfRoad.clear();
     for (const street of network.streets ?? []) {
       for (const lane of street.lanes) this.streetOfRoad.set(lane.road_id, street);
@@ -246,7 +252,8 @@ export class RoadRenderer {
     this.drawJunctions();
     this.drawMarkings();
     this.drawNavGraph();
-    this.drawLabels();
+    this.lastLabelScale = -1;
+    this.drawLabels(true);
     this.heatmapLayer.clear();
     this.disruptionLayer.clear();
     this.hideExtraSprites(0);
@@ -280,6 +287,59 @@ export class RoadRenderer {
     const street = this.streetOfRoad.get(road.id);
     const units = street && street.lane_width > 0 ? street.lane_width : DEFAULT_LANE_UNITS;
     return Math.max(units * CELL_SIZE, 3);
+  }
+
+  /**
+   * A road's centreline in world pixels. Curved roads use the polyline the
+   * importer preserved; straight ones collapse to their two endpoints, so the
+   * same code draws both and there is no special case.
+   */
+  private pathOf(road: NetworkRoad): Pt[] {
+    return this.geomOf(road).pts;
+  }
+
+  /**
+   * Path *and* its cumulative arc lengths, cached together. Smoothing turns a
+   * 32-node way into ~190 points, and the label pass runs every frame while
+   * the camera eases — recomputing arc length there cost more than drawing.
+   */
+  private geomOf(road: NetworkRoad): { pts: Pt[]; acc: number[] } {
+    const hit = this.pathCache.get(road.id);
+    if (hit) return hit;
+    let pts: Pt[];
+    if (road.path && road.path.length > 2) {
+      // Smoothed once here, so the bed, markings, vehicles, heatmap and label
+      // all ride the same curve rather than each re-deriving it.
+      pts = smooth(road.path.map(([x, y]) => [x * CELL_SIZE, y * CELL_SIZE] as Pt));
+    } else {
+      const e = this.roadEnds(road);
+      pts = [[e.p0x, e.p0y], [e.p1x, e.p1y]];
+    }
+    const entry = { pts, acc: cumulative(pts) };
+    this.pathCache.set(road.id, entry);
+    return entry;
+  }
+
+  /** Stroke a polyline. */
+  private strokePath(g: Graphics, pts: Pt[], style: Parameters<Graphics["stroke"]>[0]) {
+    if (pts.length < 2) return;
+    g.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+    g.stroke(style);
+  }
+
+  /** Stroke a polyline as dashes of `dash` px separated by `gap` px. */
+  private strokeDashed(g: Graphics, pts: Pt[], style: { color: number; width: number; alpha: number }) {
+    const acc = cumulative(pts);  // markings are drawn once per network, not per frame
+    const total = acc[acc.length - 1];
+    if (total < 1) return;
+    const dash = CELL_SIZE * 0.55;
+    const gap = CELL_SIZE * 0.45;
+    for (let d = 0; d < total; d += dash + gap) {
+      const a = sampleAt(pts, acc, d / total);
+      const b = sampleAt(pts, acc, Math.min(d + dash, total) / total);
+      g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke(style);
+    }
   }
 
   /** Endpoints of a road's painted surface, in world pixels. */
@@ -319,21 +379,30 @@ export class RoadRenderer {
       for (const r of lanes) inStreet.add(r.id);
 
       const width = this.laneWidthPx(lanes[0]) * lanes.length;
-      const ends = this.streetEnds(street, lanes[0]);
-      g.moveTo(ends.p0x, ends.p0y).lineTo(ends.p1x, ends.p1y)
-        .stroke({ color: this.theme.road, width, cap: "butt", join: "round" });
+      this.strokePath(g, this.centrelineOf(street, lanes),
+        { color: this.theme.road, width, cap: "butt", join: "round" });
     }
 
     for (const road of this.network.roads) {
       if (inStreet.has(road.id)) continue;
-      const { p0x, p0y, p1x, p1y } = this.roadEnds(road);
-      g.moveTo(p0x, p0y).lineTo(p1x, p1y).stroke({
-        color: this.theme.road,
-        width: LONE_ROAD_UNITS * CELL_SIZE,
-        cap: "butt",
-        join: "round",
+      this.strokePath(g, this.pathOf(road), {
+        color: this.theme.road, width: LONE_ROAD_UNITS * CELL_SIZE,
+        cap: "butt", join: "round",
       });
     }
+  }
+
+  /**
+   * A street's centreline. Its lanes are parallel offsets of one node chain,
+   * so the mean of the outermost two is the centre — which also stays correct
+   * around a bend, where a straight chord between the endpoints would not.
+   */
+  private centrelineOf(street: NetworkStreet, lanes: NetworkRoad[]): Pt[] {
+    const first = this.pathOf(lanes[0]);
+    const last = this.pathOf(lanes[lanes.length - 1]);
+    if (first.length > 2 && first.length === last.length) return midPath(first, last);
+    const e = this.streetEnds(street, lanes[0]);
+    return [[e.p0x, e.p0y], [e.p1x, e.p1y]];
   }
 
   /**
@@ -433,30 +502,12 @@ export class RoadRenderer {
     offset: number,
     style: { color: number; width: number; alpha: number; dashed?: boolean },
   ) {
-    const { p0x, p0y, p1x, p1y } = this.roadEnds(road);
-    const [px, py] = RoadRenderer.perp(p1x - p0x, p1y - p0y);
-    const ax = p0x + px * offset;
-    const ay = p0y + py * offset;
-    const bx = p1x + px * offset;
-    const by = p1y + py * offset;
-
-    if (!style.dashed) {
-      g.moveTo(ax, ay).lineTo(bx, by)
-        .stroke({ color: style.color, width: style.width, alpha: style.alpha });
-      return;
-    }
-
-    const len = Math.hypot(bx - ax, by - ay);
-    if (len < 1) return;
-    const ux = (bx - ax) / len;
-    const uy = (by - ay) / len;
-    const dash = CELL_SIZE * 0.55;
-    const gap = CELL_SIZE * 0.45;
-    for (let t = 0; t < len; t += dash + gap) {
-      const e = Math.min(t + dash, len);
-      g.moveTo(ax + ux * t, ay + uy * t).lineTo(ax + ux * e, ay + uy * e)
-        .stroke({ color: style.color, width: style.width, alpha: style.alpha });
-    }
+    // Offsetting the road's own polyline keeps a marking parallel to the road
+    // all the way round a bend; offsetting its chord would drift off the bed.
+    const line = offsetPath(this.pathOf(road), offset);
+    const stroke = { color: style.color, width: style.width, alpha: style.alpha };
+    if (style.dashed) this.strokeDashed(g, line, stroke);
+    else this.strokePath(g, line, stroke);
   }
 
   // -------------------------------------------------------------- junctions
@@ -514,17 +565,20 @@ export class RoadRenderer {
     for (const road of this.lastState.roads) {
       const meta = roadById.get(road.id);
       if (!meta) continue;
-      const { x0, y0, dx, dy } = meta.geometry;
+      const { pts, acc } = this.geomOf(meta);
+      const L = Math.max(1, meta.length - 1);
       for (const seg of road.segments) {
-        const p0x = (x0 + (seg.s + 0.5) * dx) * CELL_SIZE;
-        const p0y = (y0 + (seg.s + 0.5) * dy) * CELL_SIZE;
-        const p1x = (x0 + (seg.s + seg.n - 0.5) * dx) * CELL_SIZE;
-        const p1y = (y0 + (seg.s + seg.n - 0.5) * dy) * CELL_SIZE;
-        g.moveTo(p0x, p0y).lineTo(p1x, p1y).stroke({
-          color: heatColor(seg.d),
-          width: this.laneWidthPx(meta),
-          alpha: this.theme.heatmapAlpha,
-          cap: "butt",
+        // walk the arc between the segment's first and last cell
+        const steps = Math.max(2, Math.min(seg.n, 8));
+        const band: Pt[] = [];
+        for (let i = 0; i < steps; i++) {
+          const k = seg.s + (seg.n - 1) * (i / (steps - 1));
+          const at = sampleAt(pts, acc, k / L);
+          band.push([at.x, at.y]);
+        }
+        this.strokePath(g, band, {
+          color: heatColor(seg.d), width: this.laneWidthPx(meta),
+          alpha: this.theme.heatmapAlpha, cap: "butt",
         });
       }
     }
@@ -536,11 +590,17 @@ export class RoadRenderer {
    * against grass. Shown only when the camera is zoomed in far enough that
    * they fit; hidden entirely when zoomed out.
    */
-  private drawLabels() {
-    for (const t of this.labels) t.visible = false;
+  private drawLabels(force = false) {
     if (!this.network) return;
-
     const scale = this.camera.scale.x;
+    // Labels are positioned in world space, so panning does not move them
+    // relative to the map and only a zoom change needs a relayout. Skipping
+    // the no-op passes is what keeps a 243-road map inside the frame budget.
+    if (!force && Math.abs(scale - this.lastLabelScale) < this.lastLabelScale * 0.01) {
+      return;
+    }
+    this.lastLabelScale = scale;
+    for (const t of this.labels) t.visible = false;
     if (scale < LABEL_MIN_SCALE) return;
 
     // one label per named street (or per named road, if it has no street)
@@ -553,17 +613,18 @@ export class RoadRenderer {
       const key = road.street_id ?? `road:${road.id}`;
       if (seen.has(key)) continue;
 
-      const { p0x, p0y, p1x, p1y } = this.roadEnds(road);
-      if (Math.hypot(p1x - p0x, p1y - p0y) * scale < LABEL_MIN_ROAD_PX) continue;
+      const { pts, acc } = this.geomOf(road);
+      if (acc[acc.length - 1] * scale < LABEL_MIN_ROAD_PX) continue;
       seen.add(key);
 
+      const mid = sampleAt(pts, acc, 0.5);
       const label = this.getLabel(i++);
       label.text = name;
       label.style.fill = this.theme.label;
-      label.position.set((p0x + p1x) / 2, (p0y + p1y) / 2);
+      label.position.set(mid.x, mid.y);
       // keep text upright and at a constant on-screen size
       label.scale.set(1 / scale);
-      let angle = Math.atan2(p1y - p0y, p1x - p0x);
+      let angle = mid.angle;
       if (angle > Math.PI / 2 || angle < -Math.PI / 2) angle += Math.PI;
       label.rotation = angle;
       label.visible = true;
@@ -602,11 +663,10 @@ export class RoadRenderer {
     for (const road of state.roads) {
       const meta = roadById.get(road.id);
       if (!meta) continue;
-      const { x0, y0, dx, dy } = meta.geometry;
       const L = meta.length;
-      const angle = Math.atan2(dy, dx);
       // scale the sprite so a vehicle always fills its own lane
       const laneScale = this.laneWidthPx(meta) / (DEFAULT_LANE_UNITS * CELL_SIZE);
+      const { pts, acc } = this.geomOf(meta);
 
       for (const v of road.vehicles) {
         const tex = v.t === "car" ? this.carTexture : this.motoTexture;
@@ -616,15 +676,16 @@ export class RoadRenderer {
         if (meta.periodic && v.f - (v.l - 1) < 0) {
           centerIdx = ((centerIdx % L) + L) % L;
         }
-        const cx = (x0 + (centerIdx + 0.5) * dx) * CELL_SIZE;
-        const cy = (y0 + (centerIdx + 0.5) * dy) * CELL_SIZE;
+        // Cells are evenly spaced along the road's ARC, so a vehicle sits
+        // where its cell really is on a curve, facing the local tangent.
+        const at = sampleAt(pts, acc, L > 1 ? centerIdx / (L - 1) : 0);
 
         const body = this.getSprite(spriteIdx++);
         body.texture = tex;
         body.tint = v.t === "car" ? this.theme.car : this.theme.moto;
         body.alpha = 1;
-        body.rotation = angle;          // faces its direction of travel
-        body.position.set(cx, cy);
+        body.rotation = at.angle;
+        body.position.set(at.x, at.y);
         body.scale.set(laneScale / 4);  // /4 undoes the texture supersample
       }
     }
@@ -644,13 +705,14 @@ export class RoadRenderer {
     for (const dis of this.lastState.disruptions) {
       const meta = roadById.get(dis.road_id);
       if (!meta) continue;
-      const { x0, y0, dx, dy } = meta.geometry;
       const color = DISRUPTION_COLORS[dis.kind] ?? 0xffffff;
       const r = Math.max(this.laneWidthPx(meta) * 0.75, CELL_SIZE * 0.42);
+      const { pts, acc } = this.geomOf(meta);
+      const L = Math.max(1, meta.length - 1);
 
       for (const idx of dis.cells) {
-        const cx = (x0 + (idx + 0.5) * dx) * CELL_SIZE;
-        const cy = (y0 + (idx + 0.5) * dy) * CELL_SIZE;
+        const at = sampleAt(pts, acc, idx / L);
+        const cx = at.x, cy = at.y;
 
         if (dis.permanent) {
           // diamond + border: infrastructure, not an incident
@@ -802,9 +864,7 @@ export class RoadRenderer {
     };
     if (this.network) {
       for (const road of this.network.roads) {
-        const { x0, y0, dx, dy } = road.geometry;
-        acc(x0 * CELL_SIZE, y0 * CELL_SIZE);
-        acc((x0 + (road.length - 1) * dx) * CELL_SIZE, (y0 + (road.length - 1) * dy) * CELL_SIZE);
+        for (const [px, py] of this.pathOf(road)) acc(px, py);
       }
       for (const j of this.network.junctions) acc(j.x * CELL_SIZE, j.y * CELL_SIZE);
     }
