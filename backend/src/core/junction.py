@@ -27,6 +27,12 @@ class Junction:
     y: float
     # turns[incoming_road_id] = {outgoing_road_id: proportion}
     turns: dict[int, dict[int, float]] = field(default_factory=dict)
+    # lane_links[incoming_lane_road_id] = every outgoing lane it may reach.
+    # Recorded when multi-lane streets are wired up (Stage 11) and carried
+    # through save/load. v1 does NOT restrict turns by lane — `turns` above is
+    # what the engine routes on — but keeping the full lane-to-lane graph is
+    # what a later "outer lane may only turn left" rule would be built from.
+    lane_links: dict[int, list[int]] = field(default_factory=dict)
 
     def validate(self) -> None:
         """Every incoming road's outgoing proportions must sum to 1.0."""

@@ -173,6 +173,22 @@ class Street:
             lane_index = len(self.lanes_in_direction(direction))
         return self.add_lane(Lane(road=road, lane_index=lane_index, direction=direction))
 
+    def remove_road(self, road_id: int) -> bool:
+        """
+        Drop the lane wrapping `road_id`, rewiring the neighbours it leaves.
+
+        Lane indices of the survivors are left as they are: they are the
+        street's own labelling, and renumbering them would silently move
+        traffic between lanes. Adjacency is rebuilt, so the hole closes up.
+        """
+        for lane in self._lanes:
+            if lane.road.id == road_id:
+                self._lanes.remove(lane)
+                lane.left_lane = lane.right_lane = None
+                self._rewire()
+                return True
+        return False
+
     # ------------------------------------------------------------- querying
     def all_lanes(self) -> list[Lane]:
         """Every lane, ordered by direction then lane_index (left→right)."""

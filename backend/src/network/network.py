@@ -141,6 +141,25 @@ class Network:
     def get_street(self, id: str) -> "Street | None":
         return self.streets.get(id)
 
+    def prune_streets(self) -> int:
+        """
+        Drop lanes whose road is no longer in the network, and empty streets.
+
+        Roads get deleted by map edits and by the OSM importer's cleanup
+        passes. Without this the registry would keep lanes pointing at gone
+        roads, which a scenario save would then serialise and a load would
+        choke on. Returns the number of lanes removed.
+        """
+        removed = 0
+        for street in list(self.streets.values()):
+            for road in list(street.roads()):
+                if road.id not in self.roads:
+                    street.remove_road(road.id)
+                    removed += 1
+            if not len(street):
+                del self.streets[street.id]
+        return removed
+
     def streets_ordered(self) -> list["Street"]:
         return [self.streets[k] for k in sorted(self.streets)]
 

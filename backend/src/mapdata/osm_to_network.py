@@ -48,9 +48,57 @@ from typing import Any
 
 from src.core.junction import Junction
 from src.network.network import Network, Road
+from src.network.lane_geometry import (
+    LANE_WIDTH_M,
+    offset_origin,
+    street_slot,
+)
+from src.network.street import BACKWARD, FORWARD, Street
 from src.mapdata.cell_scale import meters_to_cells, haversine, MIN_CELLS
 
 logger = logging.getLogger(__name__)
+
+ONEWAY_TRUE = ("yes", "1", "true", "-1")
+
+
+def parse_lanes(tags: dict[str, Any]) -> tuple[int, int, str]:
+    """
+    Read `lanes=*` / `oneway=*` into (forward lanes, backward lanes, why).
+
+    OSM lane tagging is inconsistent. v1 handles the plain `lanes=*` tag only;
+    anything missing or malformed falls back to one lane per direction, which
+    is exactly the pre-Stage-11 behaviour. The third return value explains the
+    choice so an import can be debugged from the log.
+
+      oneway=yes, lanes=2   → 2 forward, 0 backward
+      oneway=no,  lanes=2   → 1 forward, 1 backward
+      oneway=no,  lanes=4   → 2 forward, 2 backward
+      oneway=no,  lanes=3   → 2 forward, 1 backward  (odd: extra lane forward)
+      no lanes tag          → 1 per direction
+    """
+    oneway = str(tags.get("oneway", "no")).strip().lower() in ONEWAY_TRUE
+
+    raw = tags.get("lanes")
+    total: int | None = None
+    if raw is not None:
+        try:
+            total = int(str(raw).strip())
+        except (TypeError, ValueError):
+            total = None
+        if total is not None and total < 1:
+            total = None
+
+    if total is None:
+        why = "no usable lanes tag" if raw is None else f"malformed lanes={raw!r}"
+        return (1, 0, why) if oneway else (1, 1, why)
+
+    if oneway:
+        return total, 0, f"oneway with lanes={total}"
+    if total == 1:
+        # a two-way street still needs a lane each way, whatever the tag says
+        return 1, 1, "two-way but lanes=1; one lane each way"
+    forward = (total + 1) // 2
+    return forward, total - forward, f"two-way with lanes={total}"
 
 
 def osm_to_network(
@@ -144,9 +192,18 @@ def osm_to_network(
     for way in ways:
         wnodes = way["nodes"]
         tags = way.get("tags", {})
-        is_oneway = tags.get("oneway", "no") in ("yes", "1", "true", "-1")
+        is_oneway = tags.get("oneway", "no") in ONEWAY_TRUE
         is_reverse = tags.get("oneway", "no") == "-1"
         road_name = tags.get("name", "")
+        n_forward, n_backward, lanes_why = parse_lanes(tags)
+        if is_reverse:
+            # oneway=-1: the only travel direction runs end → start
+            n_forward, n_backward = 0, n_forward
+        logger.debug(
+            "way %s (%s): %d forward + %d backward lanes (%s)",
+            way.get("id"), road_name or "unnamed",
+            n_forward, n_backward, lanes_why,
+        )
 
         # Split the way at junction nodes
         # Find indices of junction nodes within this way
@@ -203,6 +260,9 @@ def osm_to_network(
                 "is_oneway": is_oneway,
                 "is_reverse": is_reverse,
                 "name": road_name,
+                "n_forward": n_forward,
+                "n_backward": n_backward,
+                "street_id": f"w{way.get('id')}_s{seg_i}",
             }
             segments.append(seg_info)
 
@@ -213,56 +273,46 @@ def osm_to_network(
     junction_incoming: dict[int, list[int]] = {j: [] for j in net.junctions}
     junction_outgoing: dict[int, list[int]] = {j: [] for j in net.junctions}
 
+    # Every segment becomes a `Street`. Its lanes are ordinary `Road`s — the
+    # engine sees no difference — but they are grouped so the lateral pass
+    # knows they are adjacent, and offset sideways so they render apart.
     for seg in segments:
         s_jid = seg["start_jid"]
         e_jid = seg["end_jid"]
         nc = seg["n_cells"]
+        base_dx, base_dy = seg["dx"], seg["dy"]
+        n_fwd, n_bwd = seg["n_forward"], seg["n_backward"]
+        if seg["is_oneway"] and not seg["is_reverse"]:
+            n_bwd = 0
+        n_slots = n_fwd + n_bwd
+        if n_slots <= 0:
+            continue
 
-        if seg["is_reverse"]:
-            # oneway=-1: traffic flows from end to start
-            road = Road(
-                id=rid, length=nc,
-                x0=seg["x0"] + seg["dx"] * nc,
-                y0=seg["y0"] + seg["dy"] * nc,
-                dx=-seg["dx"], dy=-seg["dy"],
-                periodic=False,
-                head_junction=s_jid,
-                tail_junction=e_jid,
-            )
-            net.add_road(road)
-            junction_incoming[s_jid].append(rid)
-            junction_outgoing[e_jid].append(rid)
-            rid += 1
-        else:
-            # Forward direction (start → end)
-            road_fwd = Road(
-                id=rid, length=nc,
-                x0=seg["x0"], y0=seg["y0"],
-                dx=seg["dx"], dy=seg["dy"],
-                periodic=False,
-                head_junction=e_jid,
-                tail_junction=s_jid,
-            )
-            net.add_road(road_fwd)
-            junction_incoming[e_jid].append(rid)
-            junction_outgoing[s_jid].append(rid)
-            rid += 1
-
-            if not seg["is_oneway"]:
-                # Reverse direction (end → start)
-                road_rev = Road(
-                    id=rid, length=nc,
-                    x0=seg["x0"] + seg["dx"] * nc,
-                    y0=seg["y0"] + seg["dy"] * nc,
-                    dx=-seg["dx"], dy=-seg["dy"],
-                    periodic=False,
-                    head_junction=s_jid,
-                    tail_junction=e_jid,
+        street = Street(seg["street_id"])
+        # (direction, count, origin, step, head junction, tail junction)
+        groups = (
+            (FORWARD, n_fwd, (seg["x0"], seg["y0"]),
+             (base_dx, base_dy), e_jid, s_jid),
+            (BACKWARD, n_bwd, (seg["x0"] + base_dx * nc, seg["y0"] + base_dy * nc),
+             (-base_dx, -base_dy), s_jid, e_jid),
+        )
+        for direction, count, (ox, oy), (ddx, ddy), head, tail in groups:
+            for i in range(count):
+                slot = street_slot(i, direction, n_fwd, n_bwd)
+                # the perpendicular is taken from the *baseline*, so both
+                # directions are offset along one consistent ruler
+                lx, ly = offset_origin(
+                    ox, oy, base_dx, base_dy, slot, n_slots, LANE_WIDTH_M
                 )
-                net.add_road(road_rev)
-                junction_incoming[s_jid].append(rid)
-                junction_outgoing[e_jid].append(rid)
+                road = Road(
+                    id=rid, length=nc, x0=lx, y0=ly, dx=ddx, dy=ddy,
+                    periodic=False, head_junction=head, tail_junction=tail,
+                )
+                street.add_road(road, direction=direction, lane_index=i)
+                junction_incoming[head].append(rid)
+                junction_outgoing[tail].append(rid)
                 rid += 1
+        net.add_street(street)
 
     # ------ Step 6: set boundary source/sink behaviour ------
     # A road whose tail_junction has no incoming roads (no roads feeding it)
@@ -296,6 +346,7 @@ def osm_to_network(
             continue
 
         j.turns = {}
+        j.lane_links = {}
         for in_rid in incoming:
             # Exclude the reverse direction of the same segment (U-turn)
             # by checking if the outgoing road's tail_junction == this junction
@@ -313,15 +364,28 @@ def osm_to_network(
                 # No valid outgoing roads (only U-turn available) — allow it
                 valid_outs = list(outgoing)
 
-            if valid_outs:
-                even_p = round(1.0 / len(valid_outs), 6)
-                # Ensure proportions sum to exactly 1.0
-                turns = {oid: even_p for oid in valid_outs}
-                # Fix rounding: adjust the last entry
-                residual = round(1.0 - sum(turns.values()), 6)
-                if valid_outs:
-                    turns[valid_outs[-1]] = round(turns[valid_outs[-1]] + residual, 6)
-                j.turns[in_rid] = turns
+            if not valid_outs:
+                continue
+
+            # every incoming lane may physically reach every outgoing lane;
+            # v1 does not restrict by lane, but the graph is kept for later
+            j.lane_links[in_rid] = list(valid_outs)
+
+            # Turn proportions are a property of the junction, not of a lane:
+            # split evenly across the outgoing *streets*, then enter that
+            # street on the same lateral index (or its rightmost lane).
+            groups = _group_by_street(net, valid_outs)
+            chosen = [
+                _matching_lane(net, lanes, in_road.lane_index)
+                for lanes in groups
+            ]
+            even_p = round(1.0 / len(chosen), 6)
+            turns = {oid: even_p for oid in chosen}
+            # Fix rounding: adjust the last entry
+            residual = round(1.0 - sum(turns.values()), 6)
+            last = chosen[-1]
+            turns[last] = round(turns[last] + residual, 6)
+            j.turns[in_rid] = turns
 
     # ------ Step 8: clean up orphan junctions ------
     # Remove junctions that have no turns wired (no traffic passes through)
@@ -348,6 +412,9 @@ def osm_to_network(
     for rid_key in disconnected:
         del net.roads[rid_key]
 
+    # the cleanup passes above delete roads; keep the street registry honest
+    net.prune_streets()
+
     try:
         net.validate()
     except ValueError as e:
@@ -363,6 +430,44 @@ def osm_to_network(
         n_roads, n_junctions, total_cells,
     )
     return net
+
+
+def _group_by_street(net: Network, road_ids: list[int]) -> list[list[int]]:
+    """
+    Bucket outgoing lane ids by the street they belong to, order preserved.
+
+    Only one direction of a street can leave a given junction, so a bucket is
+    always one direction's lanes. A road with no street (there should be none
+    after Stage 11, but map edits can add bare roads) is its own bucket.
+    """
+    order: list[Any] = []
+    buckets: dict[Any, list[int]] = {}
+    for rid in road_ids:
+        road = net.roads[rid]
+        key = road.street_id if road.street_id is not None else ("road", rid)
+        if key not in buckets:
+            buckets[key] = []
+            order.append(key)
+        buckets[key].append(rid)
+    return [buckets[k] for k in order]
+
+
+def _matching_lane(net: Network, lane_ids: list[int], lane_index: int) -> int:
+    """
+    Pick the outgoing lane a vehicle from `lane_index` continues into.
+
+    Same lateral index where the outgoing street is wide enough, otherwise its
+    rightmost lane — traffic merges inward rather than vanishing.
+    """
+    best = lane_ids[0]
+    best_index = net.roads[best].lane_index
+    for rid in lane_ids:
+        idx = net.roads[rid].lane_index
+        if idx == lane_index:
+            return rid
+        if idx > best_index:
+            best, best_index = rid, idx
+    return best
 
 
 def _fix_validation(net: Network) -> None:

@@ -276,6 +276,8 @@ class Simulation:
             return
         del self.network.roads[road_id]
         self.network.blocked.pop(road_id, None)
+        # a deleted road must not linger as a lane of some street
+        self.network.prune_streets()
         # drop disruptions on that road and any junction turns referencing it
         self.disruptions.active = [d for d in self.disruptions.active if d.road_id != road_id]
         for j in self.network.junctions.values():

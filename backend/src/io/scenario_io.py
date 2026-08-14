@@ -51,7 +51,11 @@ def save_scenario(sim) -> dict[str, Any]:
             str(in_road): {str(out): p for out, p in outs.items()}
             for in_road, outs in j.turns.items()
         }
-        junctions.append({"id": j.id, "x": j.x, "y": j.y, "turns": turns})
+        lane_links = {
+            str(in_road): sorted(outs) for in_road, outs in j.lane_links.items()
+        }
+        junctions.append({"id": j.id, "x": j.x, "y": j.y, "turns": turns,
+                          "lane_links": lane_links})
     # Stage 9 lane groups. `street_id` / `lane_index` already ride along on each
     # road; this records the part a road cannot carry — the lane's direction and
     # the grouping itself — so the registry survives the round-trip.
@@ -125,7 +129,12 @@ def network_from_scenario(data: dict[str, Any]) -> Network:
             int(in_road): {int(out): float(p) for out, p in outs.items()}
             for in_road, outs in jd["turns"].items()
         }
-        net.add_junction(Junction(id=int(jd["id"]), x=jd["x"], y=jd["y"], turns=turns))
+        lane_links = {
+            int(in_road): [int(o) for o in outs]
+            for in_road, outs in (jd.get("lane_links") or {}).items()
+        }
+        net.add_junction(Junction(id=int(jd["id"]), x=jd["x"], y=jd["y"],
+                                  turns=turns, lane_links=lane_links))
     # `streets` is absent from pre-Stage-9 scenarios; those load as before.
     for sd in data.get("streets", []):
         street = Street(str(sd["id"]))
