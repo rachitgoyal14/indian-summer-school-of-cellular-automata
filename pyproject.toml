@@ -1,2 +1,5 @@
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
+markers = [
+    "slow: wall-clock performance budgets; timings are machine-dependent",
+]

@@ -100,6 +100,11 @@ class Network:
         # vehicle hops into an equally jammed lane and hops back next tick.
         self.lane_change_require_gain: bool = True
         self.last_lane_changes: int = 0
+        # per-step bookkeeping for open networks: vehicles created at sources
+        # and vehicles that left through a sink. Counting only — no effect on
+        # the physics or the RNG.
+        self.last_spawned: int = 0
+        self.last_exited: int = 0
         self._vid = 0  # global vehicle id counter
         # cells made unavailable by disruptions (Stage 4). Empty by default,
         # so with no disruptions the engine is the exact Rule 184 baseline.
@@ -223,6 +228,8 @@ class Network:
         new_lists: dict[int, list[Vehicle]] = {rid: [] for rid in self.roads}
         transfer_pending: list[tuple[int, Vehicle]] = []  # (road_id, vehicle)
         moved = 0
+        self.last_spawned = 0
+        self.last_exited = 0
 
         # disrupted cells behave like occupied cells: nothing may enter them.
         blk = self.blocked
@@ -264,6 +271,7 @@ class Network:
                     else:
                         # sink: vehicle leaves the network
                         moved += 1
+                        self.last_exited += 1
 
         # ---- Pass B: junction transfers ----
         # deterministic order: by road id then front, so results are reproducible
@@ -309,6 +317,7 @@ class Network:
                         Vehicle(self.new_vid(), length - 1, length,
                                 "car" if is_car else "moto")
                     )
+                    self.last_spawned += 1
 
         for rid in self.roads:
             self.roads[rid].vehicles = new_lists[rid]

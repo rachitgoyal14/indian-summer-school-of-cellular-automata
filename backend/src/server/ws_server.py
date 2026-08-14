@@ -26,6 +26,14 @@ Client → server control messages
   {"type": "set_lane_change_prob", "p": 0.3}     older alias for "prob" alone
   {"type": "ping", "t": 1234.5}                  → server replies {"type":"pong","t":1234.5}
   {"type": "set_delay", "seconds": 0.2}          artificial per-send delay (latency testing)
+  {"type": "run_scenario", "scenario": {...}}    batch "what-if" run; replies to the
+                                                 requesting client only, with
+                                                 {"type": "scenario_result", ...} or
+                                                 {"type": "scenario_error", "error": ...}
+
+A batch run executes on its own `Simulation` on a worker thread: the live
+simulation is never touched and its stream never pauses. Only one batch runs
+at a time; a concurrent request is rejected with a `scenario_error`.
 
 The "ping"/"pong" pair lets the frontend measure real round-trip time; the
 "pong" echoes the client's timestamp back unchanged so the client can
@@ -44,6 +52,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.engine.simulation import Simulation
+from src.engine.scenario_runner import ScenarioError, run_scenario
 from src.server.state_serializer import serialize_network, serialize_state
 
 
@@ -56,6 +65,10 @@ class SimulationManager:
         self.artificial_delay: float = 0.0  # seconds added per send (testing)
         self._loop_task: asyncio.Task | None = None
         self._lock = asyncio.Lock()  # serialize mutations vs. the tick loop
+        # Batch runs are one-at-a-time. This flag is *not* the tick-loop lock:
+        # a batch must never hold that, or the live stream would stall for the
+        # whole run. A second request while one is in flight is rejected.
+        self._batch_running = False
 
     # ------------------------------------------------------------- lifecycle
     def start(self) -> None:
@@ -112,6 +125,38 @@ class SimulationManager:
                 # Paused: don't flood identical states; just idle.
                 await asyncio.sleep(0.05)
 
+    # ------------------------------------------------------------- batch mode
+    async def run_batch(self, spec: dict[str, Any]) -> dict[str, Any]:
+        """
+        Run a batch scenario and return its result to the requesting client only.
+
+        The run happens on a worker thread and on its own `Simulation`, so the
+        tick loop keeps stepping and broadcasting throughout — other clients
+        see an uninterrupted live stream and never see the batch's states.
+
+        One batch at a time: a second request while one is in flight is
+        rejected immediately rather than queued, so the client always gets a
+        prompt answer and the server's memory stays bounded. Clients should
+        show a busy state between `run_scenario` and its reply.
+        """
+        if self._batch_running:
+            return {
+                "type": "scenario_error",
+                "error": "a scenario is already running; wait for it to finish",
+            }
+        self._batch_running = True
+        try:
+            # to_thread keeps the event loop — and the live tick — responsive
+            result = await asyncio.to_thread(run_scenario, spec)
+        except ScenarioError as exc:
+            return {"type": "scenario_error", "error": str(exc)}
+        except Exception as exc:  # a bad scenario must never kill the server
+            return {"type": "scenario_error",
+                    "error": f"scenario failed: {type(exc).__name__}: {exc}"}
+        finally:
+            self._batch_running = False
+        return {"type": "scenario_result", **result}
+
     # ------------------------------------------------------------- controls
     async def handle_message(self, msg: dict[str, Any]) -> dict[str, Any] | None:
         """
@@ -132,6 +177,9 @@ class SimulationManager:
             # Return the full scenario to the requesting client for download.
             async with self._lock:
                 return {"type": "scenario", "data": self.sim.to_scenario()}
+
+        if t == "run_scenario":
+            return await self.run_batch(msg.get("scenario") or {})
 
         async with self._lock:
             if t == "pause":
