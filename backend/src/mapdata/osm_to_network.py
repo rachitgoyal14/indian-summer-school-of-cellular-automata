@@ -312,6 +312,7 @@ def osm_to_network(
                 road = Road(
                     id=rid, length=nc, x0=lx, y0=ly, dx=ddx, dy=ddy,
                     periodic=False, head_junction=head, tail_junction=tail,
+                    name=seg["name"],
                 )
                 street.add_road(road, direction=direction, lane_index=i)
                 junction_incoming[head].append(rid)

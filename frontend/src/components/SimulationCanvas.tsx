@@ -8,6 +8,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { RoadRenderer } from "../render/RoadRenderer";
+import { THEMES, type ThemeName } from "../render/theme";
 import type { NetworkMessage, StateMessage } from "../types";
 
 interface Props {
@@ -15,6 +16,8 @@ interface Props {
   state: StateMessage | null;
   onRendererReady?: (r: RoadRenderer | null) => void;
   loading?: boolean;
+  theme?: ThemeName;
+  onThemeToggle?: () => void;
 }
 
 const LOADING_PHASES = [
@@ -97,7 +100,10 @@ function LoadingOverlay() {
   );
 }
 
-export function SimulationCanvas({ network, state, onRendererReady, loading = false }: Props) {
+export function SimulationCanvas({
+  network, state, onRendererReady, loading = false,
+  theme = "day", onThemeToggle,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<RoadRenderer | null>(null);
   const [ready, setReady] = useState(false);
@@ -152,6 +158,12 @@ export function SimulationCanvas({ network, state, onRendererReady, loading = fa
     return () => cancelAnimationFrame(raf);
   }, [ready]);
 
+  // Recolour in place. setTheme never refits the camera or touches the
+  // simulation, so toggling leaves the view and the run exactly as they were.
+  useEffect(() => {
+    rendererRef.current?.setTheme(THEMES[theme] ?? THEMES.day);
+  }, [theme, ready]);
+
   return (
     <div className="canvas-wrap">
       <div ref={containerRef} className="pixi-host" />
@@ -184,6 +196,13 @@ export function SimulationCanvas({ network, state, onRendererReady, loading = fa
           }}
         >
           {navGraph ? "Nav Graph ✓" : "Nav Graph"}
+        </button>
+        <button
+          className="ghost-btn"
+          onClick={onThemeToggle}
+          title="Switch between the Day campus map and the Night palette"
+        >
+          {theme === "day" ? "☀ Day" : "☾ Night"}
         </button>
         <span className="hint">drag to pan · scroll to zoom · double-click to zoom in · +/- keys · 0 = fit</span>
       </div>

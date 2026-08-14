@@ -1,14 +1,27 @@
 // RoadRenderer.ts — PixiJS scene for the simulation, decoupled from React.
 //
-// Renders single-lane roads as realistic asphalt strips with gravel shoulders
-// and white edge markings. Junctions are drawn as smooth asphalt pads.
-// Vehicles (motorbike 1-cell, car 2-cell) are pre-rendered top-down sprites.
+// Draws a top-down campus map: a flat ground plane, asphalt lane surfaces with
+// painted markings, blocky vehicles oriented along their road, disruption
+// markers, an optional density heatmap, and street-name labels.
 //
-// Camera: scroll-zoom toward cursor, drag-pan with grab cursor, double-click
-// zoom, and keyboard shortcuts (+/- zoom, 0 fit-to-view).
+// Themes are data (see theme.ts). Switching one recolours and redraws; it
+// never touches the simulation or the camera.
+//
+// Multi-lane streets: the backend already offsets each lane's origin
+// perpendicular to its street's centreline, and states the lane width in the
+// same units as the geometry. So a lane is drawn at its own coordinates and
+// `lane_width` converts directly to pixels — the renderer never guesses an
+// offset, and the same code is correct for the procedural grid (units = cells)
+// and an OSM import (units = metres).
+//
+// Camera: eased zoom/pan, scroll-zoom toward cursor, drag-pan, double-click
+// zoom, keyboard (+/- zoom, 0 fit-to-view).
 
-import { Application, Container, Graphics, Sprite, Texture } from "pixi.js";
-import type { DisruptionKind, NetworkMessage, StateMessage } from "../types";
+import { Application, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
+import type { NetworkMessage, NetworkRoad, NetworkStreet, StateMessage } from "../types";
+import { DAY_THEME, DISRUPTION_COLORS, type Theme } from "./theme";
+
+export { DISRUPTION_COLORS };
 
 /** Result of mapping a canvas click in edit mode. */
 export interface EditClick {
@@ -17,37 +30,30 @@ export interface EditClick {
   road: { roadId: number; cell: number } | null;
 }
 
-const CELL_SIZE = 14; // world px per cell
+const CELL_SIZE = 14; // world px per cell-length
 
-// Road cross-section widths (world px)
-const ROAD_WIDTH = CELL_SIZE + 2;       // main asphalt surface
-const SHOULDER_WIDTH = ROAD_WIDTH + 5;  // gravel shoulder beneath asphalt
-const EDGE_INSET = ROAD_WIDTH / 2 - 0.5;// offset for white edge lines from center
+/**
+ * Lane width for a road that belongs to no street, in geometry units. Matches
+ * the backend's 3.5 m lane over a 7.5 m cell, so a lone road is exactly as
+ * wide as one lane of a street.
+ */
+const DEFAULT_LANE_UNITS = 3.5 / 7.5;
 
-const COLORS = {
-  background: 0x1e1e1e,   // dark ground — slightly warmer than pure black
-  asphalt:    0x505050,    // main road surface — mid-gray asphalt
-  shoulder:   0x3a3a3a,    // gravel shoulder — visible contrast
-  edgeLine:   0xcccccc,    // white road-edge markings
-  junctionPad:0x555555,    // intersection asphalt pad
-  junctionRim:0x444444,    // subtle darker rim around junction pad
-  moto:       0x4ecdc4,    // teal
-  motoGlow:   0x2a8a84,
-  car:        0xf5a623,    // amber
-  carGlow:    0xa06b10,
-  rulerTick:  0x444444,
-  rulerText:  0x666666,
-};
+/**
+ * Width of a road that belongs to no street. Nothing sits beside it, so it is
+ * drawn a little wider than one lane to read as a drivable surface rather than
+ * a hairline. Lanes of a street keep their true width, since anything wider
+ * would overlap the lane next to it.
+ */
+const LONE_ROAD_UNITS = 0.8;
 
-// Disruption colors
-export const DISRUPTION_COLORS: Record<DisruptionKind, number> = {
-  breakdown: 0xff6b6b,
-  tree: 0x67d982,
-  accident: 0xff2d55,
-  flood: 0x3aa0ff,
-  lock: 0xb56bff,
-  parking: 0x9aa7bd,
-};
+/** Below this camera scale, street-name labels are hidden as unreadable. */
+const LABEL_MIN_SCALE = 0.5;
+/** Labels also need this many pixels of road to sit on. */
+const LABEL_MIN_ROAD_PX = 60;
+
+/** Camera easing: fraction of the remaining distance covered per frame. */
+const CAMERA_EASE = 0.22;
 
 /** Congestion colour ramp: green (free) → yellow → red (jammed). d ∈ [0,1]. */
 function heatColor(d: number): number {
@@ -63,97 +69,59 @@ function heatColor(d: number): number {
   return (r << 16) | (g << 8) | 0x30;
 }
 
-// ----------------------------------------------------------------- vehicle shapes
+// ----------------------------------------------------------------- vehicle art
+// Vehicles are drawn once in white at high resolution and tinted per type, so
+// a theme switch costs a tint change rather than a re-render.
 
-/** Draw a top-down motorbike silhouette into a Graphics. 1 cell wide. */
-function drawMotoShape(g: Graphics, cs: number) {
-  const cx = cs / 2;
-  const cy = cs / 2;
-  const bodyW = cs * 0.78;
-  const bodyH = cs * 0.32;
+/**
+ * A blocky top-down vehicle: rounded body, a lighter leading half and a darker
+ * trailing edge so the direction of travel is readable at a glance.
+ * Drawn pointing +x; the sprite is rotated to the road's angle at draw time.
+ */
+function drawVehicle(g: Graphics, lengthPx: number, widthPx: number) {
+  const r = Math.min(widthPx * 0.32, lengthPx * 0.22);
+  g.roundRect(0, 0, lengthPx, widthPx, r).fill({ color: 0xffffff });
 
-  g.moveTo(cx + bodyW * 0.5, cy)
-    .lineTo(cx + bodyW * 0.15, cy - bodyH * 0.5)
-    .lineTo(cx - bodyW * 0.35, cy - bodyH * 0.45)
-    .lineTo(cx - bodyW * 0.5, cy - bodyH * 0.3)
-    .lineTo(cx - bodyW * 0.5, cy + bodyH * 0.3)
-    .lineTo(cx - bodyW * 0.35, cy + bodyH * 0.45)
-    .lineTo(cx + bodyW * 0.15, cy + bodyH * 0.5)
-    .closePath()
-    .fill({ color: 0xffffff });
+  // windshield: a band across the front third, marking the leading edge
+  g.roundRect(lengthPx * 0.6, widthPx * 0.18, lengthPx * 0.22, widthPx * 0.64,
+              r * 0.5)
+    .fill({ color: 0xffffff, alpha: 0.55 });
 
-  g.circle(cx + bodyW * 0.38, cy, bodyH * 0.22)
-    .fill({ color: 0xcccccc });
-  g.circle(cx - bodyW * 0.42, cy, bodyH * 0.22)
-    .fill({ color: 0xcccccc });
+  // top highlight / bottom shadow — reads as a block, not a flat rectangle
+  g.roundRect(0, 0, lengthPx, widthPx * 0.22, r)
+    .fill({ color: 0xffffff, alpha: 0.28 });
+  g.roundRect(0, widthPx * 0.8, lengthPx, widthPx * 0.2, r)
+    .fill({ color: 0x000000, alpha: 0.3 });
 }
-
-/** Draw a top-down car silhouette into a Graphics. Spans footprint × 1 cell. */
-function drawCarShape(g: Graphics, cs: number, footprint: number) {
-  const w = cs * footprint - 1;
-  const h = cs * 0.72;
-  const cx = w / 2;
-  const cy = cs / 2;
-
-  const noseX = cx + w * 0.48;
-  const rearX = cx - w * 0.50;
-  const topY = cy - h * 0.50;
-  const botY = cy + h * 0.50;
-
-  g.moveTo(noseX, cy)
-    .lineTo(noseX - w * 0.06, topY + h * 0.15)
-    .lineTo(cx + w * 0.20, topY)
-    .lineTo(cx - w * 0.05, topY)
-    .lineTo(cx - w * 0.15, topY + h * 0.08)
-    .lineTo(cx - w * 0.15, topY)
-    .lineTo(rearX + w * 0.05, topY + h * 0.05)
-    .lineTo(rearX, topY + h * 0.15)
-    .lineTo(rearX, botY - h * 0.15)
-    .lineTo(rearX + w * 0.05, botY - h * 0.05)
-    .lineTo(cx - w * 0.15, botY)
-    .lineTo(cx - w * 0.15, botY - h * 0.08)
-    .lineTo(cx - w * 0.05, botY)
-    .lineTo(cx + w * 0.20, botY)
-    .lineTo(noseX - w * 0.06, botY - h * 0.15)
-    .closePath()
-    .fill({ color: 0xffffff });
-
-  g.moveTo(cx + w * 0.16, topY + h * 0.12)
-    .lineTo(cx - w * 0.04, topY + h * 0.12)
-    .lineTo(cx - w * 0.04, botY - h * 0.12)
-    .lineTo(cx + w * 0.16, botY - h * 0.12)
-    .closePath()
-    .fill({ color: 0x888888, alpha: 0.5 });
-
-  g.moveTo(cx - w * 0.18, topY + h * 0.18)
-    .lineTo(cx - w * 0.30, topY + h * 0.18)
-    .lineTo(cx - w * 0.30, botY - h * 0.18)
-    .lineTo(cx - w * 0.18, botY - h * 0.18)
-    .closePath()
-    .fill({ color: 0x888888, alpha: 0.4 });
-}
-
 
 export class RoadRenderer {
   readonly app: Application;
   private camera: Container;
   private roadLayer: Graphics;
+  private markingLayer: Graphics;
   private navGraphLayer: Graphics;
   private heatmapLayer: Graphics;
-  private disruptionLayer: Graphics;
   private junctionLayer: Graphics;
+  private disruptionLayer: Graphics;
   private vehicleContainer: Container;
-  private rulerLayer: Graphics;
+  private labelContainer: Container;
+
+  private theme: Theme = DAY_THEME;
   private network: NetworkMessage | null = null;
   private lastState: StateMessage | null = null;
   private heatmapEnabled = false;
   private navGraphEnabled = false;
 
+  /** road id → the street it is a lane of, for width and marking lookups. */
+  private streetOfRoad = new Map<number, NetworkStreet>();
+
   private motoTexture: Texture | null = null;
   private carTexture: Texture | null = null;
-
   private vehicleSprites: Sprite[] = [];
+  private labels: Text[] = [];
 
+  // Eased camera: the pointer sets a target, the ticker chases it.
+  private target = { x: 0, y: 0, scale: 1 };
   private dragging = false;
   private lastPointer = { x: 0, y: 0 };
   private downPos = { x: 0, y: 0 };
@@ -163,29 +131,34 @@ export class RoadRenderer {
     this.app = app;
     this.camera = new Container();
     this.roadLayer = new Graphics();
+    this.markingLayer = new Graphics();
     this.navGraphLayer = new Graphics();
     this.heatmapLayer = new Graphics();
-    this.disruptionLayer = new Graphics();
     this.junctionLayer = new Graphics();
+    this.disruptionLayer = new Graphics();
     this.vehicleContainer = new Container();
-    this.rulerLayer = new Graphics();
+    this.labelContainer = new Container();
 
-    // Layer order (bottom→top)
+    // Bottom → top. The heatmap tints the road bed and sits *under* the
+    // markings, disruptions and vehicles, so it can never hide them.
     this.camera.addChild(this.roadLayer);
-    this.camera.addChild(this.navGraphLayer);
     this.camera.addChild(this.heatmapLayer);
-    this.camera.addChild(this.disruptionLayer);
     this.camera.addChild(this.junctionLayer);
+    this.camera.addChild(this.markingLayer);
+    this.camera.addChild(this.navGraphLayer);
+    this.camera.addChild(this.disruptionLayer);
     this.camera.addChild(this.vehicleContainer);
-    this.camera.addChild(this.rulerLayer);
+    this.camera.addChild(this.labelContainer);
     this.app.stage.addChild(this.camera);
+
     this.installCameraControls();
+    this.app.ticker.add(() => this.stepCamera());
   }
 
   static async create(container: HTMLElement): Promise<RoadRenderer> {
     const app = new Application();
     await app.init({
-      background: COLORS.background,
+      background: DAY_THEME.background,
       resizeTo: container,
       antialias: true,
       autoDensity: true,
@@ -203,25 +176,41 @@ export class RoadRenderer {
     this.app.destroy(true, { children: true });
   }
 
-  // ----------------------------------------------------------------- textures
+  // ------------------------------------------------------------------ theme
+  /**
+   * Swap the palette and redraw. Deliberately does NOT refit the camera or
+   * touch simulation state: a theme toggle must leave the user exactly where
+   * they were looking.
+   */
+  setTheme(theme: Theme) {
+    this.theme = theme;
+    this.app.renderer.background.color = theme.background;
+    this.drawRoads();
+    this.drawJunctions();
+    this.drawMarkings();
+    this.drawNavGraph();
+    this.drawHeatmap();
+    this.drawLabels();
+    if (this.lastState) this.setState(this.lastState);
+  }
+
+  getTheme(): Theme {
+    return this.theme;
+  }
+
+  // --------------------------------------------------------------- textures
   private generateVehicleTextures() {
-    const scale = 4;
-    const cs = CELL_SIZE * scale;
+    const scale = 4; // supersample, then draw at 1/4 size
+    const laneW = DEFAULT_LANE_UNITS * CELL_SIZE * scale;
 
     const motoG = new Graphics();
-    drawMotoShape(motoG, cs);
-    this.motoTexture = this.app.renderer.generateTexture({
-      target: motoG,
-      resolution: 1,
-    });
+    drawVehicle(motoG, CELL_SIZE * scale * 0.92, laneW * 0.62);
+    this.motoTexture = this.app.renderer.generateTexture({ target: motoG, resolution: 1 });
     motoG.destroy();
 
     const carG = new Graphics();
-    drawCarShape(carG, cs, 2);
-    this.carTexture = this.app.renderer.generateTexture({
-      target: carG,
-      resolution: 1,
-    });
+    drawVehicle(carG, CELL_SIZE * 2 * scale * 0.94, laneW * 0.8);
+    this.carTexture = this.app.renderer.generateTexture({ target: carG, resolution: 1 });
     carG.destroy();
   }
 
@@ -247,10 +236,15 @@ export class RoadRenderer {
   // ----------------------------------------------------------------- network
   setNetwork(network: NetworkMessage) {
     this.network = network;
+    this.streetOfRoad.clear();
+    for (const street of network.streets ?? []) {
+      for (const lane of street.lanes) this.streetOfRoad.set(lane.road_id, street);
+    }
     this.drawRoads();
-    this.drawNavGraph();
     this.drawJunctions();
-    this.drawRuler();
+    this.drawMarkings();
+    this.drawNavGraph();
+    this.drawLabels();
     this.heatmapLayer.clear();
     this.disruptionLayer.clear();
     this.hideExtraSprites(0);
@@ -267,52 +261,214 @@ export class RoadRenderer {
     this.drawNavGraph();
   }
 
-  // ----------------------------------------------------------------- road drawing
-  // Layered cross-section for each road segment:
-  //   1. Gravel shoulder (widest, dark)
-  //   2. Asphalt surface (mid-gray)
-  //   3. White edge markings (thin lines along both sides)
+  // ------------------------------------------------------------- geometry
+  /** A lane's painted width in pixels. */
+  private laneWidthPx(road: NetworkRoad): number {
+    const street = this.streetOfRoad.get(road.id);
+    const units = street && street.lane_width > 0 ? street.lane_width : DEFAULT_LANE_UNITS;
+    return Math.max(units * CELL_SIZE, 3);
+  }
+
+  /** Endpoints of a road's painted surface, in world pixels. */
+  private roadEnds(road: NetworkRoad) {
+    const { x0, y0, dx, dy } = road.geometry;
+    return {
+      p0x: (x0 + 0.5 * dx) * CELL_SIZE,
+      p0y: (y0 + 0.5 * dy) * CELL_SIZE,
+      p1x: (x0 + (road.length - 0.5) * dx) * CELL_SIZE,
+      p1y: (y0 + (road.length - 0.5) * dy) * CELL_SIZE,
+    };
+  }
+
+  /** Unit vector 90° to the right of a road's heading. */
+  private static perp(dx: number, dy: number): [number, number] {
+    const len = Math.hypot(dx, dy);
+    return len < 1e-9 ? [0, 0] : [-dy / len, dx / len];
+  }
+
+  // ------------------------------------------------------------ road surface
   private drawRoads() {
     const g = this.roadLayer;
     g.clear();
     if (!this.network) return;
 
+    const roadById = new Map(this.network.roads.map((r) => [r.id, r]));
+    const inStreet = new Set<number>();
+
+    // A street is ONE piece of asphalt carrying all its lanes, so it is drawn
+    // as a single slab down the centreline. Drawing each lane separately would
+    // leave hairline seams between them and make the street read as N ribbons.
+    for (const street of this.network.streets ?? []) {
+      const lanes = street.lanes
+        .map((l) => roadById.get(l.road_id))
+        .filter((r): r is NetworkRoad => !!r);
+      if (!lanes.length) continue;
+      for (const r of lanes) inStreet.add(r.id);
+
+      const width = this.laneWidthPx(lanes[0]) * lanes.length;
+      const ends = this.streetEnds(street, lanes[0]);
+      g.moveTo(ends.p0x, ends.p0y).lineTo(ends.p1x, ends.p1y)
+        .stroke({ color: this.theme.road, width, cap: "butt", join: "round" });
+    }
+
     for (const road of this.network.roads) {
-      const { x0, y0, dx, dy } = road.geometry;
+      if (inStreet.has(road.id)) continue;
+      const { p0x, p0y, p1x, p1y } = this.roadEnds(road);
+      g.moveTo(p0x, p0y).lineTo(p1x, p1y).stroke({
+        color: this.theme.road,
+        width: LONE_ROAD_UNITS * CELL_SIZE,
+        cap: "butt",
+        join: "round",
+      });
+    }
+  }
 
-      const p0x = (x0 + 0.5 * dx) * CELL_SIZE;
-      const p0y = (y0 + 0.5 * dy) * CELL_SIZE;
-      const p1x = (x0 + (road.length - 0.5) * dx) * CELL_SIZE;
-      const p1y = (y0 + (road.length - 0.5) * dy) * CELL_SIZE;
+  /**
+   * A street's painted extent. Prefers its recorded centreline; falls back to
+   * a lane's own geometry for streets built without one.
+   */
+  private streetEnds(street: NetworkStreet, lane: NetworkRoad) {
+    if (street.baseline) {
+      const b = street.baseline;
+      const [ux, uy] = RoadRenderer.perp(b.y0 - b.y1, b.x1 - b.x0); // along
+      const inset = 0.5 * CELL_SIZE * 0;
+      return {
+        p0x: b.x0 * CELL_SIZE + ux * inset, p0y: b.y0 * CELL_SIZE + uy * inset,
+        p1x: b.x1 * CELL_SIZE - ux * inset, p1y: b.y1 * CELL_SIZE - uy * inset,
+      };
+    }
+    return this.roadEnds(lane);
+  }
 
-      // 1. Gravel shoulder
-      g.moveTo(p0x, p0y)
-        .lineTo(p1x, p1y)
-        .stroke({ color: COLORS.shoulder, width: SHOULDER_WIDTH, cap: "round", join: "round" });
+  // --------------------------------------------------------------- markings
+  /**
+   * Painted lines, drawn on the road surface:
+   *   - dashed centre line between adjacent lanes going the same way,
+   *   - a solid median between the two directions of a street,
+   *   - a solid edge line down each outer side of a street.
+   * A road with no street gets edge lines only — there is nothing to divide.
+   */
+  private drawMarkings() {
+    const g = this.markingLayer;
+    g.clear();
+    if (!this.network) return;
 
-      // 2. Asphalt surface
-      g.moveTo(p0x, p0y)
-        .lineTo(p1x, p1y)
-        .stroke({ color: COLORS.asphalt, width: ROAD_WIDTH, cap: "round", join: "round" });
+    const roadById = new Map(this.network.roads.map((r) => [r.id, r]));
+    const inStreet = new Set<number>();
 
-      // 3. White edge markings — thin solid lines along each edge
-      const roadLen = Math.hypot(p1x - p0x, p1y - p0y);
-      if (roadLen > 2) {
-        const angle = Math.atan2(p1y - p0y, p1x - p0x);
-        // Perpendicular unit vector
-        const px = -Math.sin(angle);
-        const py = Math.cos(angle);
+    for (const street of this.network.streets ?? []) {
+      const lanes = street.lanes
+        .map((l) => ({ lane: l, road: roadById.get(l.road_id) }))
+        .filter((e): e is { lane: typeof e.lane; road: NetworkRoad } => !!e.road);
+      if (!lanes.length) continue;
+      for (const e of lanes) inStreet.add(e.road.id);
 
-        // Left edge line
-        g.moveTo(p0x + px * EDGE_INSET, p0y + py * EDGE_INSET)
-          .lineTo(p1x + px * EDGE_INSET, p1y + py * EDGE_INSET)
-          .stroke({ color: COLORS.edgeLine, width: 0.8, alpha: 0.45 });
+      const wPx = this.laneWidthPx(lanes[0].road);
 
-        // Right edge line
-        g.moveTo(p0x - px * EDGE_INSET, p0y - py * EDGE_INSET)
-          .lineTo(p1x - px * EDGE_INSET, p1y - py * EDGE_INSET)
-          .stroke({ color: COLORS.edgeLine, width: 0.8, alpha: 0.45 });
+      // A divider between two neighbouring lanes sits on the boundary they
+      // share: half a lane to the right of the left-hand one.
+      for (const { lane, road } of lanes) {
+        if (lane.right_road_id === null) continue;
+        this.strokeOffset(g, road, wPx / 2, {
+          color: this.theme.centerLine, width: 1.1, alpha: 0.95, dashed: true,
+        });
       }
+
+      // Median: between the innermost forward lane and the oncoming side.
+      const forward = lanes.filter((e) => e.lane.direction === "forward");
+      const backward = lanes.filter((e) => e.lane.direction === "backward");
+      if (forward.length && backward.length) {
+        const innermost = forward[forward.length - 1];
+        this.strokeOffset(g, innermost.road, wPx / 2, {
+          color: this.theme.median, width: 1.0, alpha: 1,
+        });
+        this.strokeOffset(g, innermost.road, wPx / 2 + 1.4, {
+          color: this.theme.median, width: 1.0, alpha: 1,
+        });
+      }
+
+      // Outer edges of the whole street.
+      const leftMost = lanes[0];
+      const rightMost = lanes[lanes.length - 1];
+      this.strokeOffset(g, leftMost.road, -wPx / 2 + 0.4, {
+        color: this.theme.edgeLine, width: 1.0, alpha: 0.9,
+      });
+      this.strokeOffset(g, rightMost.road, wPx / 2 - 0.4, {
+        color: this.theme.edgeLine, width: 1.0, alpha: 0.9,
+      });
+    }
+
+    // Roads that belong to no street: an edge line down each side.
+    for (const road of this.network.roads) {
+      if (inStreet.has(road.id)) continue;
+      const half = (LONE_ROAD_UNITS * CELL_SIZE) / 2 - 0.4;
+      for (const side of [-half, half]) {
+        this.strokeOffset(g, road, side, {
+          color: this.theme.edgeLine, width: 0.9, alpha: 0.75,
+        });
+      }
+    }
+  }
+
+  /**
+   * Stroke a line parallel to `road`, `offset` pixels to its right.
+   * Dash length scales with the cell size so markings read at any zoom.
+   */
+  private strokeOffset(
+    g: Graphics,
+    road: NetworkRoad,
+    offset: number,
+    style: { color: number; width: number; alpha: number; dashed?: boolean },
+  ) {
+    const { p0x, p0y, p1x, p1y } = this.roadEnds(road);
+    const [px, py] = RoadRenderer.perp(p1x - p0x, p1y - p0y);
+    const ax = p0x + px * offset;
+    const ay = p0y + py * offset;
+    const bx = p1x + px * offset;
+    const by = p1y + py * offset;
+
+    if (!style.dashed) {
+      g.moveTo(ax, ay).lineTo(bx, by)
+        .stroke({ color: style.color, width: style.width, alpha: style.alpha });
+      return;
+    }
+
+    const len = Math.hypot(bx - ax, by - ay);
+    if (len < 1) return;
+    const ux = (bx - ax) / len;
+    const uy = (by - ay) / len;
+    const dash = CELL_SIZE * 0.55;
+    const gap = CELL_SIZE * 0.45;
+    for (let t = 0; t < len; t += dash + gap) {
+      const e = Math.min(t + dash, len);
+      g.moveTo(ax + ux * t, ay + uy * t).lineTo(ax + ux * e, ay + uy * e)
+        .stroke({ color: style.color, width: style.width, alpha: style.alpha });
+    }
+  }
+
+  // -------------------------------------------------------------- junctions
+  /**
+   * Junctions are just paved area where roads meet — no node graphics. The pad
+   * is sized from the widest lane touching it so it fills the intersection
+   * without spilling onto the grass.
+   */
+  private drawJunctions() {
+    const g = this.junctionLayer;
+    g.clear();
+    if (!this.network) return;
+
+    let pad = DEFAULT_LANE_UNITS * CELL_SIZE;
+    for (const road of this.network.roads) {
+      const street = this.streetOfRoad.get(road.id);
+      const lanes = street ? street.lanes.length : 1;
+      pad = Math.max(pad, this.laneWidthPx(road) * lanes);
+    }
+    const r = pad * 0.62;
+
+    for (const j of this.network.junctions) {
+      const cx = j.x * CELL_SIZE + CELL_SIZE / 2;
+      const cy = j.y * CELL_SIZE + CELL_SIZE / 2;
+      g.rect(cx - r, cy - r, r * 2, r * 2).fill({ color: this.theme.junction });
     }
   }
 
@@ -323,199 +479,214 @@ export class RoadRenderer {
 
     for (const road of this.network.roads) {
       const { x0, y0, dx, dy } = road.geometry;
-
-      const p0x = (x0 + 0.5 * dx) * CELL_SIZE;
-      const p0y = (y0 + 0.5 * dy) * CELL_SIZE;
-      const p1x = (x0 + (road.length - 0.5) * dx) * CELL_SIZE;
-      const p1y = (y0 + (road.length - 0.5) * dy) * CELL_SIZE;
-
-      g.moveTo(p0x, p0y)
-        .lineTo(p1x, p1y)
-        .stroke({ color: 0xff9500, width: 2, alpha: 0.8 });
-
+      const { p0x, p0y, p1x, p1y } = this.roadEnds(road);
+      g.moveTo(p0x, p0y).lineTo(p1x, p1y)
+        .stroke({ color: this.theme.navGraph, width: 2, alpha: 0.8 });
       for (let k = 0; k < road.length; k++) {
         const cx = (x0 + (k + 0.5) * dx) * CELL_SIZE;
         const cy = (y0 + (k + 0.5) * dy) * CELL_SIZE;
-        g.circle(cx, cy, 2.5).fill({ color: 0xffcc00, alpha: 0.9 });
+        g.circle(cx, cy, 2).fill({ color: this.theme.navGraphNode, alpha: 0.9 });
       }
     }
   }
 
-  // ----------------------------------------------------------------- junctions
-  // Draw a smooth asphalt pad at each junction — looks like a real intersection.
-  private drawJunctions() {
-    const g = this.junctionLayer;
-    g.clear();
-    if (!this.network) return;
-
-    for (const j of this.network.junctions) {
-      const cx = j.x * CELL_SIZE + CELL_SIZE / 2;
-      const cy = j.y * CELL_SIZE + CELL_SIZE / 2;
-      const pad = ROAD_WIDTH * 0.7;
-
-      // Outer rim (gravel edge around the intersection)
-      g.circle(cx, cy, pad + 2)
-        .fill({ color: COLORS.junctionRim });
-
-      // Main asphalt pad
-      g.circle(cx, cy, pad)
-        .fill({ color: COLORS.junctionPad });
-
-      // Subtle center dot — helps visually locate the node
-      g.circle(cx, cy, 2)
-        .fill({ color: COLORS.edgeLine, alpha: 0.3 });
-    }
-  }
-
-  /** Draw a thin cell-index ruler along the top edge of road 0. */
-  private drawRuler() {
-    const g = this.rulerLayer;
-    g.clear();
-    if (!this.navGraphEnabled || !this.network || this.network.roads.length === 0) return;
-
-    const road = this.network.roads[0];
-    const { x0, y0, dx, dy } = road.geometry;
-    const isHoriz = Math.abs(dx) >= Math.abs(dy);
-
-    for (let k = 0; k < road.length; k += 10) {
-      const wx = (x0 + (k + 0.5) * dx) * CELL_SIZE;
-      const wy = (y0 + (k + 0.5) * dy) * CELL_SIZE;
-
-      if (isHoriz) {
-        const tickTop = wy - 10;
-        const tickH = k % 20 === 0 ? 6 : 3;
-        g.moveTo(wx, tickTop).lineTo(wx, tickTop + tickH)
-          .stroke({ color: COLORS.rulerTick, width: 0.8 });
-      } else {
-        const tickLeft = wx - 10;
-        const tickW = k % 20 === 0 ? 6 : 3;
-        g.moveTo(tickLeft, wy).lineTo(tickLeft + tickW, wy)
-          .stroke({ color: COLORS.rulerTick, width: 0.8 });
-      }
-    }
-  }
-
+  // ---------------------------------------------------------------- heatmap
+  /** Tints the road bed. Sits under markings, disruptions and vehicles. */
   private drawHeatmap() {
     const g = this.heatmapLayer;
     g.clear();
     if (!this.heatmapEnabled || !this.network || !this.lastState) return;
     const roadById = new Map(this.network.roads.map((r) => [r.id, r]));
+
     for (const road of this.lastState.roads) {
       const meta = roadById.get(road.id);
       if (!meta) continue;
       const { x0, y0, dx, dy } = meta.geometry;
       for (const seg of road.segments) {
-        const color = heatColor(seg.d);
         const p0x = (x0 + (seg.s + 0.5) * dx) * CELL_SIZE;
         const p0y = (y0 + (seg.s + 0.5) * dy) * CELL_SIZE;
         const p1x = (x0 + (seg.s + seg.n - 0.5) * dx) * CELL_SIZE;
         const p1y = (y0 + (seg.s + seg.n - 0.5) * dy) * CELL_SIZE;
-        g.moveTo(p0x, p0y)
-          .lineTo(p1x, p1y)
-          .stroke({ color, width: CELL_SIZE - 2, alpha: 0.55, cap: "round" });
+        g.moveTo(p0x, p0y).lineTo(p1x, p1y).stroke({
+          color: heatColor(seg.d),
+          width: this.laneWidthPx(meta),
+          alpha: this.theme.heatmapAlpha,
+          cap: "butt",
+        });
       }
     }
   }
 
-  // ----------------------------------------------------------------- state
+  // ----------------------------------------------------------------- labels
+  /**
+   * Street names along their road, on a translucent pill so they stay legible
+   * against grass. Shown only when the camera is zoomed in far enough that
+   * they fit; hidden entirely when zoomed out.
+   */
+  private drawLabels() {
+    for (const t of this.labels) t.visible = false;
+    if (!this.network) return;
+
+    const scale = this.camera.scale.x;
+    if (scale < LABEL_MIN_SCALE) return;
+
+    // one label per named street (or per named road, if it has no street)
+    const seen = new Set<string>();
+    let i = 0;
+
+    for (const road of this.network.roads) {
+      const name = road.name?.trim();
+      if (!name) continue;
+      const key = road.street_id ?? `road:${road.id}`;
+      if (seen.has(key)) continue;
+
+      const { p0x, p0y, p1x, p1y } = this.roadEnds(road);
+      if (Math.hypot(p1x - p0x, p1y - p0y) * scale < LABEL_MIN_ROAD_PX) continue;
+      seen.add(key);
+
+      const label = this.getLabel(i++);
+      label.text = name;
+      label.style.fill = this.theme.label;
+      label.position.set((p0x + p1x) / 2, (p0y + p1y) / 2);
+      // keep text upright and at a constant on-screen size
+      label.scale.set(1 / scale);
+      let angle = Math.atan2(p1y - p0y, p1x - p0x);
+      if (angle > Math.PI / 2 || angle < -Math.PI / 2) angle += Math.PI;
+      label.rotation = angle;
+      label.visible = true;
+    }
+  }
+
+  private getLabel(index: number): Text {
+    if (index < this.labels.length) return this.labels[index];
+    const t = new Text({
+      text: "",
+      style: {
+        fontFamily: "system-ui, sans-serif",
+        fontSize: 11,
+        fill: this.theme.label,
+        // a soft halo does the job of a pill background at a fraction of the
+        // cost, and never boxes in a rotated label
+        stroke: { color: this.theme.labelBackdrop, width: 3, join: "round" },
+      },
+    });
+    t.anchor.set(0.5, 0.5);
+    this.labelContainer.addChild(t);
+    this.labels.push(t);
+    return t;
+  }
+
+  // ------------------------------------------------------------------ state
   setState(state: StateMessage) {
     if (!this.network) return;
     this.lastState = state;
     const roadById = new Map(this.network.roads.map((r) => [r.id, r]));
 
     this.drawHeatmap();
+    this.drawDisruptions(roadById);
 
-    // ---- disruptions ----
-    const d = this.disruptionLayer;
-    d.clear();
-    for (const dis of state.disruptions) {
-      const meta = roadById.get(dis.road_id);
-      if (!meta) continue;
-      const { x0, y0, dx, dy } = meta.geometry;
-      const color = DISRUPTION_COLORS[dis.kind] ?? 0xffffff;
-      for (const idx of dis.cells) {
-        const cx = (x0 + (idx + 0.5) * dx) * CELL_SIZE;
-        const cy = (y0 + (idx + 0.5) * dy) * CELL_SIZE;
-        d.circle(cx, cy, CELL_SIZE * 0.55).fill({ color, alpha: 0.35 });
-        d.circle(cx, cy, CELL_SIZE * 0.4).fill({ color });
-        if (dis.permanent) {
-          d.circle(cx, cy, CELL_SIZE * 0.15).fill({ color: 0x1a1a1a });
-        }
-      }
-    }
-
-    // ---- vehicles ----
     let spriteIdx = 0;
-
     for (const road of state.roads) {
       const meta = roadById.get(road.id);
       if (!meta) continue;
       const { x0, y0, dx, dy } = meta.geometry;
       const L = meta.length;
       const angle = Math.atan2(dy, dx);
+      // scale the sprite so a vehicle always fills its own lane
+      const laneScale = this.laneWidthPx(meta) / (DEFAULT_LANE_UNITS * CELL_SIZE);
 
       for (const v of road.vehicles) {
         const tex = v.t === "car" ? this.carTexture : this.motoTexture;
-        const tint = v.t === "car" ? COLORS.car : COLORS.moto;
-        const glowTint = v.t === "car" ? COLORS.carGlow : COLORS.motoGlow;
-
         if (!tex) continue;
 
-        const frontIdx = v.f;
-        const rearOffset = v.l - 1;
-        let centerIdx = frontIdx - rearOffset / 2;
-        if (meta.periodic && frontIdx - rearOffset < 0) {
-          const unwrappedRear = frontIdx - rearOffset;
-          centerIdx = frontIdx - rearOffset / 2;
-          if (unwrappedRear < 0) {
-            centerIdx = ((centerIdx % L) + L) % L;
-          }
+        let centerIdx = v.f - (v.l - 1) / 2;
+        if (meta.periodic && v.f - (v.l - 1) < 0) {
+          centerIdx = ((centerIdx % L) + L) % L;
         }
-
         const cx = (x0 + (centerIdx + 0.5) * dx) * CELL_SIZE;
         const cy = (y0 + (centerIdx + 0.5) * dy) * CELL_SIZE;
 
-        // Glow sprite
-        const glow = this.getSprite(spriteIdx++);
-        glow.texture = tex;
-        glow.tint = glowTint;
-        glow.alpha = 0.4;
-        glow.rotation = angle;
-        glow.position.set(cx, cy);
-        const texScale = 1 / 4;
-        glow.scale.set(texScale * 1.15);
-
-        // Main body sprite
         const body = this.getSprite(spriteIdx++);
         body.texture = tex;
-        body.tint = tint;
+        body.tint = v.t === "car" ? this.theme.car : this.theme.moto;
         body.alpha = 1;
-        body.rotation = angle;
+        body.rotation = angle;          // faces its direction of travel
         body.position.set(cx, cy);
-        body.scale.set(texScale);
+        body.scale.set(laneScale / 4);  // /4 undoes the texture supersample
       }
     }
-
     this.hideExtraSprites(spriteIdx);
   }
 
+  /**
+   * Disruptions as markers on the road, not flat colour fills: a triangle for
+   * a temporary incident, a bordered diamond for a permanent reservation.
+   * Drawn above the heatmap so a jam can never hide the thing causing it.
+   */
+  private drawDisruptions(roadById: Map<number, NetworkRoad>) {
+    const g = this.disruptionLayer;
+    g.clear();
+    if (!this.lastState) return;
+
+    for (const dis of this.lastState.disruptions) {
+      const meta = roadById.get(dis.road_id);
+      if (!meta) continue;
+      const { x0, y0, dx, dy } = meta.geometry;
+      const color = DISRUPTION_COLORS[dis.kind] ?? 0xffffff;
+      const r = Math.max(this.laneWidthPx(meta) * 0.75, CELL_SIZE * 0.42);
+
+      for (const idx of dis.cells) {
+        const cx = (x0 + (idx + 0.5) * dx) * CELL_SIZE;
+        const cy = (y0 + (idx + 0.5) * dy) * CELL_SIZE;
+
+        if (dis.permanent) {
+          // diamond + border: infrastructure, not an incident
+          g.moveTo(cx, cy - r).lineTo(cx + r, cy).lineTo(cx, cy + r)
+            .lineTo(cx - r, cy).closePath()
+            .fill({ color })
+            .stroke({ color: this.theme.disruptionOutline, width: 1, alpha: 0.9 });
+        } else {
+          // upward triangle: hazard
+          g.moveTo(cx, cy - r).lineTo(cx + r * 0.92, cy + r * 0.7)
+            .lineTo(cx - r * 0.92, cy + r * 0.7).closePath()
+            .fill({ color })
+            .stroke({ color: this.theme.disruptionOutline, width: 1, alpha: 0.9 });
+        }
+      }
+    }
+  }
+
   // ----------------------------------------------------------------- camera
+  /** Chase the target each frame, so zoom and pan glide instead of snapping. */
+  private stepCamera() {
+    const c = this.camera;
+    const ds = this.target.scale - c.scale.x;
+    const dx = this.target.x - c.x;
+    const dy = this.target.y - c.y;
+    if (Math.abs(ds) < 1e-4 && Math.abs(dx) < 0.2 && Math.abs(dy) < 0.2) {
+      if (ds !== 0 || dx !== 0 || dy !== 0) {
+        c.scale.set(this.target.scale);
+        c.position.set(this.target.x, this.target.y);
+        this.drawLabels();
+      }
+      return;
+    }
+    c.scale.set(c.scale.x + ds * CAMERA_EASE);
+    c.x += dx * CAMERA_EASE;
+    c.y += dy * CAMERA_EASE;
+    this.drawLabels();
+  }
+
   private installCameraControls() {
     const canvas = this.app.canvas;
-
-    // --- cursor: grab / grabbing ---
     canvas.style.cursor = "grab";
 
-    // --- scroll zoom (toward cursor) ---
     canvas.addEventListener("wheel", (e: WheelEvent) => {
       e.preventDefault();
-      // Smoother zoom: smaller step factor for trackpads / fine-grained scrolls
       const raw = Math.abs(e.deltaY) > 50 ? 1.12 : 1.06;
-      const factor = e.deltaY < 0 ? raw : 1 / raw;
-      this.zoomAt(e.offsetX, e.offsetY, factor);
+      this.zoomAt(e.offsetX, e.offsetY, e.deltaY < 0 ? raw : 1 / raw);
     });
 
-    // --- drag pan ---
     canvas.addEventListener("pointerdown", (e: PointerEvent) => {
       this.dragging = true;
       this.lastPointer = { x: e.offsetX, y: e.offsetY };
@@ -526,8 +697,14 @@ export class RoadRenderer {
 
     canvas.addEventListener("pointermove", (e: PointerEvent) => {
       if (!this.dragging) return;
-      this.camera.x += e.offsetX - this.lastPointer.x;
-      this.camera.y += e.offsetY - this.lastPointer.y;
+      // Dragging moves the camera directly: a grabbed map should track the
+      // finger exactly, with no lag. Only zoom is eased.
+      const mx = e.offsetX - this.lastPointer.x;
+      const my = e.offsetY - this.lastPointer.y;
+      this.camera.x += mx;
+      this.camera.y += my;
+      this.target.x += mx;
+      this.target.y += my;
       this.lastPointer = { x: e.offsetX, y: e.offsetY };
     });
 
@@ -547,27 +724,19 @@ export class RoadRenderer {
     canvas.addEventListener("pointerup", endDrag);
     canvas.addEventListener("pointercancel", endDrag);
 
-    // --- double-click: zoom in (shift+double-click: zoom out) ---
     canvas.addEventListener("dblclick", (e: MouseEvent) => {
       e.preventDefault();
-      const factor = e.shiftKey ? 0.5 : 2;
-      this.zoomAt(e.offsetX, e.offsetY, factor);
+      this.zoomAt(e.offsetX, e.offsetY, e.shiftKey ? 0.5 : 2);
     });
 
-    // --- keyboard: +/- zoom, 0 fit-to-view ---
-    // Make canvas focusable so it receives key events
     canvas.tabIndex = 0;
     canvas.style.outline = "none";
     canvas.addEventListener("keydown", (e: KeyboardEvent) => {
       const w = this.app.renderer.width;
       const h = this.app.renderer.height;
-      if (e.key === "=" || e.key === "+") {
-        this.zoomAt(w / 2, h / 2, 1.25);
-      } else if (e.key === "-" || e.key === "_") {
-        this.zoomAt(w / 2, h / 2, 1 / 1.25);
-      } else if (e.key === "0") {
-        this.fitToView();
-      }
+      if (e.key === "=" || e.key === "+") this.zoomAt(w / 2, h / 2, 1.25);
+      else if (e.key === "-" || e.key === "_") this.zoomAt(w / 2, h / 2, 1 / 1.25);
+      else if (e.key === "0") this.fitToView();
     });
   }
 
@@ -598,17 +767,18 @@ export class RoadRenderer {
         }
       }
     }
-    const road = best && bestDist < CELL_SIZE * 1.5 ? best : null;
-    return { gridX, gridY, road };
+    return { gridX, gridY, road: best && bestDist < CELL_SIZE * 1.5 ? best : null };
   }
 
   zoomAt(sx: number, sy: number, factor: number) {
-    const worldX = (sx - this.camera.x) / this.camera.scale.x;
-    const worldY = (sy - this.camera.y) / this.camera.scale.y;
-    const newScale = Math.min(20, Math.max(0.03, this.camera.scale.x * factor));
-    this.camera.scale.set(newScale);
-    this.camera.x = sx - worldX * newScale;
-    this.camera.y = sy - worldY * newScale;
+    // Zoom about the cursor, computed against the *target* so repeated wheel
+    // ticks compose correctly instead of fighting the easing.
+    const worldX = (sx - this.target.x) / this.target.scale;
+    const worldY = (sy - this.target.y) / this.target.scale;
+    const newScale = Math.min(20, Math.max(0.03, this.target.scale * factor));
+    this.target.scale = newScale;
+    this.target.x = sx - worldX * newScale;
+    this.target.y = sy - worldY * newScale;
   }
 
   private bounds() {
@@ -630,20 +800,31 @@ export class RoadRenderer {
   }
 
   /** Reset camera so the entire network fits comfortably. */
-  fitToView() {
+  fitToView(immediate = false) {
     const { minX, minY, maxX, maxY } = this.bounds();
     const w = this.app.renderer.width;
     const h = this.app.renderer.height;
     const margin = 80;
     const bw = Math.max(maxX - minX, CELL_SIZE);
     const bh = Math.max(maxY - minY, CELL_SIZE);
-    const fitScale = Math.min((w - margin) / bw, (h - margin) / bh);
-    const minCellPx = 6;
-    const minScale = minCellPx / CELL_SIZE;
-    const s = Math.min(Math.max(Math.max(fitScale, minScale), 0.1), 6);
-    this.camera.scale.set(s);
-    this.camera.x = (w - bw * s) / 2 - minX * s;
-    this.camera.y = (h - bh * s) / 2 - minY * s;
+    // Fit must always fit: a large OSM import needs a much smaller scale than
+    // the interactive zoom floor allows, so no minimum is applied here. The
+    // floor lives in zoomAt, where it stops the user zooming into mush.
+    const s = Math.min(Math.max((w - margin) / bw, 0.005),
+                       Math.max((h - margin) / bh, 0.005), 6);
+    this.target.scale = s;
+    this.target.x = (w - bw * s) / 2 - minX * s;
+    this.target.y = (h - bh * s) / 2 - minY * s;
+    if (immediate) {
+      this.camera.scale.set(s);
+      this.camera.position.set(this.target.x, this.target.y);
+      this.drawLabels();
+    }
+  }
+
+  /** Camera scale actually on screen — used by tests and the zoom readout. */
+  getScale(): number {
+    return this.camera.scale.x;
   }
 
   getVisibleCellRange(): { roadId: number; min: number; max: number } | null {

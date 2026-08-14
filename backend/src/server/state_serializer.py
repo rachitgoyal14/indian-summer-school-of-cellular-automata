@@ -88,6 +88,7 @@ def serialize_network(sim: Simulation) -> dict[str, Any]:
                 # which street this lane belongs to, if any (null = plain road)
                 "street_id": r.street_id,
                 "lane_index": r.lane_index,
+                "name": r.name,
             }
             for r in sim.roads
         ],

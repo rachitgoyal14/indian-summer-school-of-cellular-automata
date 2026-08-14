@@ -39,6 +39,7 @@ def save_scenario(sim) -> dict[str, Any]:
             "source_car_fraction": r.source_car_fraction,
             "street_id": r.street_id,
             "lane_index": r.lane_index,
+            "name": r.name,
             "vehicles": [
                 {"id": v.id, "front": v.front, "length": v.length, "vtype": v.vtype}
                 for v in sorted(r.vehicles, key=lambda v: v.front)
@@ -119,6 +120,7 @@ def network_from_scenario(data: dict[str, Any]) -> Network:
             source_car_fraction=rd.get("source_car_fraction", 0.0),
             street_id=rd.get("street_id"),
             lane_index=int(rd.get("lane_index", 0)),
+            name=rd.get("name", ""),
         )
         for vd in rd["vehicles"]:
             road.vehicles.append(

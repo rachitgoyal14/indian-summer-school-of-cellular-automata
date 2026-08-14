@@ -18,6 +18,8 @@ export interface NetworkRoad {
   street_id?: string | null;
   /** Position within its street's direction group, 0 = leftmost. */
   lane_index?: number;
+  /** Street name from OSM, when the import had one. Used for map labels. */
+  name?: string;
 }
 
 export interface NetworkJunction {

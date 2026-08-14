@@ -63,6 +63,9 @@ class Road:
     # and a standalone road keeps street_id=None, lane_index=0.
     street_id: str | None = None
     lane_index: int = 0
+    # human-readable name from OSM (`name=*`), for map labels. Purely
+    # descriptive — nothing in the engine reads it.
+    name: str = ""
 
     def occupancy(self) -> np.ndarray:
         occ = np.zeros(self.length, dtype=np.int8)

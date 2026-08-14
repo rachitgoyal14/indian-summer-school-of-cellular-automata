@@ -16,11 +16,14 @@ import { AnalyticsPanel } from "./components/AnalyticsPanel";
 import { MapEditor } from "./components/MapEditor";
 import { RegionSearch } from "./components/RegionSearch";
 import { useSimulationSocket } from "./hooks/useSimulationSocket";
+import type { ThemeName } from "./render/theme";
 import type { RoadRenderer } from "./render/RoadRenderer";
 import "./App.css";
 
 export default function App() {
   const api = useSimulationSocket();
+  // Day is the default; Night preserves the original dark palette.
+  const [theme, setTheme] = useState<ThemeName>("day");
   const st = api.state;
 
   // Renderer instance: set once the canvas mounts, cleared on unmount.
@@ -62,6 +65,8 @@ export default function App() {
             state={st}
             onRendererReady={handleRendererReady}
             loading={mapLoading}
+            theme={theme}
+            onThemeToggle={() => setTheme((t) => (t === "day" ? "night" : "day"))}
           />
 
           {st && st.junctions.length > 0 && (
