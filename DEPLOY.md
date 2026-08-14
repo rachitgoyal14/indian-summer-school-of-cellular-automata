@@ -20,7 +20,7 @@ The frontend and backend run on separate domains and communicate via cross-origi
 
 ## Deployment Order
 
-**⚠️ IMPORTANT:** Deploy the backend FIRST, then the frontend. The frontend build requires the backend's Railway URL to be set as an environment variable before building.
+**IMPORTANT:** Deploy the backend FIRST, then the frontend. The frontend build requires the backend's Railway URL to be set as an environment variable before building.
 
 ---
 
