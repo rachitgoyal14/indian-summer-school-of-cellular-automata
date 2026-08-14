@@ -126,6 +126,8 @@ export class RoadRenderer {
   private lastPointer = { x: 0, y: 0 };
   private downPos = { x: 0, y: 0 };
   private editClickHandler: ((loc: EditClick) => void) | null = null;
+  /** Extent of the last network, so an unchanged map keeps the user's view. */
+  private lastExtent: string | null = null;
 
   private constructor(app: Application) {
     this.app = app;
@@ -248,7 +250,18 @@ export class RoadRenderer {
     this.heatmapLayer.clear();
     this.disruptionLayer.clear();
     this.hideExtraSprites(0);
-    this.fitToView();
+
+    // Refit only when the map itself changed shape — a config switch, a
+    // region import, a road added. Promoting a scenario's final state or
+    // resetting the density sends the same extent back, and refitting there
+    // would yank the view out from under the user for no reason.
+    const b = this.bounds();
+    const extent = [b.minX, b.minY, b.maxX, b.maxY]
+      .map((n) => Math.round(n)).join(",");
+    if (extent !== this.lastExtent) {
+      this.lastExtent = extent;
+      this.fitToView();
+    }
   }
 
   setHeatmapEnabled(enabled: boolean) {
@@ -820,6 +833,15 @@ export class RoadRenderer {
       this.camera.position.set(this.target.x, this.target.y);
       this.drawLabels();
     }
+  }
+
+  /** Centre the view on a world point at a given scale (eased). */
+  focusOn(worldX: number, worldY: number, scale: number) {
+    const w = this.app.renderer.width;
+    const h = this.app.renderer.height;
+    this.target.scale = Math.min(20, Math.max(0.005, scale));
+    this.target.x = w / 2 - worldX * CELL_SIZE * this.target.scale;
+    this.target.y = h / 2 - worldY * CELL_SIZE * this.target.scale;
   }
 
   /** Camera scale actually on screen — used by tests and the zoom readout. */

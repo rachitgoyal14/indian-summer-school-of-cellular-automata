@@ -824,3 +824,87 @@ button.mode-active {
   letter-spacing: 0.01em;
 }
 
+
+/* ---------------------------------------------- Stage 15: scenario explorer */
+.theme-toggle {
+  margin-left: auto;
+  margin-right: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--text, #e8e8e8);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.theme-toggle:hover { background: rgba(255, 255, 255, 0.12); }
+
+.panel { margin: 2px 0 6px; }
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; background: none; border: 0; padding: 4px 0;
+  color: inherit; cursor: pointer; font: inherit;
+}
+.panel-head.static { cursor: default; }
+.panel-title {
+  font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--muted, #9aa0a6);
+  border-left: 3px solid var(--accent, #f5a623); padding-left: 8px;
+}
+.panel-chevron { color: var(--muted, #9aa0a6); font-size: 11px; }
+.panel-collapsed-hint { font-size: 11px; color: var(--muted, #777); padding: 0 0 4px 11px; }
+.panel-body { display: flex; flex-direction: column; gap: 8px; padding: 6px 0 2px; }
+
+.field { display: flex; flex-direction: column; gap: 3px; }
+.field-label { font-size: 11px; color: var(--muted, #9aa0a6); }
+.field input[type="number"], .field select, .scenario-schedule textarea {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: inherit; border-radius: 5px; padding: 4px 6px; font-size: 12px;
+  font-family: inherit; width: 100%; box-sizing: border-box;
+}
+.scenario-schedule textarea { font-family: ui-monospace, monospace; font-size: 11px; }
+.field.checkbox { flex-direction: row; align-items: center; gap: 7px; font-size: 12px; }
+.scenario-schedule summary { font-size: 11px; color: var(--muted, #9aa0a6); cursor: pointer; }
+
+.run-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--accent, #f5a623); color: #1a1a1a; border: 0;
+  border-radius: 6px; padding: 8px; font-weight: 600; font-size: 13px;
+  cursor: pointer; margin-top: 2px;
+}
+.run-btn:disabled { opacity: 0.65; cursor: progress; }
+.spinner {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.25); border-top-color: #1a1a1a;
+  animation: spin 0.7s linear infinite; display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.scenario-error {
+  background: rgba(214, 51, 108, 0.15);
+  border: 1px solid rgba(214, 51, 108, 0.55);
+  border-radius: 6px; padding: 7px 9px; font-size: 12px; color: #ffb3c8;
+}
+.scenario-error .small, .small { font-size: 10px; opacity: 0.75; }
+.small.muted { color: var(--muted, #9aa0a6); }
+
+.scenario-results { display: flex; flex-direction: column; gap: 8px; }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.scenario-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 5px; padding: 5px 6px;
+}
+.scenario-card-label {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted, #9aa0a6);
+}
+.scenario-card-value { font-family: ui-monospace, monospace; font-size: 13px; }
+
+.trajectory-chart { display: flex; flex-direction: column; gap: 4px; }
+.chart-legend { display: flex; gap: 10px; font-size: 10px; color: var(--muted, #9aa0a6); }
+.chart-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.chart-legend i { width: 10px; height: 2px; display: inline-block; }
+.ghost-btn.wide { width: 100%; justify-content: center; }
+.lane-live { font-size: 10px; color: var(--muted, #9aa0a6); font-family: ui-monospace, monospace; }

@@ -15,15 +15,31 @@ import { DisruptionPanel } from "./components/DisruptionPanel";
 import { AnalyticsPanel } from "./components/AnalyticsPanel";
 import { MapEditor } from "./components/MapEditor";
 import { RegionSearch } from "./components/RegionSearch";
+import { ScenarioPanel } from "./components/ScenarioPanel";
+import { LaneChangePanel } from "./components/LaneChangePanel";
 import { useSimulationSocket } from "./hooks/useSimulationSocket";
 import type { ThemeName } from "./render/theme";
 import type { RoadRenderer } from "./render/RoadRenderer";
 import "./App.css";
 
+const THEME_KEY = "ca-sim-theme";
+
 export default function App() {
   const api = useSimulationSocket();
   // Day is the default; Night preserves the original dark palette.
-  const [theme, setTheme] = useState<ThemeName>("day");
+  const [theme, setTheme] = useState<ThemeName>(() => {
+    // Restore the last choice so a refresh does not throw the user back to
+    // a palette they switched away from.
+    const saved = typeof localStorage !== "undefined" ? localStorage.getItem(THEME_KEY) : null;
+    return saved === "night" || saved === "day" ? saved : "day";
+  });
+  const toggleTheme = useCallback(() => {
+    setTheme((t) => {
+      const next: ThemeName = t === "day" ? "night" : "day";
+      try { localStorage.setItem(THEME_KEY, next); } catch { /* private mode */ }
+      return next;
+    });
+  }, []);
   const st = api.state;
 
   // Renderer instance: set once the canvas mounts, cleared on unmount.
@@ -53,6 +69,10 @@ export default function App() {
       </div>
       <header className="topbar">
         <h1><span className="topbar-issca">ISSCA</span>CA Rule 184 — Traffic Simulator</h1>
+        <button className="theme-toggle" onClick={toggleTheme} data-testid="theme-toggle"
+                title="Switch between the Day campus map and the Night palette">
+          {theme === "day" ? "☀️ Day" : "🌙 Night"}
+        </button>
         <div className={`conn ${api.connected ? "up" : "down"}`}>
           {api.connected ? "● connected" : "○ disconnected"}
         </div>
@@ -66,7 +86,7 @@ export default function App() {
             onRendererReady={handleRendererReady}
             loading={mapLoading}
             theme={theme}
-            onThemeToggle={() => setTheme((t) => (t === "day" ? "night" : "day"))}
+            onThemeToggle={toggleTheme}
           />
 
           {st && st.junctions.length > 0 && (
@@ -89,6 +109,10 @@ export default function App() {
           <AnalyticsPanel state={st} />
           <div className="divider" />
           <ControlPanel api={api} />
+          <div className="divider" />
+          <LaneChangePanel api={api} />
+          <div className="divider" />
+          <ScenarioPanel api={api} />
           <div className="divider" />
           <RegionSearch api={api} onLoadingChange={handleLoadingChange} />
           <div className="divider" />

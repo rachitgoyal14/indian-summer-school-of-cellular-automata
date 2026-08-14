@@ -126,6 +126,10 @@ export function SimulationCanvas({
       rendererRef.current = r;
       setReady(true);
       onRendererReady?.(r);
+      // Debug handle: lets automated visual checks drive the camera to a known
+      // place. Harmless in production, and the only way to screenshot a
+      // specific named road without guessing at pixel coordinates.
+      (window as unknown as { __roadRenderer?: RoadRenderer }).__roadRenderer = r;
     });
     return () => {
       cancelled = true;
