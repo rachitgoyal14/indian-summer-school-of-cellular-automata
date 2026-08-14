@@ -70,6 +70,9 @@ def serialize_state(sim: Simulation) -> dict[str, Any]:
         "step": sim.step_count,
         "running": sim.running,
         "steps_per_second": sim.steps_per_second,
+        "lane_change_prob": sim.lane_change_prob,
+        "rear_safety_gap": sim.rear_safety_gap,
+        "lane_change_require_gain": sim.lane_change_require_gain,
         "roads": [
             {
                 "id": r.id,
@@ -94,6 +97,7 @@ def serialize_state(sim: Simulation) -> dict[str, Any]:
             "entropy_bits": round(entropy_bits, 6),
             "blocked_fraction": round(sim.blocked_fraction(), 6),
             "avg_queue": round(sim.avg_queue_length(), 4),
+            "lane_changes": sim.lane_changes(),      # lateral moves last step
             "landscape": sim.landscape(),           # trivial | average | worst
         },
     }

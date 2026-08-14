@@ -20,6 +20,10 @@ Client → server control messages
   {"type": "step"}                               advance exactly one step
   {"type": "reset", "density": 0.3, "seed": 1}   rebuild initial state
   {"type": "set_speed", "steps_per_second": 20}  change tick rate
+  {"type": "set_lane_change_params",             lateral-transfer settings; any
+   "prob": 0.3, "rear_gap": 1,                   subset of the three keys may be
+   "require_gain": true}                         sent (partial update)
+  {"type": "set_lane_change_prob", "p": 0.3}     older alias for "prob" alone
   {"type": "ping", "t": 1234.5}                  → server replies {"type":"pong","t":1234.5}
   {"type": "set_delay", "seconds": 0.2}          artificial per-send delay (latency testing)
 
@@ -142,7 +146,20 @@ class SimulationManager:
                     seed=msg.get("seed"),
                     length=msg.get("length"),
                     car_fraction=msg.get("car_fraction"),
+                    lane_change_prob=msg.get("lane_change_prob"),
+                    rear_safety_gap=msg.get("rear_safety_gap"),
+                    lane_change_require_gain=msg.get("lane_change_require_gain"),
                 )
+            elif t == "set_lane_change_params":
+                # partial update: only the keys present are changed
+                self.sim.set_lane_change_params(
+                    prob=msg.get("prob"),
+                    rear_gap=msg.get("rear_gap"),
+                    require_gain=msg.get("require_gain"),
+                )
+            elif t == "set_lane_change_prob":
+                # kept for older clients; equivalent to set_lane_change_params
+                self.sim.set_lane_change_prob(float(msg.get("p", 0.0)))
             elif t == "load_config":
                 # Switch lane/junction configuration (Stage 3). Optional
                 # density/car_fraction override the defaults for the new config.

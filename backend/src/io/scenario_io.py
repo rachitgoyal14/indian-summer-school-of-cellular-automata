@@ -18,6 +18,7 @@ from src.core.vehicle import Vehicle
 from src.core.junction import Junction
 from src.core.disruptions import Disruption
 from src.network.network import Network, Road
+from src.network.street import Lane, Street
 
 SCENARIO_VERSION = 1
 
@@ -36,6 +37,8 @@ def save_scenario(sim) -> dict[str, Any]:
             "tail_junction": r.tail_junction,
             "source_rate": r.source_rate,
             "source_car_fraction": r.source_car_fraction,
+            "street_id": r.street_id,
+            "lane_index": r.lane_index,
             "vehicles": [
                 {"id": v.id, "front": v.front, "length": v.length, "vtype": v.vtype}
                 for v in sorted(r.vehicles, key=lambda v: v.front)
@@ -49,6 +52,20 @@ def save_scenario(sim) -> dict[str, Any]:
             for in_road, outs in j.turns.items()
         }
         junctions.append({"id": j.id, "x": j.x, "y": j.y, "turns": turns})
+    # Stage 9 lane groups. `street_id` / `lane_index` already ride along on each
+    # road; this records the part a road cannot carry — the lane's direction and
+    # the grouping itself — so the registry survives the round-trip.
+    streets = [
+        {
+            "id": s.id,
+            "lanes": [
+                {"road_id": lane.road.id, "lane_index": lane.lane_index,
+                 "direction": lane.direction}
+                for lane in s.all_lanes()
+            ],
+        }
+        for s in net.streets_ordered()
+    ]
 
     return {
         "version": SCENARIO_VERSION,
@@ -59,9 +76,16 @@ def save_scenario(sim) -> dict[str, Any]:
         "rng_state": sim._rng.bit_generator.state,
         "density_target": sim.density_target,
         "car_fraction": sim.car_fraction,
+        # every lateral-transfer knob, always written explicitly: each one
+        # changes the outcome of a step, so a scenario that omitted any of
+        # them would not reproduce exactly.
+        "lane_change_prob": sim.lane_change_prob,
+        "rear_safety_gap": sim.rear_safety_gap,
+        "lane_change_require_gain": sim.lane_change_require_gain,
         "steps_per_second": sim.steps_per_second,
         "roads": roads,
         "junctions": junctions,
+        "streets": streets,
         "disruptions": {
             "probs": dict(sim.disruptions.probs),
             "repair_scale": sim.disruptions.repair_scale,
@@ -73,6 +97,11 @@ def save_scenario(sim) -> dict[str, Any]:
 def network_from_scenario(data: dict[str, Any]) -> Network:
     """Rebuild a Network (structure + vehicles) from a scenario dict."""
     net = Network()
+    # pre-Stage-9 scenarios carry none of these; the defaults are the old
+    # behaviour (no lateral pass at all), so those files load unchanged.
+    net.lane_change_prob = float(data.get("lane_change_prob", 0.0))
+    net.rear_safety_gap = int(data.get("rear_safety_gap", 0))
+    net.lane_change_require_gain = bool(data.get("lane_change_require_gain", True))
     max_vid = 0
     for rd in data["roads"]:
         road = Road(
@@ -82,6 +111,8 @@ def network_from_scenario(data: dict[str, Any]) -> Network:
             head_junction=rd["head_junction"], tail_junction=rd["tail_junction"],
             source_rate=rd.get("source_rate", 0.0),
             source_car_fraction=rd.get("source_car_fraction", 0.0),
+            street_id=rd.get("street_id"),
+            lane_index=int(rd.get("lane_index", 0)),
         )
         for vd in rd["vehicles"]:
             road.vehicles.append(
@@ -95,6 +126,16 @@ def network_from_scenario(data: dict[str, Any]) -> Network:
             for in_road, outs in jd["turns"].items()
         }
         net.add_junction(Junction(id=int(jd["id"]), x=jd["x"], y=jd["y"], turns=turns))
+    # `streets` is absent from pre-Stage-9 scenarios; those load as before.
+    for sd in data.get("streets", []):
+        street = Street(str(sd["id"]))
+        for ld in sd["lanes"]:
+            street.add_lane(Lane(
+                road=net.roads[int(ld["road_id"])],
+                lane_index=int(ld["lane_index"]),
+                direction=ld["direction"],
+            ))
+        net.add_street(street)
     net._vid = max_vid
     net.validate()
     return net

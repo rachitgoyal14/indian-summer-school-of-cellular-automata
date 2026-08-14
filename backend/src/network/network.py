@@ -29,11 +29,16 @@ front advances one cell iff the cell ahead is empty in the snapshot.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from src.core.vehicle import Vehicle, FOOTPRINTS
 from src.core.junction import Junction
+from src.network.lane_change import lane_change_pass
+
+if TYPE_CHECKING:  # `street` imports `Road` from here, so keep this type-only
+    from src.network.street import Street
 
 # how many cells back from an incoming road's exit count as "in the queue"
 QUEUE_WINDOW = 12
@@ -53,6 +58,11 @@ class Road:
     source_rate: float = 0.0           # P(spawn) per step at the entry (open tail)
     source_car_fraction: float = 0.0
     vehicles: list[Vehicle] = field(default_factory=list)
+    # Stage 9 lane groups: set when this road is a lane of a `Street`
+    # (src/network/street.py). Both are pure metadata — the CA is unaffected,
+    # and a standalone road keeps street_id=None, lane_index=0.
+    street_id: str | None = None
+    lane_index: int = 0
 
     def occupancy(self) -> np.ndarray:
         occ = np.zeros(self.length, dtype=np.int8)
@@ -74,6 +84,22 @@ class Network:
     def __init__(self) -> None:
         self.roads: dict[int, Road] = {}
         self.junctions: dict[int, Junction] = {}
+        # Stage 9: lane groups. Purely a registry over roads already in
+        # `self.roads`; only the lateral pass consults it.
+        self.streets: dict[str, "Street"] = {}
+        # P(a blocked vehicle with a free adjacent lane changes into it) per
+        # step. 0.0 disables the lateral pass entirely — including its RNG
+        # draws — so a street steps exactly like independent roads.
+        self.lane_change_prob: float = 0.0
+        # extra cells that must be clear *behind* a landing footprint. 0 is the
+        # strict v1 rule: a vehicle may merge directly in front of a follower.
+        # That cannot collide (the snapshot makes the follower hold), it only
+        # costs it a step — set 1 to forbid the cut-in. See lane_change.py.
+        self.rear_safety_gap: int = 0
+        # only change lane if the vehicle could then actually advance. Off, a
+        # vehicle hops into an equally jammed lane and hops back next tick.
+        self.lane_change_require_gain: bool = True
+        self.last_lane_changes: int = 0
         self._vid = 0  # global vehicle id counter
         # cells made unavailable by disruptions (Stage 4). Empty by default,
         # so with no disruptions the engine is the exact Rule 184 baseline.
@@ -87,6 +113,40 @@ class Network:
     def add_junction(self, j: Junction) -> Junction:
         self.junctions[j.id] = j
         return j
+
+    def add_street(self, street: "Street") -> "Street":
+        """
+        Register a `Street` and every one of its lanes' roads.
+
+        The lane roads land in `self.roads` exactly as if added one by one, so
+        the stepping code, metrics and serializers see an ordinary road set.
+        """
+        if street.id in self.streets and self.streets[street.id] is not street:
+            raise ValueError(f"street id {street.id!r} is already registered")
+        for road in street.roads():
+            existing = self.roads.get(road.id)
+            if existing is not None and existing is not road:
+                raise ValueError(
+                    f"street {street.id!r}: road id {road.id} is already in use"
+                )
+            self.add_road(road)
+        self.streets[street.id] = street
+        return street
+
+    def get_street(self, id: str) -> "Street | None":
+        return self.streets.get(id)
+
+    def streets_ordered(self) -> list["Street"]:
+        return [self.streets[k] for k in sorted(self.streets)]
+
+    def all_roads(self) -> list[Road]:
+        """
+        Every road in the network, lane roads included, ordered by id.
+
+        Street lanes are ordinary members of `self.roads`, so this is the whole
+        road set — simulation loops that iterate it keep behaving identically.
+        """
+        return self.roads_ordered()
 
     def validate(self) -> None:
         for j in self.junctions.values():
@@ -151,6 +211,12 @@ class Network:
     # ------------------------------------------------------------- stepping
     def step(self, rng: np.random.Generator) -> int:
         """Advance one synchronous step. Returns the number of vehicles that moved."""
+        # ---- Pass 0: lateral (lane changing) ----
+        # Resolves fully before any longitudinal movement is computed, so the
+        # passes below see an ordinary, already-settled set of lanes. A no-op
+        # (and RNG-free) unless streets exist and lane_change_prob > 0.
+        self.last_lane_changes = lane_change_pass(self, rng)
+
         occ_old = {rid: r.occupancy() for rid, r in self.roads.items()}
         # projected new occupancy, filled as we resolve movement
         occ_new = {rid: np.zeros(r.length, dtype=np.int8) for rid, r in self.roads.items()}

@@ -11,8 +11,13 @@ for each incoming road must sum to 1.0.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:  # type-only: `street` reaches this module through `network`
+    from src.network.network import Road
+    from src.network.street import Street
 
 
 @dataclass
@@ -47,3 +52,47 @@ class Junction:
 
     def outgoing_for(self, in_road_id: int) -> list[int]:
         return list(self.turns.get(in_road_id, {}).keys())
+
+    # ------------------------------------------------------------- streets
+    def connect_road(self, road: "Road", end: str = "end") -> "Road":
+        """
+        Attach one road to this junction.
+
+        `end="end"` means the road's *head* (its exit, cell `length-1`) feeds
+        the junction; `end="start"` means its *tail* (cell 0) is fed by it.
+        """
+        if end not in ("start", "end"):
+            raise ValueError(f"end must be 'start' or 'end', got {end!r}")
+        if road.periodic:
+            raise ValueError(
+                f"junction {self.id}: road {road.id} is periodic (a ring) and "
+                f"never reaches a junction; set periodic=False to connect it"
+            )
+        if end == "end":
+            road.head_junction = self.id
+        else:
+            road.tail_junction = self.id
+        return road
+
+    def connect_street(
+        self,
+        street: "Street",
+        end: str = "end",
+        direction: str | None = None,
+    ) -> list["Road"]:
+        """
+        Attach every lane of `street` to this junction, at `end`.
+
+        A street meets a junction as a whole, so this is `connect_road` applied
+        to each lane. Pass `direction` to attach only the lanes running one way
+        — the usual case for a two-way street, whose forward lanes feed the
+        junction ("end") while its backward lanes are fed by it ("start").
+
+        Turn proportions are *not* invented here: `self.turns` still has to be
+        filled in per incoming road, since only the caller knows the geometry.
+        """
+        lanes = (
+            street.all_lanes() if direction is None
+            else street.lanes_in_direction(direction)
+        )
+        return [self.connect_road(lane.road, end=end) for lane in lanes]

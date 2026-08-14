@@ -33,12 +33,21 @@ class Simulation:
         seed: int = 42,
         steps_per_second: float = 12.0,
         car_fraction: float = 0.0,
+        lane_change_prob: float = 0.0,
+        rear_safety_gap: int = 0,
+        lane_change_require_gain: bool = True,
         build_kwargs: dict[str, Any] | None = None,
     ) -> None:
         self.config = config
         self.length = length
         self.density_target = density
         self.car_fraction = car_fraction
+        # lateral-transfer settings. Every one of these changes the outcome of
+        # a step, so like every other such knob they persist across resets and
+        # config switches, and round-trip through the scenario JSON.
+        self.lane_change_prob = float(max(0.0, min(1.0, lane_change_prob)))
+        self.rear_safety_gap = max(0, int(rear_safety_gap))
+        self.lane_change_require_gain = bool(lane_change_require_gain)
         self.seed = seed
         self.steps_per_second = steps_per_second
         self.build_kwargs = build_kwargs or {}
@@ -73,7 +82,35 @@ class Simulation:
         # (open) configs start empty and fill via their sources.
         if self._is_populatable(net):
             net.populate_density(self.density_target, self.car_fraction, self._rng)
+        self._apply_lane_settings(net)
         return net
+
+    # ------------------------------------------------------------- lane changing
+    def _apply_lane_settings(self, net: Network | None = None) -> None:
+        """Push the lateral-transfer settings onto a network."""
+        net = self.network if net is None else net
+        net.lane_change_prob = self.lane_change_prob
+        net.rear_safety_gap = self.rear_safety_gap
+        net.lane_change_require_gain = self.lane_change_require_gain
+
+    def set_lane_change_params(
+        self,
+        prob: float | None = None,
+        rear_gap: int | None = None,
+        require_gain: bool | None = None,
+    ) -> None:
+        """Update any subset of the lateral settings; effective immediately."""
+        if prob is not None:
+            self.lane_change_prob = float(max(0.0, min(1.0, prob)))
+        if rear_gap is not None:
+            self.rear_safety_gap = max(0, int(rear_gap))
+        if require_gain is not None:
+            self.lane_change_require_gain = bool(require_gain)
+        self._apply_lane_settings()
+
+    def set_lane_change_prob(self, p: float) -> None:
+        """Set P(lane change) for blocked vehicles; takes effect immediately."""
+        self.set_lane_change_params(prob=p)
 
     @staticmethod
     def _is_populatable(net: Network) -> bool:
@@ -113,6 +150,9 @@ class Simulation:
         length: int | None = None,
         car_fraction: float | None = None,
         config: str | None = None,
+        lane_change_prob: float | None = None,
+        rear_safety_gap: int | None = None,
+        lane_change_require_gain: bool | None = None,
     ) -> None:
         if density is not None:
             self.density_target = float(max(0.0, min(1.0, density)))
@@ -124,6 +164,12 @@ class Simulation:
             self.car_fraction = float(max(0.0, min(1.0, car_fraction)))
         if config is not None:
             self.config = config
+        if lane_change_prob is not None:
+            self.lane_change_prob = float(max(0.0, min(1.0, lane_change_prob)))
+        if rear_safety_gap is not None:
+            self.rear_safety_gap = max(0, int(rear_safety_gap))
+        if lane_change_require_gain is not None:
+            self.lane_change_require_gain = bool(lane_change_require_gain)
         self._rng = np.random.default_rng(self.seed)
         self.step_count = 0
         self._last_moved = 0
@@ -179,6 +225,13 @@ class Simulation:
         self.seed = int(data.get("seed", self.seed))
         self.density_target = float(data.get("density_target", self.density_target))
         self.car_fraction = float(data.get("car_fraction", self.car_fraction))
+        self.lane_change_prob = float(
+            data.get("lane_change_prob", self.lane_change_prob)
+        )
+        self.rear_safety_gap = int(data.get("rear_safety_gap", self.rear_safety_gap))
+        self.lane_change_require_gain = bool(
+            data.get("lane_change_require_gain", self.lane_change_require_gain)
+        )
         self.steps_per_second = float(data.get("steps_per_second", self.steps_per_second))
         self.step_count = int(data.get("step", 0))
         self._last_moved = 0
@@ -298,6 +351,7 @@ class Simulation:
             return {"ok": False, "error": "No roads found in the specified region"}
 
         self.network = net
+        self._apply_lane_settings(net)
         self.config = "custom"
         self.step_count = 0
         self._last_moved = 0
@@ -334,6 +388,10 @@ class Simulation:
     def junction_queue_lengths(self) -> dict[int, int]:
         return self.network.junction_queue_lengths()
 
+    def lane_changes(self) -> int:
+        """Vehicles that shifted lane on the last step (lateral, not flow)."""
+        return self.network.last_lane_changes
+
     def blocked_fraction(self) -> float:
         total = sum(r.length for r in self.network.roads.values())
         nblocked = sum(len(s) for s in self.network.blocked.values())
@@ -360,6 +418,10 @@ class Simulation:
             "config": self.config,
             "n_roads": len(self.network.roads),
             "n_junctions": len(self.network.junctions),
+            "n_streets": len(self.network.streets),
+            "lane_change_prob": self.lane_change_prob,
+            "rear_safety_gap": self.rear_safety_gap,
+            "lane_change_require_gain": self.lane_change_require_gain,
             "density": self.density(),
             "flow": self.flow(),
         }
