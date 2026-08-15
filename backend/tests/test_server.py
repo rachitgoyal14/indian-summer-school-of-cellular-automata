@@ -11,6 +11,8 @@ zoom-pan / video parts remain manual (documented in PHASE_REPORT).
 from __future__ import annotations
 
 import os
+import threading
+import time
 import sys
 
 import numpy as np
@@ -186,3 +188,69 @@ def test_ws_ping_pong_roundtrip(client):
                 break
         else:
             raise AssertionError("no pong received")
+
+
+def test_import_region_does_not_block_the_event_loop(client, monkeypatch):
+    """
+    A slow import must not freeze the whole server.
+
+    `Simulation.import_region` geocodes and queries Overpass with blocking
+    urllib — up to ~85 s of timeouts in the worst case. It used to be called
+    straight from the async handler, which stalled the event loop for that
+    long: nothing else on any connection was served until the HTTP calls
+    returned, so from a browser the import looked like it had never reached
+    the handler at all.
+
+    Note what is and is not promised. A connection reads its own messages in
+    order, so the importing connection is legitimately busy until its import
+    finishes, and the tick loop waits too — the import holds the simulation
+    lock so the network swap is atomic. What must keep working is everything
+    else, which is what a second connection here checks.
+    """
+    started = threading.Event()
+    release = threading.Event()
+
+    def slow_import(place_name):
+        started.set()
+        # Held open until the other connection has proved the loop is alive.
+        release.wait(timeout=10)
+        return {"ok": True, "error": None, "roads": 0,
+                "junctions": 0, "total_cells": 0}
+
+    monkeypatch.setattr(ws_server.manager.sim, "import_region", slow_import)
+
+    with client.websocket_connect("/ws") as importer:
+        importer.receive_json()  # network
+        importer.send_json({"type": "import_region", "place_name": "Nowhere"})
+        assert started.wait(timeout=5), "import never started"
+
+        # A blocking import would take the event loop with it, and this second
+        # connection would not be served until the import finished. The clock
+        # is what makes that visible: without the fix the pong still arrives,
+        # but only once `release.wait` times out ten seconds later.
+        t0 = time.monotonic()
+        with client.websocket_connect("/ws") as bystander:
+            assert bystander.receive_json()["type"] == "network"
+            bystander.send_json({"type": "ping", "t": 42.0})
+            for _ in range(50):
+                msg = bystander.receive_json()
+                if msg["type"] == "pong":
+                    assert msg["t"] == 42.0
+                    break
+            else:
+                raise AssertionError("no pong while an import was in flight")
+        waited = time.monotonic() - t0
+        assert waited < 3.0, (
+            f"a second connection waited {waited:.1f}s to be served while an "
+            "import was in flight; the import is blocking the event loop"
+        )
+
+        release.set()
+
+        for _ in range(200):
+            msg = importer.receive_json()
+            if msg["type"] == "import_result":
+                assert msg["ok"] is True
+                break
+        else:
+            raise AssertionError("no import_result after the import finished")

@@ -293,7 +293,19 @@ class SimulationManager:
                 self.sim.set_turn(int(msg.get("junction_id")), int(msg.get("in_road")), props)
             elif t == "import_region":
                 place_name = msg.get("place_name", "")
-                result = self.sim.import_region(place_name)
+                # Off the event loop. `import_region` geocodes and then queries
+                # Overpass with blocking urllib, up to ~85 s of timeouts in the
+                # worst case. Called directly it froze the whole server for
+                # that long: the tick loop stopped, pings went unanswered, and
+                # every other client's messages sat unread in the socket — so
+                # the import looked like it had never reached the handler at
+                # all. `run_scenario` above already does this; this did not.
+                #
+                # The lock is deliberately still held. It makes the network
+                # swap atomic against the tick loop, and an asyncio lock held
+                # across an await blocks only the tasks that want the
+                # simulation, not the event loop itself.
+                result = await asyncio.to_thread(self.sim.import_region, place_name)
                 # Send the import result back to all clients
                 await self.broadcast({"type": "import_result", **result})
             else:
