@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>RoadRenderer frame-time bench</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #111; color: #eee;
+                   font: 13px/1.5 ui-monospace, monospace; }
+      #stage { position: absolute; inset: 0; }
+      #out { position: absolute; top: 8px; left: 8px; z-index: 10;
+             background: rgba(0,0,0,.78); padding: 10px 14px; border-radius: 6px;
+             white-space: pre; pointer-events: none; }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <div id="out">booting…</div>
+    <script type="module" src="./bench.ts"></script>
+  </body>
+</html>
