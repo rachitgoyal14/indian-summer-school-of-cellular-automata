@@ -7,6 +7,7 @@
 
 import { useState } from "react";
 import type { SocketApi } from "../hooks/useSimulationSocket";
+import { Panel } from "./Panel";
 
 export function LaneChangePanel({ api }: { api: SocketApi }) {
   const state = api.state;
@@ -23,14 +24,16 @@ export function LaneChangePanel({ api }: { api: SocketApi }) {
   const shownGap = dragGap ?? gap;
 
   return (
-    <section className="panel">
-      <div className="panel-head static">
-        <span className="panel-title">Lane changing</span>
+    <Panel
+      title="Lane changing"
+      defaultOpen
+      hint="lateral transfer probability and gap"
+      badge={
         <span className="lane-live" title="lateral transfers on the last step">
           {api.laneChanges} / step
         </span>
-      </div>
-      <div className="panel-body">
+      }
+    >
         <label className="field">
           <span className="field-label">Probability: {shownProb.toFixed(2)}</span>
           <input
@@ -72,7 +75,6 @@ export function LaneChangePanel({ api }: { api: SocketApi }) {
             to do. Load a multi-lane configuration to see it act.
           </div>
         )}
-      </div>
-    </section>
+    </Panel>
   );
 }

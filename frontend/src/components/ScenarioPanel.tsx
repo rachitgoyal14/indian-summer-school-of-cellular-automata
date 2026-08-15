@@ -12,6 +12,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { SocketApi } from "../hooks/useSimulationSocket";
 import type { ScheduleEvent, ScenarioRequest, TrajectoryRecord } from "../types";
 import { TrajectoryChart } from "./TrajectoryChart";
+import { Panel } from "./Panel";
 
 interface Props {
   api: SocketApi;
@@ -32,7 +33,6 @@ const SCHEDULE_PLACEHOLDER = `[
 ]`;
 
 export function ScenarioPanel({ api }: Props) {
-  const [open, setOpen] = useState(true);
   const [steps, setSteps] = useState(500);
   const [density, setDensity] = useState(0.3);
   const [carFraction, setCarFraction] = useState(0.3);
@@ -101,15 +101,8 @@ export function ScenarioPanel({ api }: Props) {
   }, [trajectory]);
 
   return (
-    <section className="panel scenario-panel">
-      <button className="panel-head" onClick={() => setOpen((o) => !o)}>
-        <span className="panel-title">Scenario explorer</span>
-        <span className="panel-chevron">{open ? "▾" : "▸"}</span>
-      </button>
-      {!open && <div className="panel-collapsed-hint">batch “what-if” runs</div>}
-
-      {open && (
-        <div className="panel-body">
+    <Panel title="Scenario explorer" hint="batch “what-if” runs">
+      <>
           <Field label={`Duration: ${steps} steps`}>
             <input
               type="number" min={10} max={10000} step={10} value={steps}
@@ -196,9 +189,8 @@ export function ScenarioPanel({ api }: Props) {
               </button>
             </div>
           )}
-        </div>
-      )}
-    </section>
+      </>
+    </Panel>
   );
 }
 

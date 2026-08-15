@@ -12,6 +12,7 @@
 
 import { useEffect, useRef } from "react";
 import type { StateMessage } from "../types";
+import { Panel } from "./Panel";
 
 interface Props {
   state: StateMessage | null;
@@ -27,18 +28,25 @@ interface Sample {
 const CAP = 240; // samples kept (~20 s at 12 Hz)
 const LOG_MIN = 1e-3; // log-y floor so density/flow=0 is representable
 
-// palette — matches the design system
+// Chart palette — matches the sidebar's instrument tokens.
+//
+// The chart paints NO background: it sits on the panel surface rather than on
+// a slab of its own, which is what stopped it looking pasted on. Gridlines and
+// axis text are pushed right down so the three series are the only thing with
+// any weight.
+//
+// Series colours are deliberately teal / green / amber. The map's vehicles are
+// crimson and tomato, so nothing in this chart can be mistaken for traffic.
 const C = {
-  bg:       "#1a1a1a",   // tarmac
-  grid:     "#3a3a3a",   // kerb
-  gridText: "#8C8478",   // gravel
-  density:  "#4ECDC4",   // teal (motorbike accent)
-  flow:     "#67d982",   // green
-  entropy:  "#F5A623",   // amber (road marking)
+  grid:     "#262a31",
+  gridText: "#6d737d",
+  density:  "#4ECDC4",   // teal
+  flow:     "#7BD88F",   // green
+  entropy:  "#F5A623",   // amber
   densityFill: "rgba(78,205,196,0.10)",
-  flowFill:    "rgba(103,217,130,0.08)",
+  flowFill:    "rgba(123,216,143,0.08)",
   entropyFill: "rgba(245,166,35,0.10)",
-  divider:  "#3a3a3a",
+  divider:  "#262a31",
 };
 
 export function AnalyticsPanel({ state }: Props) {
@@ -76,8 +84,7 @@ export function AnalyticsPanel({ state }: Props) {
 
   const a = state?.analytics;
   return (
-    <div className="panel">
-      <h2>Analytics</h2>
+    <Panel title="Analytics" defaultOpen hint="density, flow, entropy">
       <canvas ref={canvasRef} className="chart" width={288} height={210} />
       <div className="chart-legend">
         <span><i className="ln teal" /> density (log)</span>
@@ -100,7 +107,7 @@ export function AnalyticsPanel({ state }: Props) {
           high = traffic evenly spread · drops when a disruption clusters it
         </div>
       </div>
-    </div>
+    </Panel>
   );
 }
 
@@ -120,9 +127,8 @@ function render(cv: HTMLCanvasElement, data: Sample[]) {
   const pad = 22;
   const splitY = h * 0.64; // top: density/flow (log); bottom: entropy (linear)
 
+  // Cleared, not filled: the panel behind shows through.
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = C.bg;
-  ctx.fillRect(0, 0, w, h);
 
   // ---- gridlines for the log panel ----
   ctx.strokeStyle = C.grid;
@@ -238,9 +244,9 @@ function render(cv: HTMLCanvasElement, data: Sample[]) {
 
   // ---- panel labels ----
   ctx.fillStyle = C.gridText;
-  ctx.font = "600 8px 'Overpass', sans-serif";
+  ctx.font = "500 8px 'JetBrains Mono', monospace";
   ctx.textAlign = "right";
-  ctx.fillText("DENSITY / FLOW", w - 6, pad - 6);
-  ctx.fillText("ENTROPY", w - 6, splitY + pad - 6);
+  ctx.fillText("density / flow", w - 6, pad - 6);
+  ctx.fillText("entropy", w - 6, splitY + pad - 6);
   ctx.textAlign = "left";
 }

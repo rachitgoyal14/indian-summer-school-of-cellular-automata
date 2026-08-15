@@ -295,393 +295,615 @@ html, body, #root {
 }
 
 /* ============================================================
-   SIDEBAR — scrollable panel dock
+   SIDEBAR — the instrument panel
+   ============================================================
+   One continuous dark surface, not a stack of cards. Panels sit flush and
+   are separated only by a hairline rule; nothing here casts a shadow and
+   nothing is more than 2px rounded, because sharp corners read as
+   instrumentation and soft ones read as a web form.
+
+   The surface stays dark in both Day and Night map themes on purpose. It is
+   not part of the terrain — it is the control surface in front of it.
    ============================================================ */
 
 .sidebar {
+  /* ---- instrument tokens (sidebar-local, independent of the map theme) --- */
+  --sb-bg:        #14161a;   /* the one continuous surface */
+  --sb-rule:      #24272e;   /* hairline between panels */
+  --sb-rule-soft: #1d2025;   /* hairline inside a panel */
+  --sb-accent:    #f5a623;   /* section headers, active indicators */
+  --sb-accent-dim: rgba(245, 166, 35, 0.16);
+  --sb-text:      #cfd3d9;   /* labels */
+  --sb-value:     #f4f6f8;   /* numeric readouts */
+  --sb-muted:     #7b818b;   /* helper text */
+  --sb-field:     #0d0f12;   /* input wells */
+  --sb-field-bd:  #2c3138;
+  --sb-btn:       #2b3038;   /* primary button */
+  --sb-btn-hover: #39404a;
+
   width: 320px;
   min-width: 320px;
-  background: var(--bitumen);
-  border-left: 1px solid var(--kerb);
+  background: var(--sb-bg);
+  border-left: 1px solid var(--sb-rule);
   overflow-y: auto;
   overflow-x: hidden;
+  color: var(--sb-text);
   scrollbar-width: thin;
-  scrollbar-color: var(--kerb) transparent;
+  scrollbar-color: #343a43 transparent;
 }
-.sidebar::-webkit-scrollbar { width: 5px; }
-.sidebar::-webkit-scrollbar-track { background: transparent; }
-.sidebar::-webkit-scrollbar-thumb { background: var(--kerb); border-radius: 3px; }
+.sidebar::-webkit-scrollbar { width: 8px; }
+.sidebar::-webkit-scrollbar-track { background: #0e1013; }
+.sidebar::-webkit-scrollbar-thumb {
+  background: #343a43;
+  border-radius: 0;
+  border: 2px solid #0e1013;   /* inset, so the thumb reads thinner than the track */
+}
+.sidebar::-webkit-scrollbar-thumb:hover { background: #4a515c; }
 
-/* ---- panel sections ---- */
+/* ---------------------------------------------------------------- panels */
+
 .panel {
-  padding: 14px 16px;
+  border-top: 1px solid var(--sb-rule);
 }
-.panel + .divider + .panel,
-.panel + .panel {
-  padding-top: 0;
-}
+.sidebar > .panel:first-child,
+.sidebar > *:first-child .panel:first-child { border-top: 0; }
 
-.panel h2 {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: none;
-  letter-spacing: 0.04em;
-  color: var(--chalk);
-  margin: 0 0 10px;
-  padding-left: 8px;
-  border-left: 2px solid var(--marking);
-}
-
-.panel h3 {
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: 0.02em;
-  color: var(--gravel);
-  margin: 0 0 8px;
-}
-
-/* ---- buttons ---- */
-button {
-  background: var(--tarmac);
-  color: var(--chalk);
-  border: 1px solid var(--kerb);
-  border-radius: 6px;
-  padding: 7px 12px;
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
-}
-button:hover:not(:disabled) {
-  border-color: var(--marking);
-  color: var(--marking);
-}
-button:active:not(:disabled) {
-  background: var(--marking-dim);
-}
-button:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-button.mini {
-  padding: 4px 8px;
-  font-size: 11px;
-  border-radius: 5px;
-}
-
-.btn-row {
+/* Collapsible header bar. A button, not a heading with a click handler, so
+   it is reachable by keyboard and announces its state. */
+.panel-head {
   display: flex;
-  gap: 6px;
   align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 14px;
+  background: none;
+  border: 0;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;   /* the ONLY uppercase text in the sidebar */
+  letter-spacing: 0.14em;
+  color: var(--sb-muted);
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.panel-head:hover { background: rgba(255, 255, 255, 0.03); color: var(--sb-text); }
+
+/* Open panels brighten and gain an accent edge, so the eye can find what is
+   expanded without reading a single word. */
+.panel.is-open > .panel-head {
+  color: var(--sb-accent);
+  border-left-color: var(--sb-accent);
 }
 
-/* ---- form fields ---- */
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  margin-bottom: 14px;
-  color: var(--chalk);
+.panel-title { flex: 1; }
+
+.panel-chevron {
+  font-size: 9px;
+  color: var(--sb-muted);
+  letter-spacing: 0;
 }
-.field input[type="range"] {
-  width: 100%;
-  accent-color: var(--marking);
-  cursor: pointer;
+
+/* A live value pinned to the header, readable while the panel is shut. */
+.panel-badge {
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--sb-value);
 }
-.field .sub {
-  font-size: 11px;
-  color: var(--gravel);
-  line-height: 1.4;
-  opacity: 0.7;
+
+.panel-collapsed-hint {
+  padding: 0 14px 9px 16px;
+  font-size: 10px;
+  color: var(--sb-muted);
   font-style: italic;
 }
 
-select {
-  background: var(--tarmac);
-  color: var(--chalk);
-  border: 1px solid var(--kerb);
-  border-radius: 4px;
-  padding: 7px 10px;
-  font-family: var(--font-body);
-  font-size: 12px;
-  cursor: pointer;
-}
-select:focus {
-  border-color: var(--marking);
-  outline: none;
-}
-
-.divider {
-  height: 1px;
-  background: var(--kerb);
-  margin: 10px 0 12px;
-  opacity: 0.5;
-}
-
-/* ---- legend (vehicle types) ---- */
-.legend {
+.panel-body {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  margin: 10px 0 4px;
+  gap: 10px;
+  padding: 2px 14px 14px;
+}
+
+/* Sub-headings inside a panel. Sentence case: uppercase is reserved for the
+   panel header, so the two levels never compete. */
+.panel h3,
+.subhead {
+  font-family: var(--font-display);
   font-size: 11px;
-  color: var(--gravel);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--sb-text);
+  margin: 2px 0 0;
 }
-.legend span {
-  display: flex;
+.subsection { display: flex; flex-direction: column; gap: 8px; }
+
+/* Hairline between groups inside one panel — lighter than the panel rule so
+   the hierarchy stays legible. */
+.divider {
+  height: 1px;
+  background: var(--sb-rule-soft);
+  margin: 2px 0;
+}
+
+/* ------------------------------------------------------------ typography */
+
+/* A field is a block, not a flex column, on purpose.
+   Several panels write their label as bare text followed by a <strong> —
+   "Density: <strong>0.30</strong>" — and in a flex column each of those
+   becomes its own item, so the number drops onto a line of its own. As a
+   block they stay on one line and the controls below still fill the width. */
+.field {
+  display: block;
+  font-size: 11px;
+  color: var(--sb-text);
+}
+.field > input,
+.field > select,
+.field > textarea { display: block; width: 100%; margin-top: 5px; }
+.field > .sub,
+.field > .field-label { display: block; }
+.field > .sub { margin-top: 4px; }
+.field > .field-label { margin-bottom: 5px; }
+.field-label,
+.metric-label {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--sb-text);
+  white-space: normal;
+}
+
+/* Every number in the sidebar is monospaced, so columns of them line up and
+   a changing digit does not reflow the label beside it. */
+.field strong,
+.badge,
+.count,
+.entropy-val,
+.scenario-card-value,
+.lane-live,
+.qbadge,
+.panel-badge {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  color: var(--sb-value);
+}
+
+.sub,
+.small,
+.mode-hint,
+.edit-sub,
+.turn-note,
+.field .sub {
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--sb-muted);
+}
+.muted, .small.muted { color: var(--sb-muted); }
+
+/* ---------------------------------------------------------------- buttons */
+
+/* Primary: a plain <button> in the sidebar. Solid, high contrast. */
+.sidebar button:not(.panel-head):not(.ghost-btn):not(.region-btn):not(.run-btn) {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--sb-value);
+  background: var(--sb-btn);
+  border: 1px solid transparent;
+  border-radius: 2px;
+  padding: 6px 11px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.sidebar button:not(.panel-head):not(.ghost-btn):not(.region-btn):not(.run-btn):hover:not(:disabled) {
+  background: var(--sb-btn-hover);
+}
+.sidebar button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Secondary: transparent with a hairline border.
+   Scoped to the sidebar: the canvas overlay reuses `.ghost-btn` for its
+   FIT VIEW / HEATMAP chips and keeps its own treatment. */
+.sidebar .ghost-btn {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--sb-text);
+  background: transparent;
+  border: 1px solid var(--sb-field-bd);
+  border-radius: 2px;
+  padding: 6px 11px;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.sidebar .ghost-btn:hover {
+  border-color: var(--sb-accent);
+  color: var(--sb-accent);
+  background: var(--sb-accent-dim);
+}
+.sidebar .ghost-btn.active {
+  border-color: var(--sb-accent);
+  color: var(--sb-accent);
+  background: var(--sb-accent-dim);
+}
+.sidebar .ghost-btn.wide { width: 100%; justify-content: center; }
+
+/* The one call-to-action in the sidebar. */
+.run-btn {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #14161a;
+  background: var(--sb-accent);
+  border: 0;
+  border-radius: 2px;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 7px;
+  transition: background 0.12s;
 }
-.legend-icon {
+.run-btn:hover:not(:disabled) { background: #ffb733; }
+.run-btn:disabled { opacity: 0.65; cursor: progress; }
+
+.btn-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+/* ------------------------------------------------------- inputs & selects */
+
+.sidebar input[type="number"],
+.sidebar input[type="text"],
+.sidebar select,
+.sidebar textarea {
+  font-family: var(--font-data);
+  font-size: 11px;
+  color: var(--sb-value);
+  background: var(--sb-field);
+  border: 1px solid var(--sb-field-bd);
+  border-radius: 2px;
+  padding: 6px 8px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.12s;
+}
+.sidebar input[type="number"]:focus,
+.sidebar input[type="text"]:focus,
+.sidebar select:focus,
+.sidebar textarea:focus {
+  border-color: var(--sb-accent);   /* no offset ring: the border IS the ring */
+}
+.sidebar ::placeholder { color: #5a606a; }
+.sidebar textarea { resize: vertical; min-height: 64px; line-height: 1.45; }
+
+/* ---- sliders: thin track, filled active side, thumb that grows on hover --
+   The fill is painted with a gradient driven by `--pct`, which each panel
+   sets inline; without it the track simply reads as unfilled, so a slider
+   whose component has not been taught the variable still works and still
+   looks like the others. */
+.sidebar input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 14px;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+}
+.sidebar input[type="range"]::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 2px;
+  background:
+    linear-gradient(to right, var(--sb-accent) 0 var(--pct, 0%), #2b3038 var(--pct, 0%) 100%);
+}
+.sidebar input[type="range"]::-moz-range-track {
+  height: 3px;
+  border-radius: 2px;
+  background: #2b3038;
+}
+.sidebar input[type="range"]::-moz-range-progress {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--sb-accent);
+}
+.sidebar input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4.5px;
+  border-radius: 50%;
+  background: var(--sb-value);
+  border: 0;
+  transition: transform 0.1s, background 0.12s;
+}
+.sidebar input[type="range"]:hover::-webkit-slider-thumb {
+  transform: scale(1.18);
+  background: #ffffff;
+}
+.sidebar input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--sb-value);
+  border: 0;
+  transition: transform 0.1s;
+}
+.sidebar input[type="range"]:hover::-moz-range-thumb { transform: scale(1.18); }
+
+/* ---- checkboxes as compact pill toggles ---- */
+.field.checkbox {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+}
+.field.checkbox > input { display: inline-block; width: auto; margin-top: 0; }
+.sidebar input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
   flex-shrink: 0;
-  vertical-align: middle;
+  width: 28px;
+  height: 16px;
+  border-radius: 8px;          /* a pill is a shape, not a rounded corner */
+  background: #2b3038;
+  border: 1px solid var(--sb-field-bd);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s;
+}
+.sidebar input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--sb-muted);
+  transition: transform 0.14s, background 0.14s;
+}
+.sidebar input[type="checkbox"]:checked {
+  background: var(--sb-accent-dim);
+  border-color: var(--sb-accent);
+}
+.sidebar input[type="checkbox"]:checked::after {
+  transform: translateX(12px);
+  background: var(--sb-accent);
 }
 
-/* ============================================================
-   DISRUPTION PANEL
-   Disruption colors are SEMANTIC — preserved exactly as-is.
-   ============================================================ */
+/* ------------------------------------------------------------- data chips */
 
+/* Scoped for the same reason as `.ghost-btn`: the canvas overlay's readout
+   chip is also a `.badge` and is not part of this panel language. */
+.sidebar .badge {
+  display: inline-block;
+  background: var(--sb-field);
+  border: 1px solid var(--sb-field-bd);
+  border-radius: 2px;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+/* ---- file input: the one control the browser draws for us ---- */
+.sidebar input[type="file"] {
+  font-family: var(--font-body);
+  font-size: 10px;
+  color: var(--sb-muted);
+  width: 100%;
+}
+.sidebar input[type="file"]::file-selector-button {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--sb-text);
+  background: transparent;
+  border: 1px solid var(--sb-field-bd);
+  border-radius: 2px;
+  padding: 5px 10px;
+  margin-right: 9px;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+.sidebar input[type="file"]::file-selector-button:hover {
+  border-color: var(--sb-accent);
+  color: var(--sb-accent);
+}
+
+/* ----------------------------------------------------------- legend / list */
+
+.legend { display: flex; flex-direction: column; gap: 5px; }
+.legend span { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--sb-text); }
+.legend-icon { flex-shrink: 0; }
+
+/* Disruption rows: identity comes from a stripe and a symbol, never from a
+   washed background — a tinted row competes with the values printed on it. */
 .dis-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-}
-.swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  display: inline-block;
-  flex: 0 0 auto;
-}
-.count {
-  margin-left: auto;
-  font-family: var(--font-data);
-  font-size: 10px;
-  color: var(--gravel);
-  font-variant-numeric: tabular-nums;
-}
-.dis-manual {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 6px 0 10px;
-}
-.turn-note {
-  border-left: 2px solid var(--marking);
-  padding-left: 8px;
-  margin: 4px 0 12px;
-  line-height: 1.4;
-  color: var(--gravel);
+  padding: 5px 8px 5px 0;
+  background: var(--sb-field);
+  border-radius: 0 2px 2px 0;
   font-size: 11px;
+  overflow: hidden;
 }
+/* The stripe IS the swatch element: the row keeps its own neutral fill so the
+   numbers printed on it stay legible, and identity lives in 3px of colour at
+   the edge rather than a wash across the whole row. */
+.swatch {
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 3px;
+  min-height: 20px;
+}
+.dis-glyph {
+  flex-shrink: 0;
+  width: 12px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1;
+}
+.dis-row .count { margin-left: auto; }
+.dis-manual { display: flex; flex-wrap: wrap; gap: 5px; }
 
-/* ============================================================
-   ANALYTICS PANEL
-   ============================================================ */
+/* --------------------------------------------------------------- analytics */
 
 .chart {
   width: 100%;
-  height: auto;
-  border: 1px solid var(--kerb);
-  border-radius: 4px;
-  background: var(--tarmac);
   display: block;
+  background: transparent;   /* the canvas paints no ground of its own */
 }
-
 .chart-legend {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin: 6px 0;
+  gap: 12px;
   font-family: var(--font-data);
   font-size: 10px;
-  color: var(--gravel);
+  color: var(--sb-muted);
 }
-.chart-legend span {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.ln {
-  width: 14px;
-  height: 3px;
-  border-radius: 1px;
-  display: inline-block;
-}
-.ln.teal   { background: #4ECDC4; }
-.ln.green  { background: #67d982; }
-.ln.amber  { background: #F5A623; }
+.chart-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.chart-legend i, .ln { width: 10px; height: 2px; display: inline-block; }
+.ln.teal   { background: #4ecdc4; }
+.ln.green  { background: #7bd88f; }
+.ln.amber  { background: #f5a623; }
 
-.entropy-readout {
-  margin-top: 8px;
-}
+.entropy-readout { display: flex; flex-direction: column; gap: 5px; }
 .entropy-bar {
-  height: 8px;
-  background: var(--tarmac);
-  border: 1px solid var(--kerb);
-  border-radius: 4px;
+  height: 4px;
+  background: #22262c;
+  border-radius: 2px;
   overflow: hidden;
-  margin: 4px 0;
 }
 .entropy-fill {
   height: 100%;
-  background: linear-gradient(90deg, #ff6b6b, #F5A623, #67d982);
-  transition: width 0.2s;
+  background: linear-gradient(to right, #4ecdc4, #7bd88f, #f5a623);
+  transition: width 0.25s;
 }
-.entropy-val {
-  font-family: var(--font-data);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 500;
-  color: var(--chalk);
-}
+.entropy-val { font-size: 12px; }
 
-/* ============================================================
-   MAP EDITOR
-   ============================================================ */
-
-.edit-mode-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-bottom: 10px;
-}
-
-button.mode-active {
-  border-color: var(--marking);
-  color: var(--marking);
-  background: var(--marking-dim);
-}
-
-.mode-hint {
-  font-size: 11px;
-  color: var(--gravel);
-  margin-bottom: 10px;
-  line-height: 1.4;
-  border-left: 2px solid var(--marking);
-  padding-left: 8px;
-}
-
-.edit-sub {
-  margin-bottom: 10px;
-}
-
-.load-error {
-  font-size: 11px;
-  color: #ff6b6b;
-  margin-bottom: 6px;
-}
-
-/* ---- landscape badge ---- */
 .landscape-badge {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-  padding: 6px 12px;
-  border-radius: 4px;
-  border: 1px solid var(--kerb);
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 9px;
+  border-radius: 2px;
+  border-left: 3px solid var(--sb-muted);
+  background: var(--sb-field);
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  background: var(--tarmac);
-  transition: border-color 0.3s, background 0.3s;
 }
 .landscape-badge .landscape-sub {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--gravel);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-left: auto;
-}
-.landscape-badge.landscape-trivial {
-  border-color: #67d982;
-  color: #67d982;
-}
-.landscape-badge.landscape-average {
-  border-color: #F5A623;
-  color: #F5A623;
-}
-.landscape-badge.landscape-worst {
-  border-color: #ff6b6b;
-  color: #ff6b6b;
-  box-shadow: 0 0 8px rgba(255, 107, 107, 0.2);
-}
-
-/* landscape in readout strip */
-/* `.landscape-text-*` coloured the landscape word in the old bottom strip.
-   The top bar shows it as a badge instead (`.hud-badge.landscape-*`). */
-
-/* ============================================================
-   REGION SEARCH (Stage 8)
-   ============================================================ */
-
-.region-search {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.region-input-row {
-  display: flex;
-  gap: 6px;
-}
-
-.region-input {
-  flex: 1;
-  background: var(--tarmac);
-  color: var(--chalk);
-  border: 1px solid var(--kerb);
-  border-radius: 4px;
-  padding: 7px 10px;
   font-family: var(--font-body);
-  font-size: 12px;
-  outline: none;
-  transition: border-color 0.15s;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--sb-muted);
 }
-.region-input:focus {
-  border-color: var(--marking);
-}
-.region-input::placeholder {
-  color: var(--gravel);
-  opacity: 0.7;
+.landscape-badge.landscape-trivial { border-left-color: #67d982; color: #67d982; }
+.landscape-badge.landscape-average { border-left-color: #ffd23f; color: #ffd23f; }
+.landscape-badge.landscape-worst   { border-left-color: #ff6b6b; color: #ff6b6b; }
+
+/* -------------------------------------------------------------- map editor */
+
+.edit-mode-bar { display: flex; flex-wrap: wrap; gap: 5px; }
+.load-error {
+  font-size: 10px;
+  color: #ff6b6b;
+  border-left: 3px solid #ff6b6b;
+  background: rgba(255, 107, 107, 0.07);
+  padding: 5px 8px;
 }
 
+/* ------------------------------------------------------------ region search */
+
+.region-search { display: flex; flex-direction: column; gap: 8px; }
+.region-input-row { display: flex; gap: 6px; }
+.region-input { flex: 1; }
 .region-btn {
-  white-space: nowrap;
-  padding: 7px 14px;
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  color: #14161a;
+  background: var(--sb-accent);
+  border: 0;
+  border-radius: 2px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.12s;
 }
+.region-btn:hover:not(:disabled) { background: #ffb733; }
+.region-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .region-result {
   font-family: var(--font-data);
+  font-size: 10px;
+  padding: 6px 8px;
+  border-left: 3px solid var(--sb-muted);
+  background: var(--sb-field);
+}
+.region-ok  { border-left-color: #67d982; color: #9fe4b0; }
+.region-err { border-left-color: #ff6b6b; color: #ff9d9d; }
+
+/* --------------------------------------------------------------- scenarios */
+
+.scenario-results { display: flex; flex-direction: column; gap: 9px; }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.scenario-card {
+  background: var(--sb-field);
+  border: 1px solid var(--sb-field-bd);
+  border-radius: 2px;
+  padding: 6px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.scenario-card-label {
+  font-size: 9px;
+  color: var(--sb-muted);
+  letter-spacing: 0.02em;
+}
+.scenario-card-value { font-size: 12px; }
+
+.scenario-error {
   font-size: 11px;
-  padding: 6px 10px;
-  border-radius: 4px;
-  border: 1px solid var(--kerb);
-  background: var(--tarmac);
+  color: #ff9d9d;
+  border-left: 3px solid #ff6b6b;
+  background: rgba(255, 107, 107, 0.07);
+  padding: 6px 8px;
 }
-.region-ok {
-  color: #67d982;
-  border-color: rgba(103, 217, 130, 0.3);
+.scenario-schedule summary {
+  font-size: 10px;
+  color: var(--sb-muted);
+  cursor: pointer;
 }
-.region-err {
-  color: #ff6b6b;
-  border-color: rgba(255, 107, 107, 0.3);
+.scenario-schedule textarea { font-size: 10px; }
+
+.spinner {
+  width: 11px;
+  height: 11px;
+  border: 2px solid rgba(20, 22, 26, 0.35);
+  border-top-color: #14161a;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.trajectory-chart { display: flex; flex-direction: column; gap: 5px; }
 
 /* ========================================================================== */
 /* Canvas Loading Overlay — Map-themed animation                              */
@@ -880,7 +1102,7 @@ button.mode-active {
 }
 
 
-/* ---------------------------------------------- Stage 15: scenario explorer */
+/* ---- top bar theme toggle (lives up there, not in the sidebar) ---- */
 .theme-toggle {
   /* The top bar lays its right-hand group out with flex `gap`; the old auto
      margins were pushing this away from the compass beside it. */
@@ -893,73 +1115,3 @@ button.mode-active {
   cursor: pointer;
 }
 .theme-toggle:hover { background: rgba(255, 255, 255, 0.12); }
-
-.panel { margin: 2px 0 6px; }
-.panel-head {
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%; background: none; border: 0; padding: 4px 0;
-  color: inherit; cursor: pointer; font: inherit;
-}
-.panel-head.static { cursor: default; }
-.panel-title {
-  font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase;
-  color: var(--muted, #9aa0a6);
-  border-left: 3px solid var(--accent, #f5a623); padding-left: 8px;
-}
-.panel-chevron { color: var(--muted, #9aa0a6); font-size: 11px; }
-.panel-collapsed-hint { font-size: 11px; color: var(--muted, #777); padding: 0 0 4px 11px; }
-.panel-body { display: flex; flex-direction: column; gap: 8px; padding: 6px 0 2px; }
-
-.field { display: flex; flex-direction: column; gap: 3px; }
-.field-label { font-size: 11px; color: var(--muted, #9aa0a6); }
-.field input[type="number"], .field select, .scenario-schedule textarea {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: inherit; border-radius: 5px; padding: 4px 6px; font-size: 12px;
-  font-family: inherit; width: 100%; box-sizing: border-box;
-}
-.scenario-schedule textarea { font-family: ui-monospace, monospace; font-size: 11px; }
-.field.checkbox { flex-direction: row; align-items: center; gap: 7px; font-size: 12px; }
-.scenario-schedule summary { font-size: 11px; color: var(--muted, #9aa0a6); cursor: pointer; }
-
-.run-btn {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  background: var(--accent, #f5a623); color: #1a1a1a; border: 0;
-  border-radius: 6px; padding: 8px; font-weight: 600; font-size: 13px;
-  cursor: pointer; margin-top: 2px;
-}
-.run-btn:disabled { opacity: 0.65; cursor: progress; }
-.spinner {
-  width: 12px; height: 12px; border-radius: 50%;
-  border: 2px solid rgba(0, 0, 0, 0.25); border-top-color: #1a1a1a;
-  animation: spin 0.7s linear infinite; display: inline-block;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.scenario-error {
-  background: rgba(214, 51, 108, 0.15);
-  border: 1px solid rgba(214, 51, 108, 0.55);
-  border-radius: 6px; padding: 7px 9px; font-size: 12px; color: #ffb3c8;
-}
-.scenario-error .small, .small { font-size: 10px; opacity: 0.75; }
-.small.muted { color: var(--muted, #9aa0a6); }
-
-.scenario-results { display: flex; flex-direction: column; gap: 8px; }
-.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-.scenario-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 5px; padding: 5px 6px;
-}
-.scenario-card-label {
-  font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em;
-  color: var(--muted, #9aa0a6);
-}
-.scenario-card-value { font-family: ui-monospace, monospace; font-size: 13px; }
-
-.trajectory-chart { display: flex; flex-direction: column; gap: 4px; }
-.chart-legend { display: flex; gap: 10px; font-size: 10px; color: var(--muted, #9aa0a6); }
-.chart-legend span { display: inline-flex; align-items: center; gap: 4px; }
-.chart-legend i { width: 10px; height: 2px; display: inline-block; }
-.ghost-btn.wide { width: 100%; justify-content: center; }
-.lane-live { font-size: 10px; color: var(--muted, #9aa0a6); font-family: ui-monospace, monospace; }

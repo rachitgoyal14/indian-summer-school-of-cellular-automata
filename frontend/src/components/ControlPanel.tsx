@@ -2,6 +2,7 @@
 // footprint legend, and the latency test hooks.
 
 import { useState } from "react";
+import { Panel } from "./Panel";
 import type { SocketApi } from "../hooks/useSimulationSocket";
 
 interface Props {
@@ -28,8 +29,8 @@ export function ControlPanel({ api }: Props) {
   const ringLike = config === "one_way" || config === "two_way_no_interaction";
 
   return (
-    <div className="panel">
-      <h2>Configuration</h2>
+    <>
+      <Panel title="Configuration" defaultOpen hint="lane case, density, mix">
       <label className="field">
         Lane / junction case
         <select
@@ -75,9 +76,9 @@ export function ControlPanel({ api }: Props) {
         </span>
       </div>
 
-      <div className="divider" />
+      </Panel>
 
-      <h2>Playback</h2>
+      <Panel title="Playback" defaultOpen hint="run, step, speed">
 
       <div className="btn-row">
         {running ? (
@@ -143,9 +144,9 @@ export function ControlPanel({ api }: Props) {
         />
       </label>
 
-      <div className="divider" />
+      </Panel>
 
-      <h3>Network diagnostics</h3>
+      <Panel title="Network diagnostics" hint="round-trip time, latency test">
       <div className="btn-row">
         <button onClick={api.ping}>Ping</button>
         <span className="badge">
@@ -171,6 +172,7 @@ export function ControlPanel({ api }: Props) {
         </span>
       </label>
       <div className="badge">stale states dropped: {api.staleDropped}</div>
-    </div>
+      </Panel>
+    </>
   );
 }

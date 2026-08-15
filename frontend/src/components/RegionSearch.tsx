@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 import type { SocketApi } from "../hooks/useSimulationSocket";
+import { Panel } from "./Panel";
 
 interface Props {
   api: SocketApi;
@@ -55,8 +56,7 @@ export function RegionSearch({ api, onLoadingChange }: Props) {
   };
 
   return (
-    <div className="panel">
-      <h2>Import Real Map</h2>
+    <Panel title="Import real map" hint="fetch a place from OpenStreetMap">
       <div className="region-search">
         <div className="region-input-row">
           <input
@@ -94,6 +94,6 @@ export function RegionSearch({ api, onLoadingChange }: Props) {
           </div>
         )}
       </div>
-    </div>
+    </Panel>
   );
 }

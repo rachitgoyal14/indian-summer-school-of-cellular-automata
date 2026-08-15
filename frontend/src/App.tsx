@@ -8,7 +8,7 @@
 // tarmac-grounded palette, amber road-marking accent, Overpass/Inter/JetBrains
 // Mono typography.
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { SimulationCanvas } from "./components/SimulationCanvas";
 import { ControlPanel } from "./components/ControlPanel";
 import { DisruptionPanel } from "./components/DisruptionPanel";
@@ -19,6 +19,7 @@ import { ScenarioPanel } from "./components/ScenarioPanel";
 import { LaneChangePanel } from "./components/LaneChangePanel";
 import { TopBar } from "./components/TopBar";
 import { useSimulationSocket } from "./hooks/useSimulationSocket";
+import { useSliderFill } from "./hooks/useSliderFill";
 import type { ThemeName } from "./render/theme";
 import type { RoadRenderer } from "./render/RoadRenderer";
 import "./App.css";
@@ -56,6 +57,11 @@ export default function App() {
     setMapLoading(loading);
   }, []);
 
+
+  // Every range input in the sidebar gets its filled track painted from here,
+  // rather than each panel remembering to do it.
+  const sidebarRef = useRef<HTMLElement | null>(null);
+  useSliderFill(sidebarRef);
 
   // counts of active disruptions by kind — hidden, for automated verification
   const disCounts: Record<string, number> = {};
@@ -102,24 +108,20 @@ export default function App() {
           )}
         </section>
 
-        <aside className="sidebar">
+        <aside className="sidebar" ref={sidebarRef}>
+          {/* No dividers here: each Panel draws its own hairline rule, so
+              the sidebar reads as one surface divided rather than a stack. */}
           <AnalyticsPanel state={st} />
-          <div className="divider" />
           <ControlPanel api={api} />
-          <div className="divider" />
           <LaneChangePanel api={api} />
-          <div className="divider" />
           <ScenarioPanel api={api} />
-          <div className="divider" />
           <RegionSearch api={api} onLoadingChange={handleLoadingChange} />
-          <div className="divider" />
           <MapEditor
             api={api}
             network={api.network}
             state={st}
             renderer={renderer}
           />
-          <div className="divider" />
           <DisruptionPanel api={api} />
         </aside>
       </main>

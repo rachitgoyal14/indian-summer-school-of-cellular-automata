@@ -7,6 +7,7 @@
 import { useState } from "react";
 import type { SocketApi } from "../hooks/useSimulationSocket";
 import type { DisruptionKind } from "../types";
+import { Panel } from "./Panel";
 
 interface Props {
   api: SocketApi;
@@ -19,6 +20,17 @@ const COLORS: Record<string, string> = {
   flood: "#3aa0ff",
   lock: "#b56bff",
   parking: "#9aa7bd",
+};
+
+// A glyph per kind, so a row is identifiable without relying on colour
+// alone — the stripe and the symbol say the same thing two ways.
+const GLYPHS: Record<string, string> = {
+  breakdown: "▲",
+  tree: "✸",
+  accident: "✖",
+  flood: "≋",
+  lock: "⬥",
+  parking: "P",
 };
 
 const PROB_KINDS: { kind: DisruptionKind; label: string }[] = [
@@ -50,13 +62,15 @@ export function DisruptionPanel({ api }: Props) {
   };
 
   return (
-    <div className="panel">
-      <h2>Disruptions</h2>
+    <Panel title="Disruptions" hint="breakdowns, trees, floods">
 
       {PROB_KINDS.map(({ kind, label }) => (
         <label className="field" key={kind}>
           <span className="dis-row">
             <i className="swatch" style={{ background: COLORS[kind] }} />
+            <span className="dis-glyph" style={{ color: COLORS[kind] }}>
+              {GLYPHS[kind]}
+            </span>
             {label}
             <span className="count">{counts[kind] ?? 0} active</span>
           </span>
@@ -144,6 +158,6 @@ export function DisruptionPanel({ api }: Props) {
       <div className="btn-row">
         <button onClick={() => api.clearDisruptions()}>Clear all</button>
       </div>
-    </div>
+    </Panel>
   );
 }

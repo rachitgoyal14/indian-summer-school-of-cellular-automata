@@ -17,6 +17,7 @@ import type { SocketApi } from "../hooks/useSimulationSocket";
 import type { NetworkMessage, StateMessage } from "../types";
 import type { RoadRenderer } from "../render/RoadRenderer";
 import type { EditClick } from "../render/RoadRenderer";
+import { Panel } from "./Panel";
 
 interface Props {
   api: SocketApi;
@@ -175,8 +176,7 @@ export function MapEditor({ api, network, state, renderer }: Props) {
   const analytics = state?.analytics;
 
   return (
-    <div className="panel">
-      <h2>Map Editor</h2>
+    <Panel title="Map editor" hint="add roads, vehicles, turns">
 
       {/* landscape badge */}
       {analytics && (
@@ -419,6 +419,6 @@ export function MapEditor({ api, network, state, renderer }: Props) {
       >
         📂 Load scenario
       </button>
-    </div>
+    </Panel>
   );
 }

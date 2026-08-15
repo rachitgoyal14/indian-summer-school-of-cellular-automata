@@ -47,10 +47,12 @@ export function TrajectoryChart({ trajectory }: { trajectory: TrajectoryRecord[]
         Math.round((i / Math.max(1, columns - 1)) * (trajectory.length - 1)))];
 
     const frame = (top: number, height: number, label: string) => {
-      ctx.strokeStyle = "rgba(255,255,255,0.10)";
+      ctx.strokeStyle = "rgba(255,255,255,0.07)";
       ctx.lineWidth = 1;
       ctx.strokeRect(PAD_L + 0.5, top + 0.5, plotW - 1, height - 1);
-      ctx.fillStyle = "rgba(255,255,255,0.45)";
+      // Muted, monospaced, and lower case: uppercase is reserved for the
+      // sidebar's panel headers so the two never read as the same level.
+      ctx.fillStyle = "rgba(255,255,255,0.34)";
       ctx.font = "9px ui-monospace, monospace";
       ctx.textAlign = "right";
       ctx.fillText(label, PAD_L + plotW - 4, top + 11);
@@ -71,11 +73,11 @@ export function TrajectoryChart({ trajectory }: { trajectory: TrajectoryRecord[]
       ctx.stroke();
     };
 
-    frame(0, H_TOP, "DENSITY / FLOW (log)");
+    frame(0, H_TOP, "density / flow (log)");
     series(0, H_TOP, "#4ecdc4", (r) => toLog(r.density));
-    series(0, H_TOP, "#7ee787", (r) => toLog(r.flow));
+    series(0, H_TOP, "#7bd88f", (r) => toLog(r.flow));
 
-    frame(H_TOP + GAP, H_BOT, "ENTROPY");
+    frame(H_TOP + GAP, H_BOT, "entropy");
     series(H_TOP + GAP, H_BOT, "#f5a623", (r) => Math.max(0, Math.min(1, r.entropy)));
 
     // step axis
@@ -93,7 +95,7 @@ export function TrajectoryChart({ trajectory }: { trajectory: TrajectoryRecord[]
       <canvas ref={ref} style={{ width: "100%", height: H_TOP + GAP + H_BOT }} />
       <div className="chart-legend">
         <span><i style={{ background: "#4ecdc4" }} />density</span>
-        <span><i style={{ background: "#7ee787" }} />flow</span>
+        <span><i style={{ background: "#7bd88f" }} />flow</span>
         <span><i style={{ background: "#f5a623" }} />entropy</span>
       </div>
     </div>
