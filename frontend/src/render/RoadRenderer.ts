@@ -37,7 +37,9 @@
 // zoom, keyboard (+/- zoom, 0 fit-to-view).
 
 import { Application, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
-import type { NetworkMessage, NetworkRoad, NetworkStreet, StateMessage } from "../types";
+import type {
+  NetworkMessage, NetworkRoad, NetworkStreet, Segment, StateMessage,
+} from "../types";
 import { DAY_THEME, DISRUPTION_COLORS, type Theme } from "./theme";
 import { cumulative, offsetPath, sampleAt, smooth, type Pt } from "./polyline";
 
@@ -118,6 +120,15 @@ const LABEL_MIN_ROAD_PX = 60;
 /** Camera easing: fraction of the remaining distance covered per frame. */
 const CAMERA_EASE = 0.22;
 
+/**
+ * Distinct colours in the congestion ramp.
+ *
+ * Strips sharing a colour are stroked together, so this is also the number of
+ * draw instructions the heatmap costs per lane width. Sixteen steps is past
+ * the point the banding is visible on a translucent overlay.
+ */
+const HEAT_BUCKETS = 16;
+
 /** Congestion colour ramp: green (free) → yellow → red (jammed). d ∈ [0,1]. */
 function heatColor(d: number): number {
   const t = Math.max(0, Math.min(1, d));
@@ -182,6 +193,8 @@ export class RoadRenderer {
   private carTexture: Texture | null = null;
   private vehicleSprites: Sprite[] = [];
   private labels: Text[] = [];
+  /** Arc length of each label's road, parallel to `labels`. */
+  private labelRoadPx: number[] = [];
 
   // Eased camera: the pointer sets a target, the ticker chases it.
   private target = { x: 0, y: 0, scale: 1 };
@@ -195,6 +208,8 @@ export class RoadRenderer {
   private geomCache = new Map<number, LaneGeom>();
   /** street id → its centreline in world px, shared by all its lanes. */
   private centreCache = new Map<string, Pt[]>();
+  /** road id → heatmap strip geometry, keyed by the segment layout it fits. */
+  private bandCache = new Map<number, { key: string; bands: Pt[][] }>();
   /** Scale the labels were last laid out at; they only depend on zoom. */
   private lastLabelScale = -1;
 
@@ -212,6 +227,19 @@ export class RoadRenderer {
 
     // Bottom → top. The heatmap tints the road bed and sits *under* the
     // markings, disruptions and vehicles, so it can never hide them.
+    //
+    // Layer lifetimes — the invariant that keeps the tick path cheap:
+    //
+    //   road, junction, marking, navGraph   rebuilt ONLY by setNetwork /
+    //                                       setTheme / a nav-graph toggle
+    //   heatmap, disruption, vehicles       rebuilt per state message
+    //   labels                              built by setNetwork; the per-zoom
+    //                                       pass only toggles visibility
+    //
+    // The static four are deliberately NOT grouped into one cached container.
+    // They are already not rebuilt per tick, and measurement put the whole
+    // cost of re-submitting them at under 0.4 ms a frame — while grouping
+    // them would force the heatmap above the lane markings and wash them out.
     this.camera.addChild(this.roadLayer);
     this.camera.addChild(this.heatmapLayer);
     this.camera.addChild(this.junctionLayer);
@@ -261,6 +289,9 @@ export class RoadRenderer {
     this.drawMarkings();
     this.drawNavGraph();
     this.drawHeatmap();
+    // Recoloured, not rebuilt: a theme toggle must not cost a relayout of
+    // every street name, and the geometry has not moved.
+    this.tintLabels();
     this.drawLabels(true);
     if (this.lastState) this.setState(this.lastState);
   }
@@ -318,6 +349,8 @@ export class RoadRenderer {
     this.drawJunctions();
     this.drawMarkings();
     this.drawNavGraph();
+    this.labelRoadPx.length = 0;
+    this.buildLabels();
     this.lastLabelScale = -1;
     this.drawLabels(true);
     this.heatmapLayer.clear();
@@ -366,6 +399,7 @@ export class RoadRenderer {
   private buildGeometry() {
     this.geomCache.clear();
     this.centreCache.clear();
+    this.bandCache.clear();
     if (!this.network) return;
 
     const roadById = new Map(this.network.roads.map((r) => [r.id, r]));
@@ -731,98 +765,175 @@ export class RoadRenderer {
   }
 
   // ---------------------------------------------------------------- heatmap
-  /** Tints the road bed. Sits under markings, disruptions and vehicles. */
+  /**
+   * The strip of road one congestion segment covers, in world px.
+   *
+   * The server divides a road into fixed windows of cells, so these strips
+   * never move — only the density colouring them changes. They are built once
+   * per road and reused for every state message after.
+   */
+  private heatBands(road: NetworkRoad, segments: Segment[]): Pt[][] {
+    const key = segments.map((s) => `${s.s}:${s.n}`).join(",");
+    const hit = this.bandCache.get(road.id);
+    // Keyed by the segment layout rather than assumed fixed, so a server that
+    // changes its window size re-derives instead of drawing the old strips.
+    if (hit && hit.key === key) return hit.bands;
+
+    const geom = this.geomOf(road);
+    const bands = segments.map((seg) => {
+      const steps = Math.max(2, Math.min(seg.n, 8));
+      const band: Pt[] = [];
+      for (let i = 0; i < steps; i++) {
+        const k = seg.s + (seg.n - 1) * (i / (steps - 1));
+        const at = this.cellAt(geom, k);
+        band.push([at.x, at.y]);
+      }
+      return band;
+    });
+    this.bandCache.set(road.id, { key, bands });
+    return bands;
+  }
+
+  /**
+   * Tints the road bed. Sits under markings, disruptions and vehicles.
+   *
+   * Every strip of every road is redrawn on each state message, which on the
+   * BHU import is 460 of them. Issuing one `stroke()` apiece made the heatmap
+   * four fifths of the entire per-state cost — each stroke is separately
+   * tessellated and batched. So strips are grouped by the colour they end up
+   * and stroked as one subpath set per group: 460 strokes become a handful.
+   *
+   * The cost of that is a quantised ramp, which is invisible at
+   * HEAT_BUCKETS steps and is what a congestion overlay wants anyway.
+   */
   private drawHeatmap() {
     const g = this.heatmapLayer;
     g.clear();
     if (!this.heatmapEnabled || !this.network || !this.lastState) return;
     const roadById = new Map(this.network.roads.map((r) => [r.id, r]));
 
+    // group key → the strips drawn in that colour at that width
+    const groups = new Map<string, { color: number; width: number; bands: Pt[][] }>();
+
     for (const road of this.lastState.roads) {
       const meta = roadById.get(road.id);
       if (!meta) continue;
-      const geom = this.geomOf(meta);
-      for (const seg of road.segments) {
-        // walk the arc between the segment's first and last cell
-        const steps = Math.max(2, Math.min(seg.n, 8));
-        const band: Pt[] = [];
-        for (let i = 0; i < steps; i++) {
-          const k = seg.s + (seg.n - 1) * (i / (steps - 1));
-          const at = this.cellAt(geom, k);
-          band.push([at.x, at.y]);
+      const width = this.laneWidthPx(meta);
+      const bands = this.heatBands(meta, road.segments);
+
+      for (let i = 0; i < road.segments.length; i++) {
+        const band = bands[i];
+        if (!band) continue;
+        const bucket = Math.round(
+          Math.max(0, Math.min(1, road.segments[i].d)) * (HEAT_BUCKETS - 1),
+        );
+        const key = `${bucket}|${width}`;
+        let group = groups.get(key);
+        if (!group) {
+          group = { color: heatColor(bucket / (HEAT_BUCKETS - 1)), width, bands: [] };
+          groups.set(key, group);
         }
-        this.strokePath(g, band, {
-          color: heatColor(seg.d), width: this.laneWidthPx(meta),
-          alpha: this.theme.heatmapAlpha, cap: "butt",
-        });
+        group.bands.push(band);
       }
+    }
+
+    for (const { color, width, bands } of groups.values()) {
+      for (const band of bands) {
+        g.moveTo(band[0][0], band[0][1]);
+        for (let i = 1; i < band.length; i++) g.lineTo(band[i][0], band[i][1]);
+      }
+      g.stroke({ color, width, alpha: this.theme.heatmapAlpha, cap: "butt" });
     }
   }
 
   // ----------------------------------------------------------------- labels
   /**
-   * Street names along their road, on a translucent pill so they stay legible
-   * against grass. Shown only when the camera is zoomed in far enough that
-   * they fit; hidden entirely when zoomed out.
+   * Build one label per named street, positioned in world space.
+   *
+   * Text, position and rotation depend only on the map, so they are set here
+   * and never touched again while the camera moves. Only visibility and the
+   * counter-scale that keeps text a constant size on screen are per-zoom work.
+   *
+   * Doing this at network load rather than the first time the user zooms past
+   * LABEL_MIN_SCALE is deliberate. Constructing the BHU import's 56 `Text`
+   * objects costs tens of milliseconds, and paying it mid-pan was the single
+   * worst hitch left in the frame trace. Here it lands inside a network load,
+   * which is already a visible pause.
    */
-  private drawLabels(force = false) {
+  private buildLabels() {
+    for (const t of this.labels) t.destroy();
+    this.labels.length = 0;
+    this.labelContainer.removeChildren();
     if (!this.network) return;
-    const scale = this.camera.scale.x;
-    // Labels are positioned in world space, so panning does not move them
-    // relative to the map and only a zoom change needs a relayout. Skipping
-    // the no-op passes is what keeps a 243-road map inside the frame budget.
-    if (!force && Math.abs(scale - this.lastLabelScale) < this.lastLabelScale * 0.01) {
-      return;
-    }
-    this.lastLabelScale = scale;
-    for (const t of this.labels) t.visible = false;
-    if (scale < LABEL_MIN_SCALE) return;
 
     // one label per named street (or per named road, if it has no street)
     const seen = new Set<string>();
-    let i = 0;
-
     for (const road of this.network.roads) {
       const name = road.name?.trim();
       if (!name) continue;
       const key = road.street_id ?? `road:${road.id}`;
       if (seen.has(key)) continue;
-
-      const geom = this.geomOf(road);
-      if (geom.acc[geom.acc.length - 1] * scale < LABEL_MIN_ROAD_PX) continue;
       seen.add(key);
 
+      const geom = this.geomOf(road);
       const mid = this.cellAt(geom, (road.length - 1) / 2);
-      const label = this.getLabel(i++);
-      label.text = name;
-      label.style.fill = this.theme.label;
-      label.position.set(mid.x, mid.y);
-      // keep text upright and at a constant on-screen size
-      label.scale.set(1 / scale);
+      const t = new Text({
+        text: name,
+        style: {
+          fontFamily: "system-ui, sans-serif",
+          fontSize: 11,
+          fill: this.theme.label,
+          // a soft halo does the job of a pill background at a fraction of the
+          // cost, and never boxes in a rotated label
+          stroke: { color: this.theme.labelBackdrop, width: 3, join: "round" },
+        },
+      });
+      t.anchor.set(0.5, 0.5);
+      t.position.set(mid.x, mid.y);
+      // keep text upright
       let angle = mid.angle;
       if (angle > Math.PI / 2 || angle < -Math.PI / 2) angle += Math.PI;
-      label.rotation = angle;
-      label.visible = true;
+      t.rotation = angle;
+      t.visible = false;
+      // how much road there is to sit on, so the zoom pass can hide a label
+      // that no longer fits without re-measuring the lane
+      this.labelRoadPx.push(geom.acc[geom.acc.length - 1]);
+      this.labelContainer.addChild(t);
+      this.labels.push(t);
     }
   }
 
-  private getLabel(index: number): Text {
-    if (index < this.labels.length) return this.labels[index];
-    const t = new Text({
-      text: "",
-      style: {
-        fontFamily: "system-ui, sans-serif",
-        fontSize: 11,
-        fill: this.theme.label,
-        // a soft halo does the job of a pill background at a fraction of the
-        // cost, and never boxes in a rotated label
-        stroke: { color: this.theme.labelBackdrop, width: 3, join: "round" },
-      },
-    });
-    t.anchor.set(0.5, 0.5);
-    this.labelContainer.addChild(t);
-    this.labels.push(t);
-    return t;
+  /**
+   * Show the labels that fit at the current zoom, at a constant screen size.
+   * Runs while the camera eases, so it does no layout — see `buildLabels`.
+   */
+  private drawLabels(force = false) {
+    const scale = this.camera.scale.x;
+    // Labels are positioned in world space, so panning does not move them
+    // relative to the map and only a zoom change needs a pass. Skipping the
+    // no-op passes is what keeps a 243-road map inside the frame budget.
+    if (!force && Math.abs(scale - this.lastLabelScale) < this.lastLabelScale * 0.01) {
+      return;
+    }
+    this.lastLabelScale = scale;
+
+    const visible = scale >= LABEL_MIN_SCALE;
+    for (let i = 0; i < this.labels.length; i++) {
+      const t = this.labels[i];
+      const fits = visible && this.labelRoadPx[i] * scale >= LABEL_MIN_ROAD_PX;
+      t.visible = fits;
+      if (fits) t.scale.set(1 / scale);
+    }
+  }
+
+  /** Recolour existing labels for a new theme, without rebuilding them. */
+  private tintLabels() {
+    for (const t of this.labels) {
+      t.style.fill = this.theme.label;
+      t.style.stroke = {
+        color: this.theme.labelBackdrop, width: 3, join: "round",
+      };
+    }
   }
 
   // ------------------------------------------------------------------ state
