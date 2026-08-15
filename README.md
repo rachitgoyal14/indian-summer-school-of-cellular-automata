@@ -1,6 +1,6 @@
 <div align="center">
 
-# CA Rule 184 — Traffic Simulator & OpenStreetMap Importer
+# Sarak — CA Rule 184 Traffic Simulator & OpenStreetMap Importer
 
 ### Real-Time Cellular Automata Traffic Simulator with OpenStreetMap Region Import & Docker Deployment
 
@@ -48,6 +48,19 @@ The system features:
 - **Dynamic Disruptions**: Trigger vehicle breakdowns, fallen trees, accidents, or waterlogging in real time to observe congestion propagation.
 - **Real-Time Analytics**: Live computation of spatial traffic density, flow rates, Shannon entropy, and thermodynamic landscape classification.
 - **Containerized Deployment**: One-command launch using `docker compose up --build`.
+
+### Deferred
+
+Two visual features are specified but not built, both blocked on the same
+gap rather than on rendering work:
+
+- **Buildings, parking bays and handicap zones.** The Overpass query fetches
+  only `highway=*` ways, so no area geometry reaches the frontend at all.
+  Drawing them needs a backend feature first: fetching `building=*` and
+  `amenity=parking` polygons, a model for areas, and a schema to carry them.
+  The palette already reserves colours for all three.
+- **Parking dynamics** (a vehicle that drives to a bay and stops). Depends on
+  the bays above existing as real cells before a vehicle can occupy one.
 
 ---
 

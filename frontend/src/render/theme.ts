@@ -54,18 +54,21 @@ export const DISRUPTION_COLORS: Record<DisruptionKind, number> = {
   parking: 0x5c7cfa,
 };
 
+// Reference palette. These are the exact values from Prof. Martinez's
+// simulator; they are matched deliberately and should not be "improved"
+// without checking against the reference first.
 export const DAY_THEME: Theme = {
   name: "day",
-  background: 0x7cfc00,       // flat saturated grass — no gradient
-  road: 0xa9a9a9,             // mid-grey asphalt
+  background: 0x008000,       // flat green — no gradient
+  road: 0x808080,             // mid-grey asphalt
   junction: 0x707070,         // a shade darker: paved intersection
-  centerLine: 0xffd700,       // yellow lane divider
-  edgeLine: 0xf2f2f2,         // white curb line
-  median: 0xffd700,
+  centerLine: 0xffff00,       // bright yellow lane divider
+  edgeLine: 0xffffff,         // white curb line
+  median: 0xffff00,
   building: 0xd3d3d3,
-  parking: 0xa9a9a9,
-  car: 0xb22222,
-  moto: 0xcd5c5c,
+  parking: 0x808080,          // bays are asphalt; their borders use centerLine
+  car: 0xdc143c,              // crimson
+  moto: 0xff6347,             // tomato
   vehicleHighlight: 0xffffff,
   vehicleShadow: 0x000000,
   label: 0x2b2b2b,

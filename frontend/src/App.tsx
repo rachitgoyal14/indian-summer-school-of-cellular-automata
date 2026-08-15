@@ -17,6 +17,7 @@ import { MapEditor } from "./components/MapEditor";
 import { RegionSearch } from "./components/RegionSearch";
 import { ScenarioPanel } from "./components/ScenarioPanel";
 import { LaneChangePanel } from "./components/LaneChangePanel";
+import { TopBar } from "./components/TopBar";
 import { useSimulationSocket } from "./hooks/useSimulationSocket";
 import type { ThemeName } from "./render/theme";
 import type { RoadRenderer } from "./render/RoadRenderer";
@@ -67,16 +68,12 @@ export default function App() {
       <div data-testid="dis-debug" style={{ display: "none" }}>
         {JSON.stringify(disCounts)}
       </div>
-      <header className="topbar">
-        <h1><span className="topbar-issca">ISSCA</span>CA Rule 184 — Traffic Simulator</h1>
-        <button className="theme-toggle" onClick={toggleTheme} data-testid="theme-toggle"
-                title="Switch between the Day campus map and the Night palette">
-          {theme === "day" ? "☀️ Day" : "🌙 Night"}
-        </button>
-        <div className={`conn ${api.connected ? "up" : "down"}`}>
-          {api.connected ? "● connected" : "○ disconnected"}
-        </div>
-      </header>
+      <TopBar
+        state={st}
+        connected={api.connected}
+        theme={theme}
+        onThemeToggle={toggleTheme}
+      />
 
       <main className="layout">
         <section className="stage">
@@ -127,38 +124,6 @@ export default function App() {
         </aside>
       </main>
 
-      <div className="readout">
-        <Metric label="step" value={st ? String(st.step) : "—"} />
-        <Metric
-          label="density"
-          value={st ? st.analytics.density.toFixed(3) : "—"}
-        />
-        <Metric
-          label="flow"
-          value={st ? st.analytics.flow.toFixed(3) : "—"}
-        />
-        <Metric
-          label="entropy"
-          value={st ? `${st.analytics.entropy_bits.toFixed(2)} bits` : "—"}
-        />
-        <Metric
-          label="landscape"
-          value={st ? st.analytics.landscape : "—"}
-        />
-      </div>
-    </div>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="metric">
-      <div className="metric-label">{label}</div>
-      <div
-        className={`metric-value${label === "landscape" ? ` landscape-text-${value}` : ""}`}
-      >
-        {value}
-      </div>
     </div>
   );
 }

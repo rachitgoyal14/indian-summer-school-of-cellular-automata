@@ -132,6 +132,18 @@ const LABEL_MIN_ROAD_PX = 60;
 const CAMERA_EASE = 0.22;
 
 /**
+ * Vehicle size, as fractions of the space it owns: across the lane, and along
+ * its own cell footprint. The leftover along-track fraction is deliberate —
+ * it keeps a queue of bumper-to-bumper vehicles reading as discrete cells
+ * rather than one continuous bar, which is the point of showing a CA.
+ */
+const VEHICLE_ACROSS_FRAC = 0.5;
+const VEHICLE_ALONG_FRAC = 0.8;
+
+/** Side of the white headlight square, in world px (~2 px at camera scale 1). */
+const HEADLIGHT_PX = 2;
+
+/**
  * Distinct colours in the congestion ramp.
  *
  * Strips sharing a colour are stroked together, so this is also the number of
@@ -163,25 +175,31 @@ function heatColor(d: number): number {
 }
 
 // ----------------------------------------------------------------- vehicle art
-// Vehicles are drawn once in white at high resolution and tinted per type, so
-// a theme switch costs a tint change rather than a re-render.
+// Drawn once per theme at 4x and sampled back down, so the edges stay crisp
+// without paying for a Graphics rebuild per vehicle per frame.
 
 /**
- * A blocky top-down vehicle: a sharp-cornered slab with a lighter top edge and
- * a darker bottom one, so it reads as a solid block rather than a flat
- * rectangle. Drawn pointing +x; rotated to the road's angle at draw time.
+ * A top-down vehicle in the reference's style: a plain sharp-cornered
+ * rectangle with a white headlight block at its leading edge, and nothing
+ * else. Drawn pointing +x; rotated to the road's heading at draw time.
  *
- * Deliberately not rounded and without a windshield: at the size these are
- * actually drawn, softening reads as blur rather than as detail.
+ * No rounded corners, no highlight/shadow banding, no windshield. Those were
+ * tried and read as blur at the size these are actually drawn; the reference
+ * is flat, and flat is legible.
+ *
+ * The body colour is baked in rather than applied as a sprite tint, and the
+ * headlight is baked in with it. A tint in Pixi v8 propagates down the whole
+ * display tree, so a white headlight sprite parented to a crimson body comes
+ * out crimson — the one arrangement that cannot work. Baking costs a texture
+ * regeneration per theme switch, which happens far less often than a frame.
  */
-function drawVehicle(g: Graphics, lengthPx: number, widthPx: number) {
-  g.rect(0, 0, lengthPx, widthPx).fill({ color: 0xffffff });
-
-  // A band rather than a hairline: the texture is supersampled 4x and drawn
-  // back down, so a literal 1 px edge would disappear.
-  const edge = Math.max(2, widthPx * 0.16);
-  g.rect(0, 0, lengthPx, edge).fill({ color: 0xffffff, alpha: 0.45 });
-  g.rect(0, widthPx - edge, lengthPx, edge).fill({ color: 0x000000, alpha: 0.35 });
+function drawVehicle(
+  g: Graphics, lengthPx: number, widthPx: number, color: number, lampPx: number,
+) {
+  g.rect(0, 0, lengthPx, widthPx).fill({ color });
+  // Headlight at the leading (+x) edge, centred across the vehicle.
+  g.rect(lengthPx - lampPx, (widthPx - lampPx) / 2, lampPx, lampPx)
+    .fill({ color: 0xffffff });
 }
 
 export class RoadRenderer {
@@ -300,6 +318,9 @@ export class RoadRenderer {
   setTheme(theme: Theme) {
     this.theme = theme;
     this.app.renderer.background.color = theme.background;
+    // Vehicle colour is baked into the texture, not applied as a tint, so a
+    // palette change has to redraw it.
+    this.generateVehicleTextures();
     this.drawRoads();
     this.drawJunctions();
     this.drawMarkings();
@@ -318,25 +339,33 @@ export class RoadRenderer {
 
   // --------------------------------------------------------------- textures
   /**
-   * Vehicle art, drawn once in white and tinted per type.
+   * Vehicle art, one texture per type, in that type's final colour.
    *
    * LENGTH is tied to the footprint the simulation gives a vehicle — a car
-   * occupies two cells and is drawn two cells long — so what is on screen
-   * matches what the CA is actually modelling. WIDTH is a fraction of the
-   * lane, which at the current render scale puts a car around 10 px across
-   * and a motorbike around 8, sitting well inside a ~20 px lane.
+   * occupies two cells and is drawn across VEHICLE_ALONG_FRAC of them — so
+   * what is on screen matches what the CA is modelling, and the gap left over
+   * keeps two bumper-to-bumper vehicles reading as separate cells rather than
+   * one long smear. WIDTH is a fraction of the lane.
+   *
+   * Regenerated on a theme switch, since the colour is baked in.
    */
   private generateVehicleTextures() {
     const scale = 4; // supersample, then draw at 1/4 size
     const laneW = DEFAULT_LANE_UNITS * CELL_SIZE * scale * RENDER_LANE_WIDTH_SCALE;
+    const lamp = HEADLIGHT_PX * scale;
+
+    this.motoTexture?.destroy(true);
+    this.carTexture?.destroy(true);
 
     const motoG = new Graphics();
-    drawVehicle(motoG, CELL_SIZE * scale * 0.92, laneW * 0.42);
+    drawVehicle(motoG, CELL_SIZE * scale * VEHICLE_ALONG_FRAC,
+                laneW * VEHICLE_ACROSS_FRAC, this.theme.moto, lamp);
     this.motoTexture = this.app.renderer.generateTexture({ target: motoG, resolution: 1 });
     motoG.destroy();
 
     const carG = new Graphics();
-    drawVehicle(carG, CELL_SIZE * 2 * scale * 0.94, laneW * 0.52);
+    drawVehicle(carG, CELL_SIZE * 2 * scale * VEHICLE_ALONG_FRAC,
+                laneW * VEHICLE_ACROSS_FRAC, this.theme.car, lamp);
     this.carTexture = this.app.renderer.generateTexture({ target: carG, resolution: 1 });
     carG.destroy();
   }
@@ -1021,9 +1050,12 @@ export class RoadRenderer {
 
         const body = this.getSprite(spriteIdx++);
         body.texture = tex;
-        body.tint = v.t === "car" ? this.theme.car : this.theme.moto;
         body.alpha = 1;
         body.rotation = at.angle;
+        // Snapped, not eased. The position comes straight from the cell table
+        // and is written once per state message; nothing interpolates it
+        // between messages, so a vehicle jumps a whole cell at a time. That
+        // discreteness is the CA rule made visible and must not be smoothed.
         body.position.set(at.x, at.y);
         body.scale.set(laneScale / 4);  // /4 undoes the texture supersample
       }

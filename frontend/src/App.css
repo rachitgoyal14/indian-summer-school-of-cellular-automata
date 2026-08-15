@@ -1,5 +1,5 @@
 /* ============================================================
-   ISSCA CA Rule 184 Traffic Simulator — Design System
+   Sarak — CA Rule 184 Traffic Simulator — Design System
    Palette grounded in road infrastructure: tarmac, bitumen,
    kerb, Indian road-marking amber, warm chalk/gravel text.
    ============================================================ */
@@ -46,32 +46,105 @@ html, body, #root {
   overflow: hidden;
 }
 
-/* ---- top bar ---- */
+/* ---- top bar HUD ----
+   Full width, flat black, white monospace. Carries the live readouts that
+   used to sit in a strip along the bottom of the window; they are not shown
+   in both places. Three columns, with the centre one absolutely centred on
+   the viewport rather than on the space left over, so the numbers do not
+   drift sideways as the name or the connection text changes width. */
 .topbar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 18px;
-  height: 44px;
-  min-height: 44px;
-  background: var(--bitumen);
-  border-bottom: 1px solid var(--kerb);
-  border-left: 4px solid var(--marking);  /* signature: amber lane stripe */
+  padding: 0 14px;
+  height: 38px;
+  min-height: 38px;
+  background: #000000;
+  border-bottom: 1px solid #2a2a2a;
 }
 
-.topbar h1 {
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin: 0;
-  color: var(--chalk);
+.topbar-left,
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1;
 }
-.topbar h1 .topbar-issca {
-  color: var(--marking);
+
+.topbar-name {
+  font-family: var(--font-display);
+  font-size: 15px;
   font-weight: 800;
-  margin-right: 6px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.topbar-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  white-space: nowrap;
+}
+
+.hud-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.hud-label {
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #9a9a9a;
+}
+.hud-value {
+  font-family: var(--font-data);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #ffffff;
+}
+
+/* Landscape reads as a state, so it gets a badge rather than a number. */
+.hud-badge {
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 3px;
+  color: #000000;
+  background: #9a9a9a;
+}
+.hud-badge.landscape-trivial { background: #67d982; }
+.hud-badge.landscape-average { background: #ffd23f; }
+.hud-badge.landscape-worst   { background: #ff6b6b; }
+
+/* ---- compass rose: static north indicator ---- */
+.compass { flex-shrink: 0; }
+.compass-ring {
+  fill: none;
+  stroke: #6a6a6a;
+  stroke-width: 1.5;
+}
+.compass-cross {
+  stroke: #6a6a6a;
+  stroke-width: 1;
+}
+.compass-needle { fill: #ffffff; }
+.compass-n {
+  fill: #ffffff;
+  font-family: var(--font-data);
+  font-size: 7px;
+  font-weight: 700;
 }
 
 .conn {
@@ -167,25 +240,15 @@ html, body, #root {
 }
 
 /* ============================================================
-   READOUT STRIP — docked to bottom, always visible
+   ANALYTICS PANEL SHARED BITS
    ============================================================ */
 
-.readout {
-  display: flex;
-  gap: 1px;
-  background: var(--kerb);    /* gap color = border effect */
-  border-top: 2px solid var(--marking);  /* amber top rule */
-  flex-shrink: 0;
-}
+/* The bottom `.readout` strip and its `.metric` rules lived here. The live
+   numbers moved into the top bar HUD; keeping a second copy along the bottom
+   was the duplication the reference layout avoids.
 
-.metric {
-  flex: 1;
-  background: var(--bitumen);
-  padding: 6px 14px;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
+   `.metric-label` survives them: the analytics panel uses it for its section
+   captions, which have nothing to do with the strip that is gone. */
 .metric-label {
   font-family: var(--font-display);
   font-size: 10px;
@@ -195,15 +258,8 @@ html, body, #root {
   color: var(--gravel);
   white-space: nowrap;
 }
-.metric-value {
-  font-family: var(--font-data);
-  font-size: 16px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--chalk);
-}
 
-/* ---- junction queues: integrated into readout area ---- */
+/* ---- junction queues ---- */
 .queues {
   display: flex;
   flex-wrap: wrap;
@@ -565,9 +621,8 @@ button.mode-active {
 }
 
 /* landscape in readout strip */
-.landscape-text-trivial { color: #67d982; }
-.landscape-text-average { color: #F5A623; }
-.landscape-text-worst   { color: #ff6b6b; }
+/* `.landscape-text-*` coloured the landscape word in the old bottom strip.
+   The top bar shows it as a badge instead (`.hud-badge.landscape-*`). */
 
 /* ============================================================
    REGION SEARCH (Stage 8)
@@ -827,8 +882,8 @@ button.mode-active {
 
 /* ---------------------------------------------- Stage 15: scenario explorer */
 .theme-toggle {
-  margin-left: auto;
-  margin-right: 14px;
+  /* The top bar lays its right-hand group out with flex `gap`; the old auto
+     margins were pushing this away from the compass beside it. */
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.14);
   color: var(--text, #e8e8e8);
