@@ -94,8 +94,12 @@ const CELL_SIZE = 14; // world px per cell-length
  * that way: it is what the lane offsets, cell counts and physics are built on.
  * Scaling here is safe *because* lane positions are re-derived from the street
  * centreline (see `buildGeometry`) rather than taken from `Road.path`.
+ *
+ * At 3.0 a lane is 0.4667 × 14 × 3 ≈ 19.6 px across at a camera scale of 1,
+ * so a two-lane street is ~39 px and a four-lane one ~78 px — comfortably
+ * past the 12 px per lane that markings need to be legible.
  */
-const RENDER_LANE_WIDTH_SCALE = 1.0;
+const RENDER_LANE_WIDTH_SCALE = 3.0;
 
 /**
  * Lane width for a road that belongs to no street, in geometry units. Matches
@@ -111,6 +115,13 @@ const DEFAULT_LANE_UNITS = 3.5 / 7.5;
  * would overlap the lane next to it.
  */
 const LONE_ROAD_UNITS = 0.8;
+
+/**
+ * Painted line width, in world px. Roughly 2 px on screen at a camera scale
+ * of 1, which is what a lane divider needs to read without turning the road
+ * into stripes.
+ */
+const MARKING_PX = 2;
 
 /** Below this camera scale, street-name labels are hidden as unreadable. */
 const LABEL_MIN_SCALE = 0.5;
@@ -129,18 +140,26 @@ const CAMERA_EASE = 0.22;
  */
 const HEAT_BUCKETS = 16;
 
-/** Congestion colour ramp: green (free) → yellow → red (jammed). d ∈ [0,1]. */
+/** Below this density a segment is left untinted — see `drawHeatmap`. */
+const HEAT_MIN_DENSITY = 0.05;
+
+/**
+ * Congestion colour ramp: amber (light) → red (jammed). d ∈ [0,1].
+ *
+ * It used to start at green for free-flowing traffic. That stopped working
+ * when the ground became bright grass: a half-opaque green over grey asphalt
+ * is very close to the grass beside it, so lightly-used roads read as though
+ * they had not been drawn at all. Free flow is now shown by leaving the
+ * asphalt untinted (see HEAT_MIN_DENSITY), which frees the ramp to spend its
+ * whole range on the congestion that matters.
+ */
 function heatColor(d: number): number {
   const t = Math.max(0, Math.min(1, d));
-  let r: number, g: number;
-  if (t < 0.5) {
-    r = Math.round(510 * t);
-    g = 200;
-  } else {
-    r = 255;
-    g = Math.round(200 * (1 - (t - 0.5) * 2));
-  }
-  return (r << 16) | (g << 8) | 0x30;
+  // #FFC107 amber → #C62828 dark red
+  const r = Math.round(0xff + (0xc6 - 0xff) * t);
+  const g = Math.round(0xc1 + (0x28 - 0xc1) * t);
+  const b = Math.round(0x07 + (0x28 - 0x07) * t);
+  return (r << 16) | (g << 8) | b;
 }
 
 // ----------------------------------------------------------------- vehicle art
@@ -148,24 +167,21 @@ function heatColor(d: number): number {
 // a theme switch costs a tint change rather than a re-render.
 
 /**
- * A blocky top-down vehicle: rounded body, a lighter leading half and a darker
- * trailing edge so the direction of travel is readable at a glance.
- * Drawn pointing +x; the sprite is rotated to the road's angle at draw time.
+ * A blocky top-down vehicle: a sharp-cornered slab with a lighter top edge and
+ * a darker bottom one, so it reads as a solid block rather than a flat
+ * rectangle. Drawn pointing +x; rotated to the road's angle at draw time.
+ *
+ * Deliberately not rounded and without a windshield: at the size these are
+ * actually drawn, softening reads as blur rather than as detail.
  */
 function drawVehicle(g: Graphics, lengthPx: number, widthPx: number) {
-  const r = Math.min(widthPx * 0.32, lengthPx * 0.22);
-  g.roundRect(0, 0, lengthPx, widthPx, r).fill({ color: 0xffffff });
+  g.rect(0, 0, lengthPx, widthPx).fill({ color: 0xffffff });
 
-  // windshield: a band across the front third, marking the leading edge
-  g.roundRect(lengthPx * 0.6, widthPx * 0.18, lengthPx * 0.22, widthPx * 0.64,
-              r * 0.5)
-    .fill({ color: 0xffffff, alpha: 0.55 });
-
-  // top highlight / bottom shadow — reads as a block, not a flat rectangle
-  g.roundRect(0, 0, lengthPx, widthPx * 0.22, r)
-    .fill({ color: 0xffffff, alpha: 0.28 });
-  g.roundRect(0, widthPx * 0.8, lengthPx, widthPx * 0.2, r)
-    .fill({ color: 0x000000, alpha: 0.3 });
+  // A band rather than a hairline: the texture is supersampled 4x and drawn
+  // back down, so a literal 1 px edge would disappear.
+  const edge = Math.max(2, widthPx * 0.16);
+  g.rect(0, 0, lengthPx, edge).fill({ color: 0xffffff, alpha: 0.45 });
+  g.rect(0, widthPx - edge, lengthPx, edge).fill({ color: 0x000000, alpha: 0.35 });
 }
 
 export class RoadRenderer {
@@ -301,17 +317,26 @@ export class RoadRenderer {
   }
 
   // --------------------------------------------------------------- textures
+  /**
+   * Vehicle art, drawn once in white and tinted per type.
+   *
+   * LENGTH is tied to the footprint the simulation gives a vehicle — a car
+   * occupies two cells and is drawn two cells long — so what is on screen
+   * matches what the CA is actually modelling. WIDTH is a fraction of the
+   * lane, which at the current render scale puts a car around 10 px across
+   * and a motorbike around 8, sitting well inside a ~20 px lane.
+   */
   private generateVehicleTextures() {
     const scale = 4; // supersample, then draw at 1/4 size
-    const laneW = DEFAULT_LANE_UNITS * CELL_SIZE * scale;
+    const laneW = DEFAULT_LANE_UNITS * CELL_SIZE * scale * RENDER_LANE_WIDTH_SCALE;
 
     const motoG = new Graphics();
-    drawVehicle(motoG, CELL_SIZE * scale * 0.92, laneW * 0.62);
+    drawVehicle(motoG, CELL_SIZE * scale * 0.92, laneW * 0.42);
     this.motoTexture = this.app.renderer.generateTexture({ target: motoG, resolution: 1 });
     motoG.destroy();
 
     const carG = new Graphics();
-    drawVehicle(carG, CELL_SIZE * 2 * scale * 0.94, laneW * 0.8);
+    drawVehicle(carG, CELL_SIZE * 2 * scale * 0.94, laneW * 0.52);
     this.carTexture = this.app.renderer.generateTexture({ target: carG, resolution: 1 });
     carG.destroy();
   }
@@ -577,7 +602,8 @@ export class RoadRenderer {
     for (const road of this.network.roads) {
       if (inStreet.has(road.id)) continue;
       this.strokePath(g, this.pathOf(road), {
-        color: this.theme.road, width: LONE_ROAD_UNITS * CELL_SIZE,
+        color: this.theme.road,
+        width: LONE_ROAD_UNITS * CELL_SIZE * RENDER_LANE_WIDTH_SCALE,
         cap: "butt", join: "round",
       });
     }
@@ -662,7 +688,7 @@ export class RoadRenderer {
       for (const { lane, road } of lanes) {
         if (lane.right_road_id === null) continue;
         this.strokeOffset(g, road, wPx / 2, {
-          color: this.theme.centerLine, width: 1.1, alpha: 0.95, dashed: true,
+          color: this.theme.centerLine, width: MARKING_PX, alpha: 0.95, dashed: true,
         });
       }
 
@@ -671,32 +697,34 @@ export class RoadRenderer {
       const backward = lanes.filter((e) => e.lane.direction === "backward");
       if (forward.length && backward.length) {
         const innermost = forward[forward.length - 1];
-        this.strokeOffset(g, innermost.road, wPx / 2, {
-          color: this.theme.median, width: 1.0, alpha: 1,
+        // Double solid line, the two halves a marking's width apart.
+        this.strokeOffset(g, innermost.road, wPx / 2 - MARKING_PX, {
+          color: this.theme.median, width: MARKING_PX, alpha: 1,
         });
-        this.strokeOffset(g, innermost.road, wPx / 2 + 1.4, {
-          color: this.theme.median, width: 1.0, alpha: 1,
+        this.strokeOffset(g, innermost.road, wPx / 2 + MARKING_PX, {
+          color: this.theme.median, width: MARKING_PX, alpha: 1,
         });
       }
 
       // Outer edges of the whole street.
       const leftMost = lanes[0];
       const rightMost = lanes[lanes.length - 1];
-      this.strokeOffset(g, leftMost.road, -wPx / 2 + 0.4, {
-        color: this.theme.edgeLine, width: 1.0, alpha: 0.9,
+      this.strokeOffset(g, leftMost.road, -wPx / 2 + MARKING_PX, {
+        color: this.theme.edgeLine, width: MARKING_PX, alpha: 0.9,
       });
-      this.strokeOffset(g, rightMost.road, wPx / 2 - 0.4, {
-        color: this.theme.edgeLine, width: 1.0, alpha: 0.9,
+      this.strokeOffset(g, rightMost.road, wPx / 2 - MARKING_PX, {
+        color: this.theme.edgeLine, width: MARKING_PX, alpha: 0.9,
       });
     }
 
     // Roads that belong to no street: an edge line down each side.
     for (const road of this.network.roads) {
       if (inStreet.has(road.id)) continue;
-      const half = (LONE_ROAD_UNITS * CELL_SIZE) / 2 - 0.4;
+      const half = (LONE_ROAD_UNITS * CELL_SIZE * RENDER_LANE_WIDTH_SCALE) / 2
+        - MARKING_PX;
       for (const side of [-half, half]) {
         this.strokeOffset(g, road, side, {
-          color: this.theme.edgeLine, width: 0.9, alpha: 0.75,
+          color: this.theme.edgeLine, width: MARKING_PX, alpha: 0.75,
         });
       }
     }
@@ -722,24 +750,40 @@ export class RoadRenderer {
 
   // -------------------------------------------------------------- junctions
   /**
-   * Junctions are just paved area where roads meet — no node graphics. The pad
-   * is sized from the widest lane touching it so it fills the intersection
-   * without spilling onto the grass.
+   * Junctions are just paved area where roads meet — no node graphics.
+   *
+   * Each pad is sized from the widest street that actually reaches THAT
+   * junction. Sizing every pad from the widest street anywhere on the map, as
+   * this used to, put a full arterial-sized square on top of every footpath
+   * corner; once roads were drawn at the render scale those squares swamped
+   * the map.
    */
   private drawJunctions() {
     const g = this.junctionLayer;
     g.clear();
     if (!this.network) return;
 
-    let pad = DEFAULT_LANE_UNITS * CELL_SIZE;
+    // The message states no road→junction links, so a junction claims the
+    // roads whose ends land on it.
+    const reach = new Map<number, number>();
+    const near = CELL_SIZE * 1.5;
     for (const road of this.network.roads) {
       const street = this.streetOfRoad.get(road.id);
-      const lanes = street ? street.lanes.length : 1;
-      pad = Math.max(pad, this.laneWidthPx(road) * lanes);
+      const width = this.laneWidthPx(road) * (street ? street.lanes.length : 1);
+      const { p0x, p0y, p1x, p1y } = this.roadEnds(road);
+      for (const j of this.network.junctions) {
+        const jx = j.x * CELL_SIZE + CELL_SIZE / 2;
+        const jy = j.y * CELL_SIZE + CELL_SIZE / 2;
+        if (Math.hypot(p0x - jx, p0y - jy) < near
+            || Math.hypot(p1x - jx, p1y - jy) < near) {
+          reach.set(j.id, Math.max(reach.get(j.id) ?? 0, width));
+        }
+      }
     }
-    const r = pad * 0.62;
 
+    const fallback = DEFAULT_LANE_UNITS * CELL_SIZE * RENDER_LANE_WIDTH_SCALE;
     for (const j of this.network.junctions) {
+      const r = (reach.get(j.id) ?? fallback) * 0.55;
       const cx = j.x * CELL_SIZE + CELL_SIZE / 2;
       const cy = j.y * CELL_SIZE + CELL_SIZE / 2;
       g.rect(cx - r, cy - r, r * 2, r * 2).fill({ color: this.theme.junction });
@@ -824,9 +868,13 @@ export class RoadRenderer {
       for (let i = 0; i < road.segments.length; i++) {
         const band = bands[i];
         if (!band) continue;
-        const bucket = Math.round(
-          Math.max(0, Math.min(1, road.segments[i].d)) * (HEAT_BUCKETS - 1),
-        );
+        const d = Math.max(0, Math.min(1, road.segments[i].d));
+        // Empty road is left as plain asphalt rather than tinted free-flow
+        // green. Most of a campus map is empty at any moment, and colouring
+        // all of it turned the whole site plan green and buried the lane
+        // markings under a half-opaque wash.
+        if (d < HEAT_MIN_DENSITY) continue;
+        const bucket = Math.round(d * (HEAT_BUCKETS - 1));
         const key = `${bucket}|${width}`;
         let group = groups.get(key);
         if (!group) {
@@ -950,8 +998,12 @@ export class RoadRenderer {
       const meta = roadById.get(road.id);
       if (!meta) continue;
       const L = meta.length;
-      // scale the sprite so a vehicle always fills its own lane
-      const laneScale = this.laneWidthPx(meta) / (DEFAULT_LANE_UNITS * CELL_SIZE);
+      // Scale the sprite so a vehicle always fills its own lane. The texture
+      // is already drawn at the render scale, so this compares against a
+      // default lane at that same scale — otherwise the widening would be
+      // applied twice and vehicles would overflow the asphalt.
+      const laneScale = this.laneWidthPx(meta)
+        / (DEFAULT_LANE_UNITS * CELL_SIZE * RENDER_LANE_WIDTH_SCALE);
       const geom = this.geomOf(meta);
 
       for (const v of road.vehicles) {

@@ -56,16 +56,16 @@ export const DISRUPTION_COLORS: Record<DisruptionKind, number> = {
 
 export const DAY_THEME: Theme = {
   name: "day",
-  background: 0x8fbf6a,       // flat lawn green — calm, not a gradient
-  road: 0x6e6e73,             // mid-grey asphalt
-  junction: 0x646469,         // a shade darker: paved intersection
-  centerLine: 0xf2c14e,       // yellow lane divider
+  background: 0x7cfc00,       // flat saturated grass — no gradient
+  road: 0xa9a9a9,             // mid-grey asphalt
+  junction: 0x707070,         // a shade darker: paved intersection
+  centerLine: 0xffd700,       // yellow lane divider
   edgeLine: 0xf2f2f2,         // white curb line
-  median: 0xf2c14e,
-  building: 0xd8d8d4,
-  parking: 0x9a9a9e,
-  car: 0xd04040,
-  moto: 0xe87040,
+  median: 0xffd700,
+  building: 0xd3d3d3,
+  parking: 0xa9a9a9,
+  car: 0xb22222,
+  moto: 0xcd5c5c,
   vehicleHighlight: 0xffffff,
   vehicleShadow: 0x000000,
   label: 0x2b2b2b,

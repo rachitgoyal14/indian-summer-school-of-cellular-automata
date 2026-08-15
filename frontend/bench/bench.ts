@@ -93,6 +93,8 @@ declare global {
   interface Window {
     __BENCH__?: BenchResult;
     __BENCH_DONE__?: boolean;
+    /** Exposed so a driver can park the camera and screenshot a detail. */
+    __RENDERER__?: RoadRenderer;
   }
 }
 
@@ -155,6 +157,7 @@ async function main() {
   const vehicles = states[0].roads.reduce((n, r) => n + r.vehicles.length, 0);
 
   const renderer = await RoadRenderer.create(document.getElementById("stage")!);
+  window.__RENDERER__ = renderer;
   renderer.setTheme(THEME);
   renderer.setNetwork(net);
   renderer.setHeatmapEnabled(HEATMAP);

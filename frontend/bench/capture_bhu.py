@@ -17,7 +17,8 @@ import numpy as np
 from src.engine.simulation import Simulation
 from src.server.state_serializer import serialize_network, serialize_state
 
-OUT = os.path.dirname(os.path.abspath(__file__))
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
+os.makedirs(OUT, exist_ok=True)
 
 sim = Simulation(config="one_way", seed=42)
 res = sim.import_region("IIT BHU Varanasi")
