@@ -193,7 +193,7 @@ To deploy on a GCP Compute Engine VM:
 
 ```bash
 # SSH into your VM and run:
-git clone <YOUR_GIT_REPO_URL>
+git clone https://github.com/rachitgoyal14/indian-summer-school-of-cellular-automata
 cd ca-seepage-sim
 
 # Launch with Docker Compose
