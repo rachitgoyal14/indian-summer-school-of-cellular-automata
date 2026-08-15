@@ -63,6 +63,20 @@ export interface NetworkStreet {
   id: string;
   /** Null for streets built by hand with no recorded centreline. */
   baseline: BaselineGeometry | null;
+  /**
+   * The centreline as a polyline, with NO lane offset applied — the curve the
+   * backend offset each lane from.
+   *
+   * This is what the renderer re-offsets to place lanes, so it can draw them
+   * wider than life without vehicles sliding into the middle of the slab. It
+   * cannot be recovered from the lanes: a backward lane's path is stored
+   * reversed, so averaging the outermost two folds the street onto a point.
+   *
+   * Empty for a straight street (use `baseline`) and absent from a server
+   * older than Stage 17.
+   */
+  centerline_path?: Array<[number, number]>;
+  /** True lane width, in geometry units. Never pre-scaled for drawing. */
   lane_width: number;
   n_forward: number;
   n_backward: number;

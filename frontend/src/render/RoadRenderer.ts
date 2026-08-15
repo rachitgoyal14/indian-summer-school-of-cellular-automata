@@ -7,12 +7,31 @@
 // Themes are data (see theme.ts). Switching one recolours and redraws; it
 // never touches the simulation or the camera.
 //
-// Multi-lane streets: the backend already offsets each lane's origin
-// perpendicular to its street's centreline, and states the lane width in the
-// same units as the geometry. So a lane is drawn at its own coordinates and
-// `lane_width` converts directly to pixels — the renderer never guesses an
-// offset, and the same code is correct for the procedural grid (units = cells)
-// and an OSM import (units = metres).
+// Multi-lane streets, and who owns lane placement
+// ------------------------------------------------
+// The backend offsets each lane by the TRUE lane width (3.5 m over a 7.5 m
+// cell) and sends the result as `Road.path`. That is the physics geometry, and
+// it stays authoritative for cell counts and the simulation.
+//
+// It is NOT what this renderer draws vehicles on. Real lanes are too narrow to
+// read on screen, so roads are drawn `RENDER_LANE_WIDTH_SCALE` times wider than
+// life. Placing vehicles on the backend's true-width paths while drawing a
+// slab several times wider would bunch every vehicle down the middle of the
+// asphalt instead of sitting them in lanes.
+//
+// So lane placement is derived here instead, in `buildGeometry`:
+//
+//   1. take `street.centerline_path` — the un-offset curve the backend offset
+//      FROM (never `Road.path`, which is already offset, and never an average
+//      of the outermost lanes, which collapses on a two-way street because a
+//      backward lane's path is stored reversed);
+//   2. measure how far off it the backend put each lane;
+//   3. re-offset the centreline by that distance times the render scale.
+//
+// Everything downstream — bed, markings, vehicles, heatmap, disruptions,
+// labels — rides those re-offset paths, so they cannot drift apart. At a
+// render scale of 1.0 the result is the backend's own geometry, which is what
+// makes the scale safe to change.
 //
 // Camera: eased zoom/pan, scroll-zoom toward cursor, drag-pan, double-click
 // zoom, keyboard (+/- zoom, 0 fit-to-view).
@@ -20,7 +39,7 @@
 import { Application, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import type { NetworkMessage, NetworkRoad, NetworkStreet, StateMessage } from "../types";
 import { DAY_THEME, DISRUPTION_COLORS, type Theme } from "./theme";
-import { cumulative, midPath, offsetPath, sampleAt, smooth, type Pt } from "./polyline";
+import { cumulative, offsetPath, sampleAt, smooth, type Pt } from "./polyline";
 
 export { DISRUPTION_COLORS };
 
@@ -31,7 +50,50 @@ export interface EditClick {
   road: { roadId: number; cell: number } | null;
 }
 
+/** Where a cell sits on its lane, and which way traffic faces there. */
+interface CellPos {
+  x: number;
+  y: number;
+  angle: number;
+}
+
+/**
+ * Everything the renderer needs about one lane's shape, built once per network.
+ *
+ * `cells` is the reason this exists. Placing a vehicle used to binary-search
+ * the lane's ~190 spline points for its arc-length position, 680 times per
+ * state message. The positions never change between state messages — only
+ * which cells are occupied does — so they are precomputed at load and looked
+ * up by index instead.
+ *
+ * It is sampled at HALF-cell resolution: a car occupies two cells and is drawn
+ * at their midpoint, so its centre falls on a half-integer index. Entry `j`
+ * is cell index `j / 2`.
+ */
+interface LaneGeom {
+  /** The lane's drawing path in world px, already offset off the centreline. */
+  pts: Pt[];
+  /** Cumulative arc length along `pts`. */
+  acc: number[];
+  /** Half-cell resolution position table; index `j` is cell `j / 2`. */
+  cells: CellPos[];
+}
+
 const CELL_SIZE = 14; // world px per cell-length
+
+/**
+ * How much wider than life roads are drawn.
+ *
+ * A real 3.5 m lane is 0.467 cell-lengths, which at CELL_SIZE is under 7 px —
+ * too thin to carry lane markings or to read as a drivable surface. Lanes are
+ * drawn this many times wider so the map looks like a campus site plan.
+ *
+ * FRONTEND ONLY. The backend's `lane_width` is the true width and must stay
+ * that way: it is what the lane offsets, cell counts and physics are built on.
+ * Scaling here is safe *because* lane positions are re-derived from the street
+ * centreline (see `buildGeometry`) rather than taken from `Road.path`.
+ */
+const RENDER_LANE_WIDTH_SCALE = 1.0;
 
 /**
  * Lane width for a road that belongs to no street, in geometry units. Matches
@@ -129,8 +191,10 @@ export class RoadRenderer {
   private editClickHandler: ((loc: EditClick) => void) | null = null;
   /** Extent of the last network, so an unchanged map keeps the user's view. */
   private lastExtent: string | null = null;
-  /** road id → its centreline in world px; cleared with each new network. */
-  private pathCache = new Map<number, { pts: Pt[]; acc: number[] }>();
+  /** road id → its drawing geometry; rebuilt whole with each new network. */
+  private geomCache = new Map<number, LaneGeom>();
+  /** street id → its centreline in world px, shared by all its lanes. */
+  private centreCache = new Map<string, Pt[]>();
   /** Scale the labels were last laid out at; they only depend on zoom. */
   private lastLabelScale = -1;
 
@@ -243,11 +307,13 @@ export class RoadRenderer {
   // ----------------------------------------------------------------- network
   setNetwork(network: NetworkMessage) {
     this.network = network;
-    this.pathCache.clear();
     this.streetOfRoad.clear();
     for (const street of network.streets ?? []) {
       for (const lane of street.lanes) this.streetOfRoad.set(lane.road_id, street);
     }
+    // Every path and cell position for the whole map, once. Nothing in the
+    // tick path may rebuild this.
+    this.buildGeometry();
     this.drawRoads();
     this.drawJunctions();
     this.drawMarkings();
@@ -282,42 +348,131 @@ export class RoadRenderer {
   }
 
   // ------------------------------------------------------------- geometry
-  /** A lane's painted width in pixels. */
+  /** A lane's painted width in pixels, at the exaggerated drawing scale. */
   private laneWidthPx(road: NetworkRoad): number {
     const street = this.streetOfRoad.get(road.id);
     const units = street && street.lane_width > 0 ? street.lane_width : DEFAULT_LANE_UNITS;
-    return Math.max(units * CELL_SIZE, 3);
+    return Math.max(units * CELL_SIZE * RENDER_LANE_WIDTH_SCALE, 3);
   }
 
   /**
-   * A road's centreline in world pixels. Curved roads use the polyline the
-   * importer preserved; straight ones collapse to their two endpoints, so the
-   * same code draws both and there is no special case.
+   * Build every lane's drawing path and cell-position table, once per network.
+   *
+   * Lanes of a street are re-offset from the street's centreline at the
+   * render scale rather than taken from `Road.path`; see the header for why.
+   * Roads with no street have nothing to be offset from and keep their own
+   * path.
    */
+  private buildGeometry() {
+    this.geomCache.clear();
+    this.centreCache.clear();
+    if (!this.network) return;
+
+    const roadById = new Map(this.network.roads.map((r) => [r.id, r]));
+    const done = new Set<number>();
+
+    for (const street of this.network.streets ?? []) {
+      const centre = this.centrelineOf(street, roadById);
+      if (!centre) continue;
+      this.centreCache.set(street.id, centre);
+
+      for (const lane of street.lanes) {
+        const road = roadById.get(lane.road_id);
+        if (!road) continue;
+        const backward = lane.direction === "backward";
+
+        // How far off the centreline the backend put this lane, measured
+        // rather than recomputed from slot arithmetic: that keeps one-way,
+        // two-way, odd lane counts and drive-side handedness in exactly one
+        // place — the backend — instead of duplicating the rules here and
+        // letting the two drift.
+        const offset = this.measureOffset(road, centre, backward);
+        let pts = offsetPath(centre, offset * RENDER_LANE_WIDTH_SCALE);
+        // A backward lane runs against the centreline, and its cell 0 is at
+        // the far end.
+        if (backward) pts = [...pts].reverse();
+
+        this.geomCache.set(road.id, this.laneGeom(pts, road.length));
+        done.add(road.id);
+      }
+    }
+
+    for (const road of this.network.roads) {
+      if (done.has(road.id)) continue;
+      this.geomCache.set(road.id, this.laneGeom(this.ownPath(road), road.length));
+    }
+  }
+
+  /** A road's own geometry, for one that belongs to no street. */
+  private ownPath(road: NetworkRoad): Pt[] {
+    if (road.path && road.path.length > 2) {
+      return smooth(road.path.map(([x, y]) => [x * CELL_SIZE, y * CELL_SIZE] as Pt));
+    }
+    const e = this.roadEnds(road);
+    return [[e.p0x, e.p0y], [e.p1x, e.p1y]];
+  }
+
+  /** Path, arc lengths and the half-cell position table, computed together. */
+  private laneGeom(pts: Pt[], length: number): LaneGeom {
+    const acc = cumulative(pts);
+    const span = Math.max(1, length - 1);
+    // One entry per half cell, inclusive of both ends.
+    const n = Math.max(2, span * 2 + 1);
+    const cells: CellPos[] = new Array(n);
+    for (let j = 0; j < n; j++) {
+      cells[j] = sampleAt(pts, acc, (j / 2) / span);
+    }
+    return { pts, acc, cells };
+  }
+
+  /**
+   * Signed perpendicular distance from `centre` to a lane, in world px.
+   *
+   * Taken at the midpoint, where a lane is furthest from the ends and least
+   * affected by how the centreline was trimmed. `reversed` un-flips a backward
+   * lane's stored path so the two are compared running the same way.
+   */
+  private measureOffset(road: NetworkRoad, centre: Pt[], reversed: boolean): number {
+    const own = this.ownPath(road);
+    if (own.length < 2 || centre.length < 2) return 0;
+    const lane = reversed ? [...own].reverse() : own;
+
+    const c = sampleAt(centre, cumulative(centre), 0.5);
+    const l = sampleAt(lane, cumulative(lane), 0.5);
+    // Project the gap onto the centreline's right-hand normal.
+    const [nx, ny] = RoadRenderer.perp(Math.cos(c.angle), Math.sin(c.angle));
+    return (l.x - c.x) * nx + (l.y - c.y) * ny;
+  }
+
+  /** A road's drawing geometry. Present for every road after `setNetwork`. */
+  private geomOf(road: NetworkRoad): LaneGeom {
+    let hit = this.geomCache.get(road.id);
+    if (!hit) {
+      // Only reachable if a state message names a road the network message
+      // did not; build it rather than dropping the road from the frame.
+      hit = this.laneGeom(this.ownPath(road), road.length);
+      this.geomCache.set(road.id, hit);
+    }
+    return hit;
+  }
+
+  /** A road's drawing path in world pixels. */
   private pathOf(road: NetworkRoad): Pt[] {
     return this.geomOf(road).pts;
   }
 
   /**
-   * Path *and* its cumulative arc lengths, cached together. Smoothing turns a
-   * 32-node way into ~190 points, and the label pass runs every frame while
-   * the camera eases — recomputing arc length there cost more than drawing.
+   * Position and heading of a cell, by index. Fractional indices are allowed
+   * at the half cell, which is where a two-cell vehicle's centre falls.
+   *
+   * This is the hot path: it replaces an arc-length binary search that ran
+   * once per vehicle per state message.
    */
-  private geomOf(road: NetworkRoad): { pts: Pt[]; acc: number[] } {
-    const hit = this.pathCache.get(road.id);
-    if (hit) return hit;
-    let pts: Pt[];
-    if (road.path && road.path.length > 2) {
-      // Smoothed once here, so the bed, markings, vehicles, heatmap and label
-      // all ride the same curve rather than each re-deriving it.
-      pts = smooth(road.path.map(([x, y]) => [x * CELL_SIZE, y * CELL_SIZE] as Pt));
-    } else {
-      const e = this.roadEnds(road);
-      pts = [[e.p0x, e.p0y], [e.p1x, e.p1y]];
-    }
-    const entry = { pts, acc: cumulative(pts) };
-    this.pathCache.set(road.id, entry);
-    return entry;
+  private cellAt(geom: LaneGeom, idx: number): CellPos {
+    const j = Math.round(idx * 2);
+    if (j <= 0) return geom.cells[0];
+    if (j >= geom.cells.length) return geom.cells[geom.cells.length - 1];
+    return geom.cells[j];
   }
 
   /** Stroke a polyline. */
@@ -378,8 +533,10 @@ export class RoadRenderer {
       if (!lanes.length) continue;
       for (const r of lanes) inStreet.add(r.id);
 
+      const centre = this.centreOf(street);
+      if (!centre) continue;
       const width = this.laneWidthPx(lanes[0]) * lanes.length;
-      this.strokePath(g, this.centrelineOf(street, lanes),
+      this.strokePath(g, centre,
         { color: this.theme.road, width, cap: "butt", join: "round" });
     }
 
@@ -393,16 +550,35 @@ export class RoadRenderer {
   }
 
   /**
-   * A street's centreline. Its lanes are parallel offsets of one node chain,
-   * so the mean of the outermost two is the centre — which also stays correct
-   * around a bend, where a straight chord between the endpoints would not.
+   * A street's centreline in world pixels: the curve its lanes are offset
+   * from, and the spine the road bed is drawn along.
+   *
+   * The server states it outright. It used to be inferred as the pointwise
+   * mean of the outermost two lanes, which is wrong for a two-way street: a
+   * backward lane's path is stored reversed, so the average of point i of one
+   * and point i of the other folds the whole street onto a point near its
+   * middle. On the IIT (BHU) import that was 120 of 123 streets.
+   *
+   * Falls back to the straight baseline, which is all a straight street needs
+   * and all an older server sends.
    */
-  private centrelineOf(street: NetworkStreet, lanes: NetworkRoad[]): Pt[] {
-    const first = this.pathOf(lanes[0]);
-    const last = this.pathOf(lanes[lanes.length - 1]);
-    if (first.length > 2 && first.length === last.length) return midPath(first, last);
-    const e = this.streetEnds(street, lanes[0]);
+  private centrelineOf(
+    street: NetworkStreet,
+    roadById: Map<number, NetworkRoad>,
+  ): Pt[] | null {
+    const path = street.centerline_path;
+    if (path && path.length > 2) {
+      return smooth(path.map(([x, y]) => [x * CELL_SIZE, y * CELL_SIZE] as Pt));
+    }
+    const first = street.lanes.map((l) => roadById.get(l.road_id)).find((r) => !!r);
+    if (!first) return null;
+    const e = this.streetEnds(street, first);
     return [[e.p0x, e.p0y], [e.p1x, e.p1y]];
+  }
+
+  /** A street's cached centreline, or null if it had no usable geometry. */
+  private centreOf(street: NetworkStreet): Pt[] | null {
+    return this.centreCache.get(street.id) ?? null;
   }
 
   /**
@@ -565,15 +741,14 @@ export class RoadRenderer {
     for (const road of this.lastState.roads) {
       const meta = roadById.get(road.id);
       if (!meta) continue;
-      const { pts, acc } = this.geomOf(meta);
-      const L = Math.max(1, meta.length - 1);
+      const geom = this.geomOf(meta);
       for (const seg of road.segments) {
         // walk the arc between the segment's first and last cell
         const steps = Math.max(2, Math.min(seg.n, 8));
         const band: Pt[] = [];
         for (let i = 0; i < steps; i++) {
           const k = seg.s + (seg.n - 1) * (i / (steps - 1));
-          const at = sampleAt(pts, acc, k / L);
+          const at = this.cellAt(geom, k);
           band.push([at.x, at.y]);
         }
         this.strokePath(g, band, {
@@ -613,11 +788,11 @@ export class RoadRenderer {
       const key = road.street_id ?? `road:${road.id}`;
       if (seen.has(key)) continue;
 
-      const { pts, acc } = this.geomOf(road);
-      if (acc[acc.length - 1] * scale < LABEL_MIN_ROAD_PX) continue;
+      const geom = this.geomOf(road);
+      if (geom.acc[geom.acc.length - 1] * scale < LABEL_MIN_ROAD_PX) continue;
       seen.add(key);
 
-      const mid = sampleAt(pts, acc, 0.5);
+      const mid = this.cellAt(geom, (road.length - 1) / 2);
       const label = this.getLabel(i++);
       label.text = name;
       label.style.fill = this.theme.label;
@@ -666,7 +841,7 @@ export class RoadRenderer {
       const L = meta.length;
       // scale the sprite so a vehicle always fills its own lane
       const laneScale = this.laneWidthPx(meta) / (DEFAULT_LANE_UNITS * CELL_SIZE);
-      const { pts, acc } = this.geomOf(meta);
+      const geom = this.geomOf(meta);
 
       for (const v of road.vehicles) {
         const tex = v.t === "car" ? this.carTexture : this.motoTexture;
@@ -677,8 +852,9 @@ export class RoadRenderer {
           centerIdx = ((centerIdx % L) + L) % L;
         }
         // Cells are evenly spaced along the road's ARC, so a vehicle sits
-        // where its cell really is on a curve, facing the local tangent.
-        const at = sampleAt(pts, acc, L > 1 ? centerIdx / (L - 1) : 0);
+        // where its cell really is on a curve, facing the local tangent —
+        // read straight out of the precomputed table, no search.
+        const at = this.cellAt(geom, centerIdx);
 
         const body = this.getSprite(spriteIdx++);
         body.texture = tex;
@@ -707,11 +883,10 @@ export class RoadRenderer {
       if (!meta) continue;
       const color = DISRUPTION_COLORS[dis.kind] ?? 0xffffff;
       const r = Math.max(this.laneWidthPx(meta) * 0.75, CELL_SIZE * 0.42);
-      const { pts, acc } = this.geomOf(meta);
-      const L = Math.max(1, meta.length - 1);
+      const geom = this.geomOf(meta);
 
       for (const idx of dis.cells) {
-        const at = sampleAt(pts, acc, idx / L);
+        const at = this.cellAt(geom, idx);
         const cx = at.x, cy = at.y;
 
         if (dis.permanent) {

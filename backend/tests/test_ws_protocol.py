@@ -62,11 +62,15 @@ def test_network_message_carries_streets():
 
     assert len(msg["streets"]) == 12
     street = msg["streets"][0]
-    assert set(street) == {"id", "baseline", "lane_width",
+    assert set(street) == {"id", "baseline", "centerline_path", "lane_width",
                            "n_forward", "n_backward", "lanes"}
     assert (street["n_forward"], street["n_backward"]) == (2, 0)
     assert street["lane_width"] > 0
     assert set(street["baseline"]) == {"x0", "y0", "x1", "y1"}
+    # A grid street is straight, so it carries no centreline polyline and the
+    # renderer falls back to `baseline`. Curved (imported) streets carry one —
+    # see test_multilane_import.
+    assert street["centerline_path"] == []
 
     lanes = street["lanes"]
     assert [l["lane_index"] for l in lanes] == [0, 1]

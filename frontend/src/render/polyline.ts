@@ -64,11 +64,11 @@ export function offsetPath(points: Pt[], dist: number): Pt[] {
   });
 }
 
-/** Pointwise mean of two equal-length paths — a street's centreline. */
-export function midPath(a: Pt[], b: Pt[]): Pt[] {
-  if (a.length !== b.length || a.length < 2) return a;
-  return a.map(([x, y], i) => [(x + b[i][0]) / 2, (y + b[i][1]) / 2] as Pt);
-}
+// A `midPath` helper used to live here, averaging two lane paths pointwise to
+// find a street's centreline. It was removed rather than left available: on a
+// two-way street a backward lane's path is stored reversed, so the average of
+// point i of each folds the street onto a point near its middle. The server
+// now states the centreline outright (`street.centerline_path`).
 
 /**
  * Resample a chain through a Catmull-Rom spline, `perSegment` points per

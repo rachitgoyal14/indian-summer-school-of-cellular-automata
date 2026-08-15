@@ -65,6 +65,7 @@ def save_scenario(sim) -> dict[str, Any]:
         {
             "id": s.id,
             "baseline": list(s.baseline) if s.baseline is not None else None,
+            "centerline_path": [[x, y] for x, y in s.centerline_path],
             "lane_width": s.lane_width,
             "lanes": [
                 {"road_id": lane.road.id, "lane_index": lane.lane_index,
@@ -148,6 +149,12 @@ def network_from_scenario(data: dict[str, Any]) -> Network:
             str(sd["id"]),
             baseline=tuple(baseline) if baseline else None,
             lane_width=float(sd.get("lane_width", 0.0)),
+            # Absent from scenarios saved before the renderer needed the
+            # un-offset curve; those load with an empty path and fall back to
+            # `baseline`, exactly as they did.
+            centerline_path=[
+                (float(x), float(y)) for x, y in sd.get("centerline_path", [])
+            ],
         )
         for ld in sd["lanes"]:
             street.add_lane(Lane(

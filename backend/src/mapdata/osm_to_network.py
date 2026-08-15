@@ -309,6 +309,11 @@ def osm_to_network(
             baseline=(seg["x0"], seg["y0"],
                       seg["x0"] + base_dx * nc, seg["y0"] + base_dy * nc),
             lane_width=LANE_WIDTH_M,
+            # The surveyed node chain, before any lane offset — this is what
+            # `_offset_path` below shifts to produce each lane. Keeping it lets
+            # the renderer re-offset the lanes at a drawing width of its own
+            # choosing instead of being locked to the true 3.5 m.
+            centerline_path=seg["path"] if len(seg["path"]) >= 3 else (),
         )
         # (direction, count, origin, step, head junction, tail junction)
         groups = (

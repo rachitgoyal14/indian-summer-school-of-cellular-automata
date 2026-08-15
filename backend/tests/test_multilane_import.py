@@ -220,6 +220,92 @@ def test_no_two_lanes_share_a_centreline():
         assert len(set(origins)) == len(origins), f"{street.id} lanes overlap"
 
 
+# ------------------------------------------------- centreline for the renderer
+#   A bent way, so the centreline is a curve and not just its own chord.
+#   N5 ──╮
+#        ╰── N6 ──╮
+#                 ╰── N7
+BENT_NODES = {
+    5: {"lat": 25.2700, "lon": 82.9900},
+    6: {"lat": 25.2706, "lon": 82.9912},
+    7: {"lat": 25.2704, "lon": 82.9930},
+}
+BENT_WAYS = [
+    {"id": 400, "nodes": [5, 6, 7],
+     "tags": {"highway": "primary", "name": "Bent",
+              "oneway": "yes", "lanes": "2"}},
+]
+
+
+def test_curved_street_records_its_unoffset_centreline():
+    """
+    The centreline is the surveyed chain, before any lane offset.
+
+    The renderer needs it to re-offset lanes at a drawing width of its own
+    choosing; if this arrived already offset, widening the road visually would
+    drag the lanes off the asphalt with it.
+    """
+    net = osm(ways=BENT_WAYS, nodes=BENT_NODES)
+    street = street_named(net, 400)
+
+    assert len(street.centerline_path) == 3, "one point per surveyed node"
+
+    # It is nobody's lane: every lane sits a real distance off it.
+    for lane in street.all_lanes():
+        assert lane.road.path, "a bent way should give its lanes a polyline"
+        for (cx, cy), (lx, ly) in zip(street.centerline_path, lane.road.path):
+            assert math.hypot(cx - lx, cy - ly) > 0.1, (
+                f"lane {lane.road.id} sits on the centreline"
+            )
+
+    # And it is genuinely between them: a two-lane street's lanes straddle it,
+    # half a lane width away on either side.
+    fwd = street.lanes_in_direction(FORWARD)
+    assert len(fwd) == 2
+    left, right = (lane.road.path for lane in fwd)
+    for (cx, cy), (lx, ly), (rx, ry) in zip(street.centerline_path, left, right):
+        assert math.isclose((lx + rx) / 2, cx, abs_tol=1e-6)
+        assert math.isclose((ly + ry) / 2, cy, abs_tol=1e-6)
+
+
+def test_centreline_cannot_be_recovered_by_averaging_a_two_way_street():
+    """
+    Guards the reason this is sent rather than derived.
+
+    A backward lane's polyline is stored reversed, so averaging the outermost
+    lanes pointwise — the obvious way to find a centreline renderer-side —
+    folds the street onto a point near its middle instead of tracing it.
+    """
+    bent_two_way = [{"id": 400, "nodes": [5, 6, 7],
+                     "tags": {"highway": "primary", "name": "Bent"}}]
+    street = street_named(osm(ways=bent_two_way, nodes=BENT_NODES), 400)
+
+    lanes = street.all_lanes()
+    first, last = lanes[0].road.path, lanes[-1].road.path
+    naive = [((a[0] + b[0]) / 2, (a[1] + b[1]) / 2) for a, b in zip(first, last)]
+
+    # The naive average collapses: its two ends land on nearly the same point.
+    span = math.hypot(naive[0][0] - naive[-1][0], naive[0][1] - naive[-1][1])
+    true = street.centerline_path
+    true_span = math.hypot(true[0][0] - true[-1][0], true[0][1] - true[-1][1])
+    assert true_span > 100, "the real centreline spans the street"
+    assert span < true_span / 10, (
+        f"averaging happened to work here (span {span:.1f} vs {true_span:.1f}); "
+        "this test no longer guards anything"
+    )
+
+
+def test_centreline_survives_a_scenario_roundtrip():
+    sim = Simulation(config="one_way", seed=1)
+    sim.network = osm(ways=BENT_WAYS, nodes=BENT_NODES)
+    before = street_named(sim.network, 400).centerline_path
+
+    data = json.loads(json.dumps(sim.to_scenario()))
+    after = street_named(network_from_scenario(data), 400).centerline_path
+
+    assert after == before
+
+
 def test_lane_offset_does_not_change_cell_count():
     """Lane width is a rendering concern: it must not touch the physics."""
     for street in osm().streets.values():

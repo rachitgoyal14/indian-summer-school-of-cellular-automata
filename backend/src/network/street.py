@@ -122,6 +122,7 @@ class Street:
         lanes: Iterable[Lane] = (),
         baseline: tuple[float, float, float, float] | None = None,
         lane_width: float = 0.0,
+        centerline_path: Iterable[tuple[float, float]] = (),
     ) -> None:
         self.id = str(id)
         # The street's centreline as (x0, y0, x1, y1), and the lane width the
@@ -130,6 +131,21 @@ class Street:
         # of reverse-engineering a centreline from N offset lanes.
         self.baseline = baseline
         self.lane_width = float(lane_width)
+        # The centreline as a *polyline*, with no lane offset applied — the
+        # curve the lanes were offset FROM.
+        #
+        # `baseline` says the same thing for a straight street and nothing
+        # useful for a curved one, where the chord between the endpoints cuts
+        # the corner. A renderer that wants to draw lanes at a width other
+        # than the true one needs the un-offset curve to re-offset from, and
+        # cannot recover it from the lanes: averaging the outermost two only
+        # works when they are symmetric about the centre, which a one-way
+        # street or an odd slot count breaks.
+        #
+        # Empty for a straight street; `baseline` covers that case.
+        self.centerline_path: list[tuple[float, float]] = [
+            (float(x), float(y)) for x, y in centerline_path
+        ]
         self._lanes: list[Lane] = []
         for lane in lanes:
             self.add_lane(lane)

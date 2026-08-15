@@ -56,6 +56,14 @@ def serialize_streets(sim: Simulation) -> list[dict[str, Any]]:
         streets.append({
             "id": street.id,
             "baseline": street.baseline_geometry(),
+            # The un-offset centreline curve. The renderer derives its own lane
+            # offsets from this, so it can draw lanes wider than life without
+            # the vehicles — which ride the re-offset paths — sliding into the
+            # middle of the slab. Empty for a straight street, where `baseline`
+            # already says everything.
+            "centerline_path": [
+                [round(x, 2), round(y, 2)] for x, y in street.centerline_path
+            ],
             "lane_width": street.lane_width,
             "n_forward": len(street.lanes_in_direction("forward")),
             "n_backward": len(street.lanes_in_direction("backward")),
