@@ -61,7 +61,7 @@ export function TopBar({ state, connected, theme, onThemeToggle }: {
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <span className="topbar-name">Sarak</span>
+        <span className="topbar-name">sadak</span>
       </div>
 
       <div className="topbar-center" data-testid="hud-readouts">

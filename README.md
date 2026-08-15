@@ -1,6 +1,6 @@
 <div align="center">
 
-# Sarak — CA Rule 184 Traffic Simulator & OpenStreetMap Importer
+# sadak — CA Rule 184 Traffic Simulator & OpenStreetMap Importer
 
 ### Real-Time Cellular Automata Traffic Simulator with OpenStreetMap Region Import & Docker Deployment
 
