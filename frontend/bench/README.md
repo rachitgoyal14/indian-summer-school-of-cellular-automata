@@ -70,7 +70,8 @@ same dpr, and take three runs — the tail moves by a few ms between them.
 cd backend && PYTHONPATH=$PWD ../.venv/bin/python ../frontend/bench/capture_bhu.py
 ```
 
-It writes `bhu-network.json` and `bhu-states.json` next to itself. The
+It writes `bhu-network.json` and `bhu-states.json` into `fixtures/`, which is
+where the bench loads them from — check the path it prints on the way out. The
 imported network spawns vehicles from sources and so starts empty; the script
 seeds it to ~680 vehicles directly, and drops the `cells` array from each
 state because the renderer never reads it.

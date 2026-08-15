@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <title>RoadRenderer frame-time bench</title>
+    <!-- Inline, so the page makes no request Chromium can log as a 404. The
+         sweep checks for zero console errors and a missing favicon would sit
+         in that list forever. -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%237cfc00'/><rect y='6' width='16' height='4' fill='%23a9a9a9'/></svg>" />
     <style>
       html, body { margin: 0; height: 100%; background: #111; color: #eee;
                    font: 13px/1.5 ui-monospace, monospace; }
