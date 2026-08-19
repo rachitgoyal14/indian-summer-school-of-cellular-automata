@@ -1,0 +1,1289 @@
+{
+  "version": 1,
+  "config": "custom",
+  "seed": 77,
+  "step": 0,
+  "rng_state": {
+    "bit_generator": "PCG64",
+    "state": {
+      "state": 289533129354323354318955456298181112347,
+      "inc": 336983293413220778415499640756163231851
+    },
+    "has_uint32": 0,
+    "uinteger": 0
+  },
+  "density_target": 0.2,
+  "car_fraction": 0.3,
+  "lane_change_prob": 0.25,
+  "rear_safety_gap": 1,
+  "lane_change_require_gain": true,
+  "steps_per_second": 10.0,
+  "roads": [
+    {
+      "id": 0,
+      "length": 25,
+      "x0": 100.0,
+      "y0": 70.0,
+      "dx": 1.2,
+      "dy": 1.2,
+      "periodic": false,
+      "head_junction": 1,
+      "tail_junction": 0,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": "roundabout_ring",
+      "lane_index": 0,
+      "name": "Roundabout Ring",
+      "path": [
+        [
+          100.0,
+          70.0
+        ],
+        [
+          106.676,
+          70.752
+        ],
+        [
+          113.017,
+          72.971
+        ],
+        [
+          118.705,
+          76.545
+        ],
+        [
+          123.455,
+          81.295
+        ],
+        [
+          127.029,
+          86.983
+        ],
+        [
+          129.248,
+          93.324
+        ],
+        [
+          130.0,
+          100.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 1,
+          "front": 3,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 2,
+          "front": 8,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 3,
+          "front": 13,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 4,
+          "front": 18,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 5,
+          "front": 23,
+          "length": 2,
+          "vtype": "car"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "length": 25,
+      "x0": 130.0,
+      "y0": 100.0,
+      "dx": -1.2,
+      "dy": 1.2,
+      "periodic": false,
+      "head_junction": 2,
+      "tail_junction": 1,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": "roundabout_ring",
+      "lane_index": 1,
+      "name": "Roundabout Ring",
+      "path": [
+        [
+          130.0,
+          100.0
+        ],
+        [
+          129.248,
+          106.676
+        ],
+        [
+          127.029,
+          113.017
+        ],
+        [
+          123.455,
+          118.705
+        ],
+        [
+          118.705,
+          123.455
+        ],
+        [
+          113.017,
+          127.029
+        ],
+        [
+          106.676,
+          129.248
+        ],
+        [
+          100.0,
+          130.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 6,
+          "front": 3,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 7,
+          "front": 8,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 8,
+          "front": 13,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 9,
+          "front": 18,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 10,
+          "front": 23,
+          "length": 2,
+          "vtype": "car"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "length": 25,
+      "x0": 100.0,
+      "y0": 130.0,
+      "dx": -1.2,
+      "dy": -1.2,
+      "periodic": false,
+      "head_junction": 3,
+      "tail_junction": 2,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": "roundabout_ring",
+      "lane_index": 2,
+      "name": "Roundabout Ring",
+      "path": [
+        [
+          100.0,
+          130.0
+        ],
+        [
+          93.324,
+          129.248
+        ],
+        [
+          86.983,
+          127.029
+        ],
+        [
+          81.295,
+          123.455
+        ],
+        [
+          76.545,
+          118.705
+        ],
+        [
+          72.971,
+          113.017
+        ],
+        [
+          70.752,
+          106.676
+        ],
+        [
+          70.0,
+          100.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 11,
+          "front": 3,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 12,
+          "front": 8,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 13,
+          "front": 13,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 14,
+          "front": 18,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 15,
+          "front": 23,
+          "length": 2,
+          "vtype": "car"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "length": 25,
+      "x0": 70.0,
+      "y0": 100.0,
+      "dx": 1.2,
+      "dy": -1.2,
+      "periodic": false,
+      "head_junction": 0,
+      "tail_junction": 3,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": "roundabout_ring",
+      "lane_index": 3,
+      "name": "Roundabout Ring",
+      "path": [
+        [
+          70.0,
+          100.0
+        ],
+        [
+          70.752,
+          93.324
+        ],
+        [
+          72.971,
+          86.983
+        ],
+        [
+          76.545,
+          81.295
+        ],
+        [
+          81.295,
+          76.545
+        ],
+        [
+          86.983,
+          72.971
+        ],
+        [
+          93.324,
+          70.752
+        ],
+        [
+          100.0,
+          70.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 16,
+          "front": 3,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 17,
+          "front": 8,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 18,
+          "front": 13,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 19,
+          "front": 18,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 20,
+          "front": 23,
+          "length": 2,
+          "vtype": "car"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "length": 30,
+      "x0": 100.0,
+      "y0": 20.0,
+      "dx": 0.0,
+      "dy": 1.6667,
+      "periodic": false,
+      "head_junction": 0,
+      "tail_junction": null,
+      "source_rate": 0.15,
+      "source_car_fraction": 0.3,
+      "street_id": "north_approach",
+      "lane_index": 0,
+      "name": "North Approach",
+      "path": [
+        [
+          100.0,
+          20.0
+        ],
+        [
+          97.061,
+          30.0
+        ],
+        [
+          95.245,
+          40.0
+        ],
+        [
+          95.245,
+          50.0
+        ],
+        [
+          97.061,
+          60.0
+        ],
+        [
+          100.0,
+          70.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 21,
+          "front": 4,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 22,
+          "front": 10,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 23,
+          "front": 17,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 24,
+          "front": 25,
+          "length": 1,
+          "vtype": "moto"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "length": 30,
+      "x0": 100.0,
+      "y0": 70.0,
+      "dx": 0.0,
+      "dy": -1.6667,
+      "periodic": false,
+      "head_junction": null,
+      "tail_junction": 0,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": "north_approach",
+      "lane_index": 1,
+      "name": "North Approach",
+      "path": [
+        [
+          100.0,
+          70.0
+        ],
+        [
+          98.237,
+          60.0
+        ],
+        [
+          97.147,
+          50.0
+        ],
+        [
+          97.147,
+          40.0
+        ],
+        [
+          98.237,
+          30.0
+        ],
+        [
+          100.0,
+          20.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 37,
+          "front": 3,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 38,
+          "front": 10,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 39,
+          "front": 18,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 40,
+          "front": 25,
+          "length": 1,
+          "vtype": "moto"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "length": 30,
+      "x0": 180.0,
+      "y0": 100.0,
+      "dx": -1.6667,
+      "dy": 0.0,
+      "periodic": false,
+      "head_junction": 1,
+      "tail_junction": null,
+      "source_rate": 0.15,
+      "source_car_fraction": 0.3,
+      "street_id": "east_approach",
+      "lane_index": 0,
+      "name": "East Approach",
+      "path": [
+        [
+          180.0,
+          100.0
+        ],
+        [
+          170.0,
+          102.939
+        ],
+        [
+          160.0,
+          104.755
+        ],
+        [
+          150.0,
+          104.755
+        ],
+        [
+          140.0,
+          102.939
+        ],
+        [
+          130.0,
+          100.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 25,
+          "front": 4,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 26,
+          "front": 10,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 27,
+          "front": 17,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 28,
+          "front": 25,
+          "length": 1,
+          "vtype": "moto"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "length": 30,
+      "x0": 130.0,
+      "y0": 100.0,
+      "dx": 1.6667,
+      "dy": 0.0,
+      "periodic": false,
+      "head_junction": null,
+      "tail_junction": 1,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": "east_approach",
+      "lane_index": 1,
+      "name": "East Approach",
+      "path": [
+        [
+          130.0,
+          100.0
+        ],
+        [
+          140.0,
+          101.763
+        ],
+        [
+          150.0,
+          102.853
+        ],
+        [
+          160.0,
+          102.853
+        ],
+        [
+          170.0,
+          101.763
+        ],
+        [
+          180.0,
+          100.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 41,
+          "front": 5,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 42,
+          "front": 14,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 43,
+          "front": 22,
+          "length": 1,
+          "vtype": "moto"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "length": 30,
+      "x0": 100.0,
+      "y0": 180.0,
+      "dx": 0.0,
+      "dy": -1.6667,
+      "periodic": false,
+      "head_junction": 2,
+      "tail_junction": null,
+      "source_rate": 0.15,
+      "source_car_fraction": 0.3,
+      "street_id": "south_approach",
+      "lane_index": 0,
+      "name": "South Approach",
+      "path": [
+        [
+          100.0,
+          180.0
+        ],
+        [
+          102.939,
+          170.0
+        ],
+        [
+          104.755,
+          160.0
+        ],
+        [
+          104.755,
+          150.0
+        ],
+        [
+          102.939,
+          140.0
+        ],
+        [
+          100.0,
+          130.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 29,
+          "front": 4,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 30,
+          "front": 10,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 31,
+          "front": 17,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 32,
+          "front": 25,
+          "length": 1,
+          "vtype": "moto"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "length": 30,
+      "x0": 100.0,
+      "y0": 130.0,
+      "dx": 0.0,
+      "dy": 1.6667,
+      "periodic": false,
+      "head_junction": null,
+      "tail_junction": 2,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": "south_approach",
+      "lane_index": 1,
+      "name": "South Approach",
+      "path": [
+        [
+          100.0,
+          130.0
+        ],
+        [
+          101.763,
+          140.0
+        ],
+        [
+          102.853,
+          150.0
+        ],
+        [
+          102.853,
+          160.0
+        ],
+        [
+          101.763,
+          170.0
+        ],
+        [
+          100.0,
+          180.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 44,
+          "front": 8,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 45,
+          "front": 20,
+          "length": 1,
+          "vtype": "moto"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "length": 30,
+      "x0": 20.0,
+      "y0": 100.0,
+      "dx": 1.6667,
+      "dy": 0.0,
+      "periodic": false,
+      "head_junction": 3,
+      "tail_junction": null,
+      "source_rate": 0.15,
+      "source_car_fraction": 0.3,
+      "street_id": "west_approach",
+      "lane_index": 0,
+      "name": "West Approach",
+      "path": [
+        [
+          20.0,
+          100.0
+        ],
+        [
+          30.0,
+          97.061
+        ],
+        [
+          40.0,
+          95.245
+        ],
+        [
+          50.0,
+          95.245
+        ],
+        [
+          60.0,
+          97.061
+        ],
+        [
+          70.0,
+          100.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 33,
+          "front": 4,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 34,
+          "front": 10,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 35,
+          "front": 17,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 36,
+          "front": 25,
+          "length": 1,
+          "vtype": "moto"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "length": 30,
+      "x0": 70.0,
+      "y0": 100.0,
+      "dx": -1.6667,
+      "dy": 0.0,
+      "periodic": false,
+      "head_junction": null,
+      "tail_junction": 3,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": "west_approach",
+      "lane_index": 1,
+      "name": "West Approach",
+      "path": [
+        [
+          70.0,
+          100.0
+        ],
+        [
+          60.0,
+          98.237
+        ],
+        [
+          50.0,
+          97.147
+        ],
+        [
+          40.0,
+          97.147
+        ],
+        [
+          30.0,
+          98.237
+        ],
+        [
+          20.0,
+          100.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 46,
+          "front": 7,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 47,
+          "front": 18,
+          "length": 1,
+          "vtype": "moto"
+        }
+      ]
+    }
+  ],
+  "junctions": [
+    {
+      "id": 0,
+      "x": 100.0,
+      "y": 70.0,
+      "turns": {
+        "3": {
+          "0": 0.65,
+          "5": 0.35
+        },
+        "4": {
+          "0": 0.85,
+          "5": 0.15
+        }
+      },
+      "lane_links": {
+        "3": [
+          0,
+          5
+        ],
+        "4": [
+          0,
+          5
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "x": 130.0,
+      "y": 100.0,
+      "turns": {
+        "0": {
+          "1": 0.65,
+          "7": 0.35
+        },
+        "6": {
+          "1": 0.85,
+          "7": 0.15
+        }
+      },
+      "lane_links": {
+        "0": [
+          1,
+          7
+        ],
+        "6": [
+          1,
+          7
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "x": 100.0,
+      "y": 130.0,
+      "turns": {
+        "1": {
+          "2": 0.65,
+          "9": 0.35
+        },
+        "8": {
+          "2": 0.85,
+          "9": 0.15
+        }
+      },
+      "lane_links": {
+        "1": [
+          2,
+          9
+        ],
+        "8": [
+          2,
+          9
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "x": 70.0,
+      "y": 100.0,
+      "turns": {
+        "2": {
+          "3": 0.65,
+          "11": 0.35
+        },
+        "10": {
+          "3": 0.85,
+          "11": 0.15
+        }
+      },
+      "lane_links": {
+        "2": [
+          3,
+          11
+        ],
+        "10": [
+          3,
+          11
+        ]
+      }
+    }
+  ],
+  "streets": [
+    {
+      "id": "roundabout_ring",
+      "baseline": null,
+      "centerline_path": [
+        [
+          100.0,
+          70.0
+        ],
+        [
+          112.202,
+          72.594
+        ],
+        [
+          122.294,
+          79.926
+        ],
+        [
+          128.532,
+          90.729
+        ],
+        [
+          129.836,
+          103.136
+        ],
+        [
+          125.981,
+          115.0
+        ],
+        [
+          117.634,
+          124.271
+        ],
+        [
+          106.237,
+          129.344
+        ],
+        [
+          93.763,
+          129.344
+        ],
+        [
+          82.366,
+          124.271
+        ],
+        [
+          74.019,
+          115.0
+        ],
+        [
+          70.164,
+          103.136
+        ],
+        [
+          71.468,
+          90.729
+        ],
+        [
+          77.706,
+          79.926
+        ],
+        [
+          87.798,
+          72.594
+        ],
+        [
+          100.0,
+          70.0
+        ]
+      ],
+      "lane_width": 3.0,
+      "lanes": [
+        {
+          "road_id": 0,
+          "lane_index": 0,
+          "direction": "forward"
+        },
+        {
+          "road_id": 1,
+          "lane_index": 1,
+          "direction": "forward"
+        },
+        {
+          "road_id": 2,
+          "lane_index": 2,
+          "direction": "forward"
+        },
+        {
+          "road_id": 3,
+          "lane_index": 3,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "north_approach",
+      "baseline": [
+        100.0,
+        20.0,
+        100.0,
+        70.0
+      ],
+      "centerline_path": [
+        [
+          100.0,
+          20.0
+        ],
+        [
+          100.0,
+          70.0
+        ]
+      ],
+      "lane_width": 3.0,
+      "lanes": [
+        {
+          "road_id": 4,
+          "lane_index": 0,
+          "direction": "forward"
+        },
+        {
+          "road_id": 5,
+          "lane_index": 1,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "east_approach",
+      "baseline": [
+        180.0,
+        100.0,
+        130.0,
+        100.0
+      ],
+      "centerline_path": [
+        [
+          180.0,
+          100.0
+        ],
+        [
+          130.0,
+          100.0
+        ]
+      ],
+      "lane_width": 3.0,
+      "lanes": [
+        {
+          "road_id": 6,
+          "lane_index": 0,
+          "direction": "forward"
+        },
+        {
+          "road_id": 7,
+          "lane_index": 1,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "south_approach",
+      "baseline": [
+        100.0,
+        180.0,
+        100.0,
+        130.0
+      ],
+      "centerline_path": [
+        [
+          100.0,
+          180.0
+        ],
+        [
+          100.0,
+          130.0
+        ]
+      ],
+      "lane_width": 3.0,
+      "lanes": [
+        {
+          "road_id": 8,
+          "lane_index": 0,
+          "direction": "forward"
+        },
+        {
+          "road_id": 9,
+          "lane_index": 1,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "west_approach",
+      "baseline": [
+        20.0,
+        100.0,
+        70.0,
+        100.0
+      ],
+      "centerline_path": [
+        [
+          20.0,
+          100.0
+        ],
+        [
+          70.0,
+          100.0
+        ]
+      ],
+      "lane_width": 3.0,
+      "lanes": [
+        {
+          "road_id": 10,
+          "lane_index": 0,
+          "direction": "forward"
+        },
+        {
+          "road_id": 11,
+          "lane_index": 1,
+          "direction": "forward"
+        }
+      ]
+    }
+  ],
+  "disruptions": {
+    "probs": {
+      "breakdown": 0.008,
+      "tree": 0.003,
+      "accident": 0.005,
+      "flood": 0.0
+    },
+    "repair_scale": 1.0,
+    "active": [
+      {
+        "id": 1,
+        "kind": "breakdown",
+        "label": "Fall car (breakdown)",
+        "road_id": 0,
+        "cells": [
+          10
+        ],
+        "permanent": false,
+        "remaining": 60
+      },
+      {
+        "id": 2,
+        "kind": "accident",
+        "label": "Accident (two cars)",
+        "road_id": 2,
+        "cells": [
+          15,
+          16
+        ],
+        "permanent": false,
+        "remaining": 90
+      },
+      {
+        "id": 3,
+        "kind": "tree",
+        "label": "Fallen tree",
+        "road_id": 4,
+        "cells": [
+          20
+        ],
+        "permanent": false,
+        "remaining": 55
+      },
+      {
+        "id": 4,
+        "kind": "parking",
+        "label": "Parking",
+        "road_id": 7,
+        "cells": [
+          28
+        ],
+        "permanent": true,
+        "remaining": 0
+      }
+    ]
+  },
+  "batch": {
+    "steps": 600,
+    "record_every": 1,
+    "snapshot_every": 60,
+    "include_segments": true,
+    "schedule": [
+      {
+        "step": 80,
+        "action": "trigger_disruption",
+        "kind": "flood"
+      },
+      {
+        "step": 200,
+        "action": "set_lane_change_params",
+        "prob": 0.5,
+        "rear_gap": 0,
+        "require_gain": false
+      },
+      {
+        "step": 350,
+        "action": "block_cells",
+        "road_id": 1,
+        "cells": [
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "kind": "flood",
+        "label": "Ring flood SE",
+        "duration": 120,
+        "permanent": false
+      },
+      {
+        "step": 500,
+        "action": "clear_disruptions"
+      }
+    ]
+  }
+}

@@ -1,0 +1,3963 @@
+{
+  "version": 1,
+  "config": "custom",
+  "seed": 303,
+  "step": 0,
+  "rng_state": null,
+  "density_target": 0.2,
+  "car_fraction": 0.33,
+  "lane_change_prob": 0.3,
+  "rear_safety_gap": 2,
+  "lane_change_require_gain": true,
+  "steps_per_second": 10,
+  "roads": [
+    {
+      "id": 0,
+      "length": 15,
+      "x0": 20.0,
+      "y0": 0.0,
+      "dx": -9.999999999999998,
+      "dy": -17.32050807568877,
+      "periodic": false,
+      "head_junction": 1,
+      "tail_junction": 0,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "hex_0",
+      "lane_index": 0,
+      "name": "hex_0",
+      "path": [
+        [
+          20.0,
+          0.0
+        ],
+        [
+          20.55,
+          -4.93
+        ],
+        [
+          20.12,
+          -9.31
+        ],
+        [
+          18.12,
+          -12.77
+        ],
+        [
+          14.55,
+          -15.33
+        ],
+        [
+          10.0,
+          -17.32
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 0,
+          "vtype": "car",
+          "length": 2,
+          "front": 1
+        },
+        {
+          "id": 1,
+          "vtype": "moto",
+          "length": 1,
+          "front": 3
+        },
+        {
+          "id": 2,
+          "vtype": "moto",
+          "length": 1,
+          "front": 6
+        },
+        {
+          "id": 3,
+          "vtype": "car",
+          "length": 2,
+          "front": 10
+        },
+        {
+          "id": 4,
+          "vtype": "moto",
+          "length": 1,
+          "front": 12
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "length": 15,
+      "x0": 10.000000000000002,
+      "y0": -17.32050807568877,
+      "dx": -20.0,
+      "dy": -3.552713678800501e-15,
+      "periodic": false,
+      "head_junction": 2,
+      "tail_junction": 1,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "hex_1",
+      "lane_index": 0,
+      "name": "hex_1",
+      "path": [
+        [
+          10.0,
+          -17.32
+        ],
+        [
+          6.0,
+          -20.26
+        ],
+        [
+          2.0,
+          -22.08
+        ],
+        [
+          -2.0,
+          -22.08
+        ],
+        [
+          -6.0,
+          -20.26
+        ],
+        [
+          -10.0,
+          -17.32
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 5,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 6,
+          "vtype": "car",
+          "length": 2,
+          "front": 4
+        },
+        {
+          "id": 7,
+          "vtype": "moto",
+          "length": 1,
+          "front": 6
+        },
+        {
+          "id": 8,
+          "vtype": "moto",
+          "length": 1,
+          "front": 9
+        },
+        {
+          "id": 9,
+          "vtype": "car",
+          "length": 2,
+          "front": 13
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "length": 15,
+      "x0": -9.999999999999996,
+      "y0": -17.320508075688775,
+      "dx": -10.000000000000004,
+      "dy": 17.32050807568877,
+      "periodic": false,
+      "head_junction": 3,
+      "tail_junction": 2,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "hex_2",
+      "lane_index": 0,
+      "name": "hex_2",
+      "path": [
+        [
+          -10.0,
+          -17.32
+        ],
+        [
+          -14.55,
+          -15.33
+        ],
+        [
+          -18.12,
+          -12.77
+        ],
+        [
+          -20.12,
+          -9.31
+        ],
+        [
+          -20.55,
+          -4.93
+        ],
+        [
+          -20.0,
+          -0.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 10,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 11,
+          "vtype": "moto",
+          "length": 1,
+          "front": 3
+        },
+        {
+          "id": 12,
+          "vtype": "car",
+          "length": 2,
+          "front": 7
+        },
+        {
+          "id": 13,
+          "vtype": "moto",
+          "length": 1,
+          "front": 9
+        },
+        {
+          "id": 14,
+          "vtype": "moto",
+          "length": 1,
+          "front": 12
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "length": 15,
+      "x0": -20.0,
+      "y0": -2.4492935982947065e-15,
+      "dx": 9.999999999999991,
+      "dy": 17.32050807568877,
+      "periodic": false,
+      "head_junction": 4,
+      "tail_junction": 3,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "hex_3",
+      "lane_index": 0,
+      "name": "hex_3",
+      "path": [
+        [
+          -20.0,
+          -0.0
+        ],
+        [
+          -20.55,
+          4.93
+        ],
+        [
+          -20.12,
+          9.31
+        ],
+        [
+          -18.12,
+          12.77
+        ],
+        [
+          -14.55,
+          15.33
+        ],
+        [
+          -10.0,
+          17.32
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 15,
+          "vtype": "car",
+          "length": 2,
+          "front": 1
+        },
+        {
+          "id": 16,
+          "vtype": "moto",
+          "length": 1,
+          "front": 3
+        },
+        {
+          "id": 17,
+          "vtype": "moto",
+          "length": 1,
+          "front": 6
+        },
+        {
+          "id": 18,
+          "vtype": "car",
+          "length": 2,
+          "front": 10
+        },
+        {
+          "id": 19,
+          "vtype": "moto",
+          "length": 1,
+          "front": 12
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "length": 15,
+      "x0": -10.000000000000009,
+      "y0": 17.320508075688767,
+      "dx": 20.00000000000001,
+      "dy": 3.552713678800501e-15,
+      "periodic": false,
+      "head_junction": 5,
+      "tail_junction": 4,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "hex_4",
+      "lane_index": 0,
+      "name": "hex_4",
+      "path": [
+        [
+          -10.0,
+          17.32
+        ],
+        [
+          -6.0,
+          20.26
+        ],
+        [
+          -2.0,
+          22.08
+        ],
+        [
+          2.0,
+          22.08
+        ],
+        [
+          6.0,
+          20.26
+        ],
+        [
+          10.0,
+          17.32
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 20,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 21,
+          "vtype": "car",
+          "length": 2,
+          "front": 4
+        },
+        {
+          "id": 22,
+          "vtype": "moto",
+          "length": 1,
+          "front": 6
+        },
+        {
+          "id": 23,
+          "vtype": "moto",
+          "length": 1,
+          "front": 9
+        },
+        {
+          "id": 24,
+          "vtype": "car",
+          "length": 2,
+          "front": 13
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "length": 15,
+      "x0": 10.000000000000002,
+      "y0": 17.32050807568877,
+      "dx": 9.999999999999998,
+      "dy": -17.32050807568877,
+      "periodic": false,
+      "head_junction": 0,
+      "tail_junction": 5,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "hex_5",
+      "lane_index": 0,
+      "name": "hex_5",
+      "path": [
+        [
+          10.0,
+          17.32
+        ],
+        [
+          14.55,
+          15.33
+        ],
+        [
+          18.12,
+          12.77
+        ],
+        [
+          20.12,
+          9.31
+        ],
+        [
+          20.55,
+          4.93
+        ],
+        [
+          20.0,
+          0.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 25,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 26,
+          "vtype": "moto",
+          "length": 1,
+          "front": 3
+        },
+        {
+          "id": 27,
+          "vtype": "car",
+          "length": 2,
+          "front": 7
+        },
+        {
+          "id": 28,
+          "vtype": "moto",
+          "length": 1,
+          "front": 9
+        },
+        {
+          "id": 29,
+          "vtype": "moto",
+          "length": 1,
+          "front": 12
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "length": 50,
+      "x0": 20.0,
+      "y0": 0.0,
+      "dx": 80.0,
+      "dy": 2.4492935982947064e-14,
+      "periodic": false,
+      "head_junction": 6,
+      "tail_junction": 0,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_0",
+      "lane_index": 0,
+      "name": "spoke_0_fwd0",
+      "path": [
+        [
+          20.0,
+          0.0
+        ],
+        [
+          31.43,
+          6.51
+        ],
+        [
+          42.86,
+          11.73
+        ],
+        [
+          54.29,
+          14.62
+        ],
+        [
+          65.71,
+          14.62
+        ],
+        [
+          77.14,
+          11.73
+        ],
+        [
+          88.57,
+          6.51
+        ],
+        [
+          100.0,
+          0.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 30,
+          "vtype": "car",
+          "length": 2,
+          "front": 1
+        },
+        {
+          "id": 31,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 32,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 33,
+          "vtype": "car",
+          "length": 2,
+          "front": 31
+        },
+        {
+          "id": 34,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "length": 50,
+      "x0": 20.0,
+      "y0": 0.0,
+      "dx": 80.0,
+      "dy": 2.4492935982947064e-14,
+      "periodic": false,
+      "head_junction": 6,
+      "tail_junction": 0,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_0",
+      "lane_index": 1,
+      "name": "spoke_0_fwd1",
+      "path": [
+        [
+          20.0,
+          0.0
+        ],
+        [
+          31.43,
+          6.51
+        ],
+        [
+          42.86,
+          11.73
+        ],
+        [
+          54.29,
+          14.62
+        ],
+        [
+          65.71,
+          14.62
+        ],
+        [
+          77.14,
+          11.73
+        ],
+        [
+          88.57,
+          6.51
+        ],
+        [
+          100.0,
+          0.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 35,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 36,
+          "vtype": "car",
+          "length": 2,
+          "front": 11
+        },
+        {
+          "id": 37,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 38,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 39,
+          "vtype": "car",
+          "length": 2,
+          "front": 41
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "length": 50,
+      "x0": 100.0,
+      "y0": 2.4492935982947064e-14,
+      "dx": -80.0,
+      "dy": -2.4492935982947064e-14,
+      "periodic": false,
+      "head_junction": 0,
+      "tail_junction": 6,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_0",
+      "lane_index": 0,
+      "name": "spoke_0_bwd0",
+      "path": [
+        [
+          100.0,
+          0.0
+        ],
+        [
+          88.57,
+          6.51
+        ],
+        [
+          77.14,
+          11.73
+        ],
+        [
+          65.71,
+          14.62
+        ],
+        [
+          54.29,
+          14.62
+        ],
+        [
+          42.86,
+          11.73
+        ],
+        [
+          31.43,
+          6.51
+        ],
+        [
+          20.0,
+          0.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 40,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 41,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 42,
+          "vtype": "car",
+          "length": 2,
+          "front": 21
+        },
+        {
+          "id": 43,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 44,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "length": 50,
+      "x0": 100.0,
+      "y0": 2.4492935982947064e-14,
+      "dx": -80.0,
+      "dy": -2.4492935982947064e-14,
+      "periodic": false,
+      "head_junction": 0,
+      "tail_junction": 6,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_0",
+      "lane_index": 1,
+      "name": "spoke_0_bwd1",
+      "path": [
+        [
+          100.0,
+          0.0
+        ],
+        [
+          88.57,
+          6.51
+        ],
+        [
+          77.14,
+          11.73
+        ],
+        [
+          65.71,
+          14.62
+        ],
+        [
+          54.29,
+          14.62
+        ],
+        [
+          42.86,
+          11.73
+        ],
+        [
+          31.43,
+          6.51
+        ],
+        [
+          20.0,
+          0.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 45,
+          "vtype": "car",
+          "length": 2,
+          "front": 1
+        },
+        {
+          "id": 46,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 47,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 48,
+          "vtype": "car",
+          "length": 2,
+          "front": 31
+        },
+        {
+          "id": 49,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "length": 50,
+      "x0": 10.000000000000002,
+      "y0": -17.32050807568877,
+      "dx": 40.00000000000006,
+      "dy": -69.28203230275506,
+      "periodic": false,
+      "head_junction": 7,
+      "tail_junction": 1,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_1",
+      "lane_index": 0,
+      "name": "spoke_1_fwd0",
+      "path": [
+        [
+          10.0,
+          -17.32
+        ],
+        [
+          21.35,
+          -23.96
+        ],
+        [
+          31.58,
+          -31.25
+        ],
+        [
+          39.81,
+          -39.7
+        ],
+        [
+          45.52,
+          -49.6
+        ],
+        [
+          48.73,
+          -60.94
+        ],
+        [
+          49.92,
+          -73.45
+        ],
+        [
+          50.0,
+          -86.6
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 50,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 51,
+          "vtype": "car",
+          "length": 2,
+          "front": 11
+        },
+        {
+          "id": 52,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 53,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 54,
+          "vtype": "car",
+          "length": 2,
+          "front": 41
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "length": 50,
+      "x0": 10.000000000000002,
+      "y0": -17.32050807568877,
+      "dx": 40.00000000000006,
+      "dy": -69.28203230275506,
+      "periodic": false,
+      "head_junction": 7,
+      "tail_junction": 1,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_1",
+      "lane_index": 1,
+      "name": "spoke_1_fwd1",
+      "path": [
+        [
+          10.0,
+          -17.32
+        ],
+        [
+          21.35,
+          -23.96
+        ],
+        [
+          31.58,
+          -31.25
+        ],
+        [
+          39.81,
+          -39.7
+        ],
+        [
+          45.52,
+          -49.6
+        ],
+        [
+          48.73,
+          -60.94
+        ],
+        [
+          49.92,
+          -73.45
+        ],
+        [
+          50.0,
+          -86.6
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 55,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 56,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 57,
+          "vtype": "car",
+          "length": 2,
+          "front": 21
+        },
+        {
+          "id": 58,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 59,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "length": 50,
+      "x0": 50.00000000000006,
+      "y0": -86.60254037844383,
+      "dx": -40.00000000000006,
+      "dy": 69.28203230275506,
+      "periodic": false,
+      "head_junction": 1,
+      "tail_junction": 7,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_1",
+      "lane_index": 0,
+      "name": "spoke_1_bwd0",
+      "path": [
+        [
+          50.0,
+          -86.6
+        ],
+        [
+          49.92,
+          -73.45
+        ],
+        [
+          48.73,
+          -60.94
+        ],
+        [
+          45.52,
+          -49.6
+        ],
+        [
+          39.81,
+          -39.7
+        ],
+        [
+          31.58,
+          -31.25
+        ],
+        [
+          21.35,
+          -23.96
+        ],
+        [
+          10.0,
+          -17.32
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 60,
+          "vtype": "car",
+          "length": 2,
+          "front": 1
+        },
+        {
+          "id": 61,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 62,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 63,
+          "vtype": "car",
+          "length": 2,
+          "front": 31
+        },
+        {
+          "id": 64,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "length": 50,
+      "x0": 50.00000000000006,
+      "y0": -86.60254037844383,
+      "dx": -40.00000000000006,
+      "dy": 69.28203230275506,
+      "periodic": false,
+      "head_junction": 1,
+      "tail_junction": 7,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_1",
+      "lane_index": 1,
+      "name": "spoke_1_bwd1",
+      "path": [
+        [
+          50.0,
+          -86.6
+        ],
+        [
+          49.92,
+          -73.45
+        ],
+        [
+          48.73,
+          -60.94
+        ],
+        [
+          45.52,
+          -49.6
+        ],
+        [
+          39.81,
+          -39.7
+        ],
+        [
+          31.58,
+          -31.25
+        ],
+        [
+          21.35,
+          -23.96
+        ],
+        [
+          10.0,
+          -17.32
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 65,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 66,
+          "vtype": "car",
+          "length": 2,
+          "front": 11
+        },
+        {
+          "id": 67,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 68,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 69,
+          "vtype": "car",
+          "length": 2,
+          "front": 41
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "length": 50,
+      "x0": -9.999999999999996,
+      "y0": -17.320508075688775,
+      "dx": -39.99999999999993,
+      "dy": -69.28203230275514,
+      "periodic": false,
+      "head_junction": 8,
+      "tail_junction": 2,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_2",
+      "lane_index": 0,
+      "name": "spoke_2_fwd0",
+      "path": [
+        [
+          -10.0,
+          -17.32
+        ],
+        [
+          -10.08,
+          -30.47
+        ],
+        [
+          -11.27,
+          -42.98
+        ],
+        [
+          -14.48,
+          -54.32
+        ],
+        [
+          -20.19,
+          -64.22
+        ],
+        [
+          -28.42,
+          -72.67
+        ],
+        [
+          -38.65,
+          -79.96
+        ],
+        [
+          -50.0,
+          -86.6
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 70,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 71,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 72,
+          "vtype": "car",
+          "length": 2,
+          "front": 21
+        },
+        {
+          "id": 73,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 74,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "length": 50,
+      "x0": -9.999999999999996,
+      "y0": -17.320508075688775,
+      "dx": -39.99999999999993,
+      "dy": -69.28203230275514,
+      "periodic": false,
+      "head_junction": 8,
+      "tail_junction": 2,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_2",
+      "lane_index": 1,
+      "name": "spoke_2_fwd1",
+      "path": [
+        [
+          -10.0,
+          -17.32
+        ],
+        [
+          -10.08,
+          -30.47
+        ],
+        [
+          -11.27,
+          -42.98
+        ],
+        [
+          -14.48,
+          -54.32
+        ],
+        [
+          -20.19,
+          -64.22
+        ],
+        [
+          -28.42,
+          -72.67
+        ],
+        [
+          -38.65,
+          -79.96
+        ],
+        [
+          -50.0,
+          -86.6
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 75,
+          "vtype": "car",
+          "length": 2,
+          "front": 1
+        },
+        {
+          "id": 76,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 77,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 78,
+          "vtype": "car",
+          "length": 2,
+          "front": 31
+        },
+        {
+          "id": 79,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "length": 50,
+      "x0": -49.99999999999992,
+      "y0": -86.60254037844392,
+      "dx": 39.99999999999993,
+      "dy": 69.28203230275514,
+      "periodic": false,
+      "head_junction": 2,
+      "tail_junction": 8,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_2",
+      "lane_index": 0,
+      "name": "spoke_2_bwd0",
+      "path": [
+        [
+          -50.0,
+          -86.6
+        ],
+        [
+          -38.65,
+          -79.96
+        ],
+        [
+          -28.42,
+          -72.67
+        ],
+        [
+          -20.19,
+          -64.22
+        ],
+        [
+          -14.48,
+          -54.32
+        ],
+        [
+          -11.27,
+          -42.98
+        ],
+        [
+          -10.08,
+          -30.47
+        ],
+        [
+          -10.0,
+          -17.32
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 80,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 81,
+          "vtype": "car",
+          "length": 2,
+          "front": 11
+        },
+        {
+          "id": 82,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 83,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 84,
+          "vtype": "car",
+          "length": 2,
+          "front": 41
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "length": 50,
+      "x0": -49.99999999999992,
+      "y0": -86.60254037844392,
+      "dx": 39.99999999999993,
+      "dy": 69.28203230275514,
+      "periodic": false,
+      "head_junction": 2,
+      "tail_junction": 8,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_2",
+      "lane_index": 1,
+      "name": "spoke_2_bwd1",
+      "path": [
+        [
+          -50.0,
+          -86.6
+        ],
+        [
+          -38.65,
+          -79.96
+        ],
+        [
+          -28.42,
+          -72.67
+        ],
+        [
+          -20.19,
+          -64.22
+        ],
+        [
+          -14.48,
+          -54.32
+        ],
+        [
+          -11.27,
+          -42.98
+        ],
+        [
+          -10.08,
+          -30.47
+        ],
+        [
+          -10.0,
+          -17.32
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 85,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 86,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 87,
+          "vtype": "car",
+          "length": 2,
+          "front": 21
+        },
+        {
+          "id": 88,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 89,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "length": 50,
+      "x0": -20.0,
+      "y0": -2.4492935982947065e-15,
+      "dx": -80.0,
+      "dy": -3.4290110376125886e-14,
+      "periodic": false,
+      "head_junction": 9,
+      "tail_junction": 3,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_3",
+      "lane_index": 0,
+      "name": "spoke_3_fwd0",
+      "path": [
+        [
+          -20.0,
+          -0.0
+        ],
+        [
+          -31.43,
+          -6.51
+        ],
+        [
+          -42.86,
+          -11.73
+        ],
+        [
+          -54.29,
+          -14.62
+        ],
+        [
+          -65.71,
+          -14.62
+        ],
+        [
+          -77.14,
+          -11.73
+        ],
+        [
+          -88.57,
+          -6.51
+        ],
+        [
+          -100.0,
+          -0.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 90,
+          "vtype": "car",
+          "length": 2,
+          "front": 1
+        },
+        {
+          "id": 91,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 92,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 93,
+          "vtype": "car",
+          "length": 2,
+          "front": 31
+        },
+        {
+          "id": 94,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "length": 50,
+      "x0": -20.0,
+      "y0": -2.4492935982947065e-15,
+      "dx": -80.0,
+      "dy": -3.4290110376125886e-14,
+      "periodic": false,
+      "head_junction": 9,
+      "tail_junction": 3,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_3",
+      "lane_index": 1,
+      "name": "spoke_3_fwd1",
+      "path": [
+        [
+          -20.0,
+          -0.0
+        ],
+        [
+          -31.43,
+          -6.51
+        ],
+        [
+          -42.86,
+          -11.73
+        ],
+        [
+          -54.29,
+          -14.62
+        ],
+        [
+          -65.71,
+          -14.62
+        ],
+        [
+          -77.14,
+          -11.73
+        ],
+        [
+          -88.57,
+          -6.51
+        ],
+        [
+          -100.0,
+          -0.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 95,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 96,
+          "vtype": "car",
+          "length": 2,
+          "front": 11
+        },
+        {
+          "id": 97,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 98,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 99,
+          "vtype": "car",
+          "length": 2,
+          "front": 41
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "length": 50,
+      "x0": -100.0,
+      "y0": -3.6739403974420595e-14,
+      "dx": 80.0,
+      "dy": 3.4290110376125886e-14,
+      "periodic": false,
+      "head_junction": 3,
+      "tail_junction": 9,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_3",
+      "lane_index": 0,
+      "name": "spoke_3_bwd0",
+      "path": [
+        [
+          -100.0,
+          -0.0
+        ],
+        [
+          -88.57,
+          -6.51
+        ],
+        [
+          -77.14,
+          -11.73
+        ],
+        [
+          -65.71,
+          -14.62
+        ],
+        [
+          -54.29,
+          -14.62
+        ],
+        [
+          -42.86,
+          -11.73
+        ],
+        [
+          -31.43,
+          -6.51
+        ],
+        [
+          -20.0,
+          -0.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 100,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 101,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 102,
+          "vtype": "car",
+          "length": 2,
+          "front": 21
+        },
+        {
+          "id": 103,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 104,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "length": 50,
+      "x0": -100.0,
+      "y0": -3.6739403974420595e-14,
+      "dx": 80.0,
+      "dy": 3.4290110376125886e-14,
+      "periodic": false,
+      "head_junction": 3,
+      "tail_junction": 9,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_3",
+      "lane_index": 1,
+      "name": "spoke_3_bwd1",
+      "path": [
+        [
+          -100.0,
+          -0.0
+        ],
+        [
+          -88.57,
+          -6.51
+        ],
+        [
+          -77.14,
+          -11.73
+        ],
+        [
+          -65.71,
+          -14.62
+        ],
+        [
+          -54.29,
+          -14.62
+        ],
+        [
+          -42.86,
+          -11.73
+        ],
+        [
+          -31.43,
+          -6.51
+        ],
+        [
+          -20.0,
+          -0.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 105,
+          "vtype": "car",
+          "length": 2,
+          "front": 1
+        },
+        {
+          "id": 106,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 107,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 108,
+          "vtype": "car",
+          "length": 2,
+          "front": 31
+        },
+        {
+          "id": 109,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "length": 50,
+      "x0": -10.000000000000009,
+      "y0": 17.320508075688767,
+      "dx": -39.99999999999998,
+      "dy": 69.28203230275511,
+      "periodic": false,
+      "head_junction": 10,
+      "tail_junction": 4,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_4",
+      "lane_index": 0,
+      "name": "spoke_4_fwd0",
+      "path": [
+        [
+          -10.0,
+          17.32
+        ],
+        [
+          -21.35,
+          23.96
+        ],
+        [
+          -31.58,
+          31.25
+        ],
+        [
+          -39.81,
+          39.7
+        ],
+        [
+          -45.52,
+          49.6
+        ],
+        [
+          -48.73,
+          60.94
+        ],
+        [
+          -49.92,
+          73.45
+        ],
+        [
+          -50.0,
+          86.6
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 110,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 111,
+          "vtype": "car",
+          "length": 2,
+          "front": 11
+        },
+        {
+          "id": 112,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 113,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 114,
+          "vtype": "car",
+          "length": 2,
+          "front": 41
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "length": 50,
+      "x0": -10.000000000000009,
+      "y0": 17.320508075688767,
+      "dx": -39.99999999999998,
+      "dy": 69.28203230275511,
+      "periodic": false,
+      "head_junction": 10,
+      "tail_junction": 4,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_4",
+      "lane_index": 1,
+      "name": "spoke_4_fwd1",
+      "path": [
+        [
+          -10.0,
+          17.32
+        ],
+        [
+          -21.35,
+          23.96
+        ],
+        [
+          -31.58,
+          31.25
+        ],
+        [
+          -39.81,
+          39.7
+        ],
+        [
+          -45.52,
+          49.6
+        ],
+        [
+          -48.73,
+          60.94
+        ],
+        [
+          -49.92,
+          73.45
+        ],
+        [
+          -50.0,
+          86.6
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 115,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 116,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 117,
+          "vtype": "car",
+          "length": 2,
+          "front": 21
+        },
+        {
+          "id": 118,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 119,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "length": 50,
+      "x0": -49.999999999999986,
+      "y0": 86.60254037844388,
+      "dx": 39.99999999999998,
+      "dy": -69.28203230275511,
+      "periodic": false,
+      "head_junction": 4,
+      "tail_junction": 10,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_4",
+      "lane_index": 0,
+      "name": "spoke_4_bwd0",
+      "path": [
+        [
+          -50.0,
+          86.6
+        ],
+        [
+          -49.92,
+          73.45
+        ],
+        [
+          -48.73,
+          60.94
+        ],
+        [
+          -45.52,
+          49.6
+        ],
+        [
+          -39.81,
+          39.7
+        ],
+        [
+          -31.58,
+          31.25
+        ],
+        [
+          -21.35,
+          23.96
+        ],
+        [
+          -10.0,
+          17.32
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 120,
+          "vtype": "car",
+          "length": 2,
+          "front": 1
+        },
+        {
+          "id": 121,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 122,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 123,
+          "vtype": "car",
+          "length": 2,
+          "front": 31
+        },
+        {
+          "id": 124,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "length": 50,
+      "x0": -49.999999999999986,
+      "y0": 86.60254037844388,
+      "dx": 39.99999999999998,
+      "dy": -69.28203230275511,
+      "periodic": false,
+      "head_junction": 4,
+      "tail_junction": 10,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_4",
+      "lane_index": 1,
+      "name": "spoke_4_bwd1",
+      "path": [
+        [
+          -50.0,
+          86.6
+        ],
+        [
+          -49.92,
+          73.45
+        ],
+        [
+          -48.73,
+          60.94
+        ],
+        [
+          -45.52,
+          49.6
+        ],
+        [
+          -39.81,
+          39.7
+        ],
+        [
+          -31.58,
+          31.25
+        ],
+        [
+          -21.35,
+          23.96
+        ],
+        [
+          -10.0,
+          17.32
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 125,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 126,
+          "vtype": "car",
+          "length": 2,
+          "front": 11
+        },
+        {
+          "id": 127,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 128,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 129,
+          "vtype": "car",
+          "length": 2,
+          "front": 41
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "length": 50,
+      "x0": 10.000000000000002,
+      "y0": 17.32050807568877,
+      "dx": 39.999999999999915,
+      "dy": 69.28203230275514,
+      "periodic": false,
+      "head_junction": 11,
+      "tail_junction": 5,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_5",
+      "lane_index": 0,
+      "name": "spoke_5_fwd0",
+      "path": [
+        [
+          10.0,
+          17.32
+        ],
+        [
+          10.08,
+          30.47
+        ],
+        [
+          11.27,
+          42.98
+        ],
+        [
+          14.48,
+          54.32
+        ],
+        [
+          20.19,
+          64.22
+        ],
+        [
+          28.42,
+          72.67
+        ],
+        [
+          38.65,
+          79.96
+        ],
+        [
+          50.0,
+          86.6
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 130,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 131,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 132,
+          "vtype": "car",
+          "length": 2,
+          "front": 21
+        },
+        {
+          "id": 133,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 134,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "length": 50,
+      "x0": 10.000000000000002,
+      "y0": 17.32050807568877,
+      "dx": 39.999999999999915,
+      "dy": 69.28203230275514,
+      "periodic": false,
+      "head_junction": 11,
+      "tail_junction": 5,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_5",
+      "lane_index": 1,
+      "name": "spoke_5_fwd1",
+      "path": [
+        [
+          10.0,
+          17.32
+        ],
+        [
+          10.08,
+          30.47
+        ],
+        [
+          11.27,
+          42.98
+        ],
+        [
+          14.48,
+          54.32
+        ],
+        [
+          20.19,
+          64.22
+        ],
+        [
+          28.42,
+          72.67
+        ],
+        [
+          38.65,
+          79.96
+        ],
+        [
+          50.0,
+          86.6
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 135,
+          "vtype": "car",
+          "length": 2,
+          "front": 1
+        },
+        {
+          "id": 136,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 137,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 138,
+          "vtype": "car",
+          "length": 2,
+          "front": 31
+        },
+        {
+          "id": 139,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "length": 50,
+      "x0": 49.999999999999915,
+      "y0": 86.60254037844392,
+      "dx": -39.999999999999915,
+      "dy": -69.28203230275514,
+      "periodic": false,
+      "head_junction": 5,
+      "tail_junction": 11,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_5",
+      "lane_index": 0,
+      "name": "spoke_5_bwd0",
+      "path": [
+        [
+          50.0,
+          86.6
+        ],
+        [
+          38.65,
+          79.96
+        ],
+        [
+          28.42,
+          72.67
+        ],
+        [
+          20.19,
+          64.22
+        ],
+        [
+          14.48,
+          54.32
+        ],
+        [
+          11.27,
+          42.98
+        ],
+        [
+          10.08,
+          30.47
+        ],
+        [
+          10.0,
+          17.32
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 140,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 141,
+          "vtype": "car",
+          "length": 2,
+          "front": 11
+        },
+        {
+          "id": 142,
+          "vtype": "moto",
+          "length": 1,
+          "front": 20
+        },
+        {
+          "id": 143,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 144,
+          "vtype": "car",
+          "length": 2,
+          "front": 41
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "length": 50,
+      "x0": 49.999999999999915,
+      "y0": 86.60254037844392,
+      "dx": -39.999999999999915,
+      "dy": -69.28203230275514,
+      "periodic": false,
+      "head_junction": 5,
+      "tail_junction": 11,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "spoke_5",
+      "lane_index": 1,
+      "name": "spoke_5_bwd1",
+      "path": [
+        [
+          50.0,
+          86.6
+        ],
+        [
+          38.65,
+          79.96
+        ],
+        [
+          28.42,
+          72.67
+        ],
+        [
+          20.19,
+          64.22
+        ],
+        [
+          14.48,
+          54.32
+        ],
+        [
+          11.27,
+          42.98
+        ],
+        [
+          10.08,
+          30.47
+        ],
+        [
+          10.0,
+          17.32
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 145,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 146,
+          "vtype": "moto",
+          "length": 1,
+          "front": 10
+        },
+        {
+          "id": 147,
+          "vtype": "car",
+          "length": 2,
+          "front": 21
+        },
+        {
+          "id": 148,
+          "vtype": "moto",
+          "length": 1,
+          "front": 30
+        },
+        {
+          "id": 149,
+          "vtype": "moto",
+          "length": 1,
+          "front": 40
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "length": 35,
+      "x0": 100.0,
+      "y0": 0.0,
+      "dx": -49.999999999999986,
+      "dy": -86.60254037844386,
+      "periodic": false,
+      "head_junction": 7,
+      "tail_junction": 6,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "outer_0",
+      "lane_index": 0,
+      "name": "outer_0",
+      "path": [
+        [
+          100.0,
+          0.0
+        ],
+        [
+          87.45,
+          -15.85
+        ],
+        [
+          75.88,
+          -32.26
+        ],
+        [
+          65.88,
+          -49.58
+        ],
+        [
+          57.45,
+          -67.81
+        ],
+        [
+          50.0,
+          -86.6
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 150,
+          "vtype": "car",
+          "length": 2,
+          "front": 1
+        },
+        {
+          "id": 151,
+          "vtype": "moto",
+          "length": 1,
+          "front": 7
+        },
+        {
+          "id": 152,
+          "vtype": "moto",
+          "length": 1,
+          "front": 14
+        },
+        {
+          "id": 153,
+          "vtype": "car",
+          "length": 2,
+          "front": 22
+        },
+        {
+          "id": 154,
+          "vtype": "moto",
+          "length": 1,
+          "front": 28
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "length": 35,
+      "x0": 50.000000000000014,
+      "y0": -86.60254037844386,
+      "dx": -100.0,
+      "dy": -1.4210854715202004e-14,
+      "periodic": false,
+      "head_junction": 8,
+      "tail_junction": 7,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "outer_1",
+      "lane_index": 0,
+      "name": "outer_1",
+      "path": [
+        [
+          50.0,
+          -86.6
+        ],
+        [
+          30.0,
+          -83.66
+        ],
+        [
+          10.0,
+          -81.85
+        ],
+        [
+          -10.0,
+          -81.85
+        ],
+        [
+          -30.0,
+          -83.66
+        ],
+        [
+          -50.0,
+          -86.6
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 155,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 156,
+          "vtype": "car",
+          "length": 2,
+          "front": 8
+        },
+        {
+          "id": 157,
+          "vtype": "moto",
+          "length": 1,
+          "front": 14
+        },
+        {
+          "id": 158,
+          "vtype": "moto",
+          "length": 1,
+          "front": 21
+        },
+        {
+          "id": 159,
+          "vtype": "car",
+          "length": 2,
+          "front": 29
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "length": 35,
+      "x0": -49.999999999999986,
+      "y0": -86.60254037844388,
+      "dx": -50.000000000000014,
+      "dy": 86.60254037844386,
+      "periodic": false,
+      "head_junction": 9,
+      "tail_junction": 8,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "outer_2",
+      "lane_index": 0,
+      "name": "outer_2",
+      "path": [
+        [
+          -50.0,
+          -86.6
+        ],
+        [
+          -57.45,
+          -67.81
+        ],
+        [
+          -65.88,
+          -49.58
+        ],
+        [
+          -75.88,
+          -32.26
+        ],
+        [
+          -87.45,
+          -15.85
+        ],
+        [
+          -100.0,
+          -0.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 160,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 161,
+          "vtype": "moto",
+          "length": 1,
+          "front": 7
+        },
+        {
+          "id": 162,
+          "vtype": "car",
+          "length": 2,
+          "front": 15
+        },
+        {
+          "id": 163,
+          "vtype": "moto",
+          "length": 1,
+          "front": 21
+        },
+        {
+          "id": 164,
+          "vtype": "moto",
+          "length": 1,
+          "front": 28
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "length": 35,
+      "x0": -100.0,
+      "y0": -1.2246467991473532e-14,
+      "dx": 49.99999999999996,
+      "dy": 86.60254037844385,
+      "periodic": false,
+      "head_junction": 10,
+      "tail_junction": 9,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "outer_3",
+      "lane_index": 0,
+      "name": "outer_3",
+      "path": [
+        [
+          -100.0,
+          -0.0
+        ],
+        [
+          -87.45,
+          15.85
+        ],
+        [
+          -75.88,
+          32.26
+        ],
+        [
+          -65.88,
+          49.58
+        ],
+        [
+          -57.45,
+          67.81
+        ],
+        [
+          -50.0,
+          86.6
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 165,
+          "vtype": "car",
+          "length": 2,
+          "front": 1
+        },
+        {
+          "id": 166,
+          "vtype": "moto",
+          "length": 1,
+          "front": 7
+        },
+        {
+          "id": 167,
+          "vtype": "moto",
+          "length": 1,
+          "front": 14
+        },
+        {
+          "id": 168,
+          "vtype": "car",
+          "length": 2,
+          "front": 22
+        },
+        {
+          "id": 169,
+          "vtype": "moto",
+          "length": 1,
+          "front": 28
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "length": 35,
+      "x0": -50.00000000000004,
+      "y0": 86.60254037844383,
+      "dx": 100.00000000000006,
+      "dy": 2.842170943040401e-14,
+      "periodic": false,
+      "head_junction": 11,
+      "tail_junction": 10,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "outer_4",
+      "lane_index": 0,
+      "name": "outer_4",
+      "path": [
+        [
+          -50.0,
+          86.6
+        ],
+        [
+          -30.0,
+          83.66
+        ],
+        [
+          -10.0,
+          81.85
+        ],
+        [
+          10.0,
+          81.85
+        ],
+        [
+          30.0,
+          83.66
+        ],
+        [
+          50.0,
+          86.6
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 170,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 171,
+          "vtype": "car",
+          "length": 2,
+          "front": 8
+        },
+        {
+          "id": 172,
+          "vtype": "moto",
+          "length": 1,
+          "front": 14
+        },
+        {
+          "id": 173,
+          "vtype": "moto",
+          "length": 1,
+          "front": 21
+        },
+        {
+          "id": 174,
+          "vtype": "car",
+          "length": 2,
+          "front": 29
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "length": 35,
+      "x0": 50.000000000000014,
+      "y0": 86.60254037844386,
+      "dx": 49.999999999999986,
+      "dy": -86.60254037844386,
+      "periodic": false,
+      "head_junction": 6,
+      "tail_junction": 11,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.8,
+      "street_id": "outer_5",
+      "lane_index": 0,
+      "name": "outer_5",
+      "path": [
+        [
+          50.0,
+          86.6
+        ],
+        [
+          57.45,
+          67.81
+        ],
+        [
+          65.88,
+          49.58
+        ],
+        [
+          75.88,
+          32.26
+        ],
+        [
+          87.45,
+          15.85
+        ],
+        [
+          100.0,
+          -0.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 175,
+          "vtype": "moto",
+          "length": 1,
+          "front": 0
+        },
+        {
+          "id": 176,
+          "vtype": "moto",
+          "length": 1,
+          "front": 7
+        },
+        {
+          "id": 177,
+          "vtype": "car",
+          "length": 2,
+          "front": 15
+        },
+        {
+          "id": 178,
+          "vtype": "moto",
+          "length": 1,
+          "front": 21
+        },
+        {
+          "id": 179,
+          "vtype": "moto",
+          "length": 1,
+          "front": 28
+        }
+      ]
+    }
+  ],
+  "junctions": [
+    {
+      "id": 0,
+      "x": 20.0,
+      "y": 0.0,
+      "turns": {
+        "5": {
+          "0": 0.5,
+          "6": 0.25,
+          "7": 0.25
+        },
+        "8": {
+          "0": 0.8,
+          "6": 0.1,
+          "7": 0.1
+        },
+        "9": {
+          "0": 0.8,
+          "6": 0.1,
+          "7": 0.1
+        }
+      },
+      "lane_links": {
+        "5": [
+          0,
+          6,
+          7
+        ],
+        "8": [
+          0,
+          6,
+          7
+        ],
+        "9": [
+          0,
+          6,
+          7
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "x": 10.0,
+      "y": -17.32,
+      "turns": {
+        "0": {
+          "1": 0.5,
+          "10": 0.25,
+          "11": 0.25
+        },
+        "12": {
+          "1": 0.8,
+          "10": 0.1,
+          "11": 0.1
+        },
+        "13": {
+          "1": 0.8,
+          "10": 0.1,
+          "11": 0.1
+        }
+      },
+      "lane_links": {
+        "0": [
+          1,
+          10,
+          11
+        ],
+        "12": [
+          1,
+          10,
+          11
+        ],
+        "13": [
+          1,
+          10,
+          11
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "x": -10.0,
+      "y": -17.32,
+      "turns": {
+        "1": {
+          "2": 0.5,
+          "14": 0.25,
+          "15": 0.25
+        },
+        "16": {
+          "2": 0.8,
+          "14": 0.1,
+          "15": 0.1
+        },
+        "17": {
+          "2": 0.8,
+          "14": 0.1,
+          "15": 0.1
+        }
+      },
+      "lane_links": {
+        "1": [
+          2,
+          14,
+          15
+        ],
+        "16": [
+          2,
+          14,
+          15
+        ],
+        "17": [
+          2,
+          14,
+          15
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "x": -20.0,
+      "y": -0.0,
+      "turns": {
+        "2": {
+          "3": 0.5,
+          "18": 0.25,
+          "19": 0.25
+        },
+        "20": {
+          "3": 0.8,
+          "18": 0.1,
+          "19": 0.1
+        },
+        "21": {
+          "3": 0.8,
+          "18": 0.1,
+          "19": 0.1
+        }
+      },
+      "lane_links": {
+        "2": [
+          3,
+          18,
+          19
+        ],
+        "20": [
+          3,
+          18,
+          19
+        ],
+        "21": [
+          3,
+          18,
+          19
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "x": -10.0,
+      "y": 17.32,
+      "turns": {
+        "3": {
+          "4": 0.5,
+          "22": 0.25,
+          "23": 0.25
+        },
+        "24": {
+          "4": 0.8,
+          "22": 0.1,
+          "23": 0.1
+        },
+        "25": {
+          "4": 0.8,
+          "22": 0.1,
+          "23": 0.1
+        }
+      },
+      "lane_links": {
+        "3": [
+          4,
+          22,
+          23
+        ],
+        "24": [
+          4,
+          22,
+          23
+        ],
+        "25": [
+          4,
+          22,
+          23
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "x": 10.0,
+      "y": 17.32,
+      "turns": {
+        "4": {
+          "5": 0.5,
+          "26": 0.25,
+          "27": 0.25
+        },
+        "28": {
+          "5": 0.8,
+          "26": 0.1,
+          "27": 0.1
+        },
+        "29": {
+          "5": 0.8,
+          "26": 0.1,
+          "27": 0.1
+        }
+      },
+      "lane_links": {
+        "4": [
+          5,
+          26,
+          27
+        ],
+        "28": [
+          5,
+          26,
+          27
+        ],
+        "29": [
+          5,
+          26,
+          27
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "x": 100.0,
+      "y": 0.0,
+      "turns": {
+        "35": {
+          "30": 0.5,
+          "8": 0.25,
+          "9": 0.25
+        },
+        "6": {
+          "30": 0.8,
+          "8": 0.1,
+          "9": 0.1
+        },
+        "7": {
+          "30": 0.8,
+          "8": 0.1,
+          "9": 0.1
+        }
+      },
+      "lane_links": {
+        "35": [
+          30,
+          8,
+          9
+        ],
+        "6": [
+          30,
+          8,
+          9
+        ],
+        "7": [
+          30,
+          8,
+          9
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "x": 50.0,
+      "y": -86.6,
+      "turns": {
+        "30": {
+          "31": 0.5,
+          "12": 0.25,
+          "13": 0.25
+        },
+        "10": {
+          "31": 0.8,
+          "12": 0.1,
+          "13": 0.1
+        },
+        "11": {
+          "31": 0.8,
+          "12": 0.1,
+          "13": 0.1
+        }
+      },
+      "lane_links": {
+        "30": [
+          31,
+          12,
+          13
+        ],
+        "10": [
+          31,
+          12,
+          13
+        ],
+        "11": [
+          31,
+          12,
+          13
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "x": -50.0,
+      "y": -86.6,
+      "turns": {
+        "31": {
+          "32": 0.5,
+          "16": 0.25,
+          "17": 0.25
+        },
+        "14": {
+          "32": 0.8,
+          "16": 0.1,
+          "17": 0.1
+        },
+        "15": {
+          "32": 0.8,
+          "16": 0.1,
+          "17": 0.1
+        }
+      },
+      "lane_links": {
+        "31": [
+          32,
+          16,
+          17
+        ],
+        "14": [
+          32,
+          16,
+          17
+        ],
+        "15": [
+          32,
+          16,
+          17
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "x": -100.0,
+      "y": -0.0,
+      "turns": {
+        "32": {
+          "33": 0.5,
+          "20": 0.25,
+          "21": 0.25
+        },
+        "18": {
+          "33": 0.8,
+          "20": 0.1,
+          "21": 0.1
+        },
+        "19": {
+          "33": 0.8,
+          "20": 0.1,
+          "21": 0.1
+        }
+      },
+      "lane_links": {
+        "32": [
+          33,
+          20,
+          21
+        ],
+        "18": [
+          33,
+          20,
+          21
+        ],
+        "19": [
+          33,
+          20,
+          21
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "x": -50.0,
+      "y": 86.6,
+      "turns": {
+        "33": {
+          "34": 0.5,
+          "24": 0.25,
+          "25": 0.25
+        },
+        "22": {
+          "34": 0.8,
+          "24": 0.1,
+          "25": 0.1
+        },
+        "23": {
+          "34": 0.8,
+          "24": 0.1,
+          "25": 0.1
+        }
+      },
+      "lane_links": {
+        "33": [
+          34,
+          24,
+          25
+        ],
+        "22": [
+          34,
+          24,
+          25
+        ],
+        "23": [
+          34,
+          24,
+          25
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "x": 50.0,
+      "y": 86.6,
+      "turns": {
+        "34": {
+          "35": 0.5,
+          "28": 0.25,
+          "29": 0.25
+        },
+        "26": {
+          "35": 0.8,
+          "28": 0.1,
+          "29": 0.1
+        },
+        "27": {
+          "35": 0.8,
+          "28": 0.1,
+          "29": 0.1
+        }
+      },
+      "lane_links": {
+        "34": [
+          35,
+          28,
+          29
+        ],
+        "26": [
+          35,
+          28,
+          29
+        ],
+        "27": [
+          35,
+          28,
+          29
+        ]
+      }
+    }
+  ],
+  "streets": [
+    {
+      "id": "hex_0",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 0,
+          "lane_index": 0,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "hex_1",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 1,
+          "lane_index": 0,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "hex_2",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 2,
+          "lane_index": 0,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "hex_3",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 3,
+          "lane_index": 0,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "hex_4",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 4,
+          "lane_index": 0,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "hex_5",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 5,
+          "lane_index": 0,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "outer_0",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 30,
+          "lane_index": 0,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "outer_1",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 31,
+          "lane_index": 0,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "outer_2",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 32,
+          "lane_index": 0,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "outer_3",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 33,
+          "lane_index": 0,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "outer_4",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 34,
+          "lane_index": 0,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "outer_5",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 35,
+          "lane_index": 0,
+          "direction": "forward"
+        }
+      ]
+    },
+    {
+      "id": "spoke_0",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 6,
+          "lane_index": 0,
+          "direction": "forward"
+        },
+        {
+          "road_id": 7,
+          "lane_index": 1,
+          "direction": "forward"
+        },
+        {
+          "road_id": 8,
+          "lane_index": 0,
+          "direction": "backward"
+        },
+        {
+          "road_id": 9,
+          "lane_index": 1,
+          "direction": "backward"
+        }
+      ]
+    },
+    {
+      "id": "spoke_1",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 10,
+          "lane_index": 0,
+          "direction": "forward"
+        },
+        {
+          "road_id": 11,
+          "lane_index": 1,
+          "direction": "forward"
+        },
+        {
+          "road_id": 12,
+          "lane_index": 0,
+          "direction": "backward"
+        },
+        {
+          "road_id": 13,
+          "lane_index": 1,
+          "direction": "backward"
+        }
+      ]
+    },
+    {
+      "id": "spoke_2",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 14,
+          "lane_index": 0,
+          "direction": "forward"
+        },
+        {
+          "road_id": 15,
+          "lane_index": 1,
+          "direction": "forward"
+        },
+        {
+          "road_id": 16,
+          "lane_index": 0,
+          "direction": "backward"
+        },
+        {
+          "road_id": 17,
+          "lane_index": 1,
+          "direction": "backward"
+        }
+      ]
+    },
+    {
+      "id": "spoke_3",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 18,
+          "lane_index": 0,
+          "direction": "forward"
+        },
+        {
+          "road_id": 19,
+          "lane_index": 1,
+          "direction": "forward"
+        },
+        {
+          "road_id": 20,
+          "lane_index": 0,
+          "direction": "backward"
+        },
+        {
+          "road_id": 21,
+          "lane_index": 1,
+          "direction": "backward"
+        }
+      ]
+    },
+    {
+      "id": "spoke_4",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 22,
+          "lane_index": 0,
+          "direction": "forward"
+        },
+        {
+          "road_id": 23,
+          "lane_index": 1,
+          "direction": "forward"
+        },
+        {
+          "road_id": 24,
+          "lane_index": 0,
+          "direction": "backward"
+        },
+        {
+          "road_id": 25,
+          "lane_index": 1,
+          "direction": "backward"
+        }
+      ]
+    },
+    {
+      "id": "spoke_5",
+      "lane_width": 4.0,
+      "centerline_path": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "baseline": null,
+      "lanes": [
+        {
+          "road_id": 26,
+          "lane_index": 0,
+          "direction": "forward"
+        },
+        {
+          "road_id": 27,
+          "lane_index": 1,
+          "direction": "forward"
+        },
+        {
+          "road_id": 28,
+          "lane_index": 0,
+          "direction": "backward"
+        },
+        {
+          "road_id": 29,
+          "lane_index": 1,
+          "direction": "backward"
+        }
+      ]
+    }
+  ],
+  "disruptions": {
+    "probs": {
+      "breakdown": 0.008,
+      "tree": 0.003,
+      "accident": 0.005,
+      "flood": 0.0
+    },
+    "repair_scale": 1.0,
+    "active": [
+      {
+        "id": 1,
+        "road_id": 0,
+        "cells": [
+          7
+        ],
+        "kind": "breakdown",
+        "permanent": false,
+        "remaining": 500,
+        "label": "d1"
+      },
+      {
+        "id": 2,
+        "road_id": 3,
+        "cells": [
+          8,
+          9
+        ],
+        "kind": "accident",
+        "permanent": false,
+        "remaining": 800,
+        "label": "d2"
+      },
+      {
+        "id": 3,
+        "road_id": 10,
+        "cells": [
+          20
+        ],
+        "kind": "tree",
+        "permanent": false,
+        "remaining": 1000,
+        "label": "d3"
+      },
+      {
+        "id": 4,
+        "road_id": 32,
+        "cells": [
+          10,
+          11,
+          12,
+          13,
+          14
+        ],
+        "kind": "flood",
+        "permanent": false,
+        "remaining": 1200,
+        "label": "d4"
+      },
+      {
+        "id": 5,
+        "road_id": 24,
+        "cells": [
+          30
+        ],
+        "kind": "parking",
+        "permanent": true,
+        "remaining": 0,
+        "label": "d5"
+      },
+      {
+        "id": 6,
+        "road_id": 7,
+        "cells": [
+          40
+        ],
+        "kind": "lock",
+        "permanent": true,
+        "remaining": 0,
+        "label": "d6"
+      }
+    ]
+  },
+  "batch": {
+    "steps": 1200,
+    "record_every": 1,
+    "schedule": [
+      {
+        "step": 100,
+        "action": "trigger_disruption",
+        "kind": "flood"
+      },
+      {
+        "step": 200,
+        "action": "set_lane_change_params",
+        "prob": 0.5,
+        "require_gain": false
+      },
+      {
+        "step": 400,
+        "action": "block_cells",
+        "road_id": 1,
+        "cells": [
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "kind": "flood"
+      },
+      {
+        "step": 500,
+        "action": "trigger_disruption",
+        "kind": "accident"
+      },
+      {
+        "step": 700,
+        "action": "set_lane_change_params",
+        "prob": 0.3,
+        "require_gain": true
+      },
+      {
+        "step": 900,
+        "action": "trigger_disruption",
+        "kind": "breakdown"
+      },
+      {
+        "step": 1100,
+        "action": "clear_disruptions"
+      }
+    ]
+  }
+}

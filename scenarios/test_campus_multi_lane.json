@@ -1,0 +1,849 @@
+{
+  "version": 1,
+  "config": "custom",
+  "seed": 42,
+  "step": 0,
+  "rng_state": {
+    "bit_generator": "PCG64",
+    "state": {
+      "state": 274674114334540486603088602300644985544,
+      "inc": 332724090758049132448979897138935081983
+    },
+    "has_uint32": 0,
+    "uinteger": 0
+  },
+  "density_target": 0.15,
+  "car_fraction": 0.25,
+  "lane_change_prob": 0.3,
+  "rear_safety_gap": 1,
+  "lane_change_require_gain": true,
+  "steps_per_second": 10.0,
+  "roads": [
+    {
+      "id": 0,
+      "length": 60,
+      "x0": 0.0,
+      "y0": 2.0,
+      "dx": 2.0,
+      "dy": 0.0,
+      "periodic": false,
+      "head_junction": 1,
+      "tail_junction": 0,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": "main_avenue",
+      "lane_index": 0,
+      "name": "Main Avenue",
+      "path": [
+        [
+          0.0,
+          2.0
+        ],
+        [
+          24.0,
+          10.0
+        ],
+        [
+          48.0,
+          6.0
+        ],
+        [
+          72.0,
+          -2.0
+        ],
+        [
+          96.0,
+          -6.0
+        ],
+        [
+          120.0,
+          2.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 1,
+          "front": 3,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 2,
+          "front": 9,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 3,
+          "front": 18,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 4,
+          "front": 24,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 5,
+          "front": 31,
+          "length": 2,
+          "vtype": "car"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "length": 60,
+      "x0": 0.0,
+      "y0": 5.0,
+      "dx": 2.0,
+      "dy": 0.0,
+      "periodic": false,
+      "head_junction": 1,
+      "tail_junction": 0,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": "main_avenue",
+      "lane_index": 1,
+      "name": "Main Avenue",
+      "path": [
+        [
+          0.0,
+          5.0
+        ],
+        [
+          24.0,
+          13.0
+        ],
+        [
+          48.0,
+          9.0
+        ],
+        [
+          72.0,
+          1.0
+        ],
+        [
+          96.0,
+          -3.0
+        ],
+        [
+          120.0,
+          5.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 6,
+          "front": 5,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 7,
+          "front": 12,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 8,
+          "front": 21,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 9,
+          "front": 33,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 10,
+          "front": 45,
+          "length": 2,
+          "vtype": "car"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "length": 60,
+      "x0": 120.0,
+      "y0": -2.0,
+      "dx": -2.0,
+      "dy": 0.0,
+      "periodic": false,
+      "head_junction": 0,
+      "tail_junction": 1,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": "main_avenue",
+      "lane_index": 0,
+      "name": "Main Avenue",
+      "path": [
+        [
+          0.0,
+          -2.0
+        ],
+        [
+          24.0,
+          6.0
+        ],
+        [
+          48.0,
+          2.0
+        ],
+        [
+          72.0,
+          -6.0
+        ],
+        [
+          96.0,
+          -10.0
+        ],
+        [
+          120.0,
+          -2.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 11,
+          "front": 6,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 12,
+          "front": 15,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 13,
+          "front": 27,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 14,
+          "front": 39,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 15,
+          "front": 51,
+          "length": 2,
+          "vtype": "car"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "length": 60,
+      "x0": 120.0,
+      "y0": -5.0,
+      "dx": -2.0,
+      "dy": 0.0,
+      "periodic": false,
+      "head_junction": 0,
+      "tail_junction": 1,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": "main_avenue",
+      "lane_index": 1,
+      "name": "Main Avenue",
+      "path": [
+        [
+          0.0,
+          -5.0
+        ],
+        [
+          24.0,
+          3.0
+        ],
+        [
+          48.0,
+          -1.0
+        ],
+        [
+          72.0,
+          -9.0
+        ],
+        [
+          96.0,
+          -13.0
+        ],
+        [
+          120.0,
+          -5.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 16,
+          "front": 3,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 17,
+          "front": 12,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 18,
+          "front": 24,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 19,
+          "front": 36,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 20,
+          "front": 48,
+          "length": 2,
+          "vtype": "car"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "length": 40,
+      "x0": 0.0,
+      "y0": -15.0,
+      "dx": 3.0,
+      "dy": 0.0,
+      "periodic": false,
+      "head_junction": 1,
+      "tail_junction": 0,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": "hostel_road",
+      "lane_index": 0,
+      "name": "Hostel Road",
+      "path": [
+        [
+          0.0,
+          -15.0
+        ],
+        [
+          120.0,
+          -15.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 21,
+          "front": 2,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 22,
+          "front": 7,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 23,
+          "front": 13,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 24,
+          "front": 19,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 25,
+          "front": 24,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 26,
+          "front": 30,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 27,
+          "front": 33,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 28,
+          "front": 38,
+          "length": 2,
+          "vtype": "car"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "length": 40,
+      "x0": 120.0,
+      "y0": -12.0,
+      "dx": -3.0,
+      "dy": 0.0,
+      "periodic": false,
+      "head_junction": 0,
+      "tail_junction": 1,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": "hostel_road",
+      "lane_index": 0,
+      "name": "Hostel Road",
+      "path": [
+        [
+          0.0,
+          -12.0
+        ],
+        [
+          120.0,
+          -12.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 29,
+          "front": 3,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 30,
+          "front": 9,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 31,
+          "front": 15,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 32,
+          "front": 25,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 33,
+          "front": 28,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 34,
+          "front": 34,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 35,
+          "front": 38,
+          "length": 1,
+          "vtype": "moto"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "length": 20,
+      "x0": 90.0,
+      "y0": -20.0,
+      "dx": 0.0,
+      "dy": -1.0,
+      "periodic": false,
+      "head_junction": null,
+      "tail_junction": 2,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": "parking_access",
+      "lane_index": 0,
+      "name": "Parking Access",
+      "path": [
+        [
+          90.0,
+          -20.0
+        ],
+        [
+          90.0,
+          -40.0
+        ]
+      ],
+      "vehicles": [
+        {
+          "id": 36,
+          "front": 2,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 37,
+          "front": 8,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 38,
+          "front": 11,
+          "length": 1,
+          "vtype": "moto"
+        },
+        {
+          "id": 39,
+          "front": 15,
+          "length": 2,
+          "vtype": "car"
+        },
+        {
+          "id": 40,
+          "front": 18,
+          "length": 1,
+          "vtype": "moto"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "length": 10,
+      "x0": 120.0,
+      "y0": 0.0,
+      "dx": -3.0,
+      "dy": -2.0,
+      "periodic": false,
+      "head_junction": 2,
+      "tail_junction": 1,
+      "source_rate": 0.0,
+      "source_car_fraction": 0.0,
+      "street_id": null,
+      "lane_index": 0,
+      "name": "Connector",
+      "path": [
+        [
+          120.0,
+          0.0
+        ],
+        [
+          90.0,
+          -20.0
+        ]
+      ],
+      "vehicles": []
+    }
+  ],
+  "junctions": [
+    {
+      "id": 0,
+      "x": 0.0,
+      "y": 0.0,
+      "turns": {
+        "2": {
+          "0": 0.4,
+          "1": 0.3,
+          "4": 0.3
+        },
+        "3": {
+          "0": 0.3,
+          "1": 0.4,
+          "4": 0.3
+        },
+        "5": {
+          "0": 0.35,
+          "1": 0.35,
+          "4": 0.3
+        }
+      },
+      "lane_links": {
+        "2": [
+          0,
+          1,
+          4
+        ],
+        "3": [
+          0,
+          1,
+          4
+        ],
+        "5": [
+          0,
+          1,
+          4
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "x": 120.0,
+      "y": 0.0,
+      "turns": {
+        "0": {
+          "2": 0.3,
+          "3": 0.3,
+          "5": 0.25,
+          "7": 0.15
+        },
+        "1": {
+          "2": 0.3,
+          "3": 0.3,
+          "5": 0.25,
+          "7": 0.15
+        },
+        "4": {
+          "2": 0.3,
+          "3": 0.3,
+          "5": 0.3,
+          "7": 0.1
+        }
+      },
+      "lane_links": {
+        "0": [
+          2,
+          3,
+          5,
+          7
+        ],
+        "1": [
+          2,
+          3,
+          5,
+          7
+        ],
+        "4": [
+          2,
+          3,
+          5,
+          7
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "x": 90.0,
+      "y": -20.0,
+      "turns": {
+        "7": {
+          "6": 1.0
+        }
+      },
+      "lane_links": {
+        "7": [
+          6
+        ]
+      }
+    }
+  ],
+  "streets": [
+    {
+      "id": "main_avenue",
+      "baseline": [
+        0.0,
+        0.0,
+        120.0,
+        0.0
+      ],
+      "centerline_path": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          24.0,
+          8.0
+        ],
+        [
+          48.0,
+          4.0
+        ],
+        [
+          72.0,
+          -4.0
+        ],
+        [
+          96.0,
+          -8.0
+        ],
+        [
+          120.0,
+          0.0
+        ]
+      ],
+      "lane_width": 3.0,
+      "lanes": [
+        {
+          "road_id": 0,
+          "lane_index": 0,
+          "direction": "forward"
+        },
+        {
+          "road_id": 1,
+          "lane_index": 1,
+          "direction": "forward"
+        },
+        {
+          "road_id": 2,
+          "lane_index": 0,
+          "direction": "backward"
+        },
+        {
+          "road_id": 3,
+          "lane_index": 1,
+          "direction": "backward"
+        }
+      ]
+    },
+    {
+      "id": "hostel_road",
+      "baseline": [
+        0.0,
+        -13.5,
+        120.0,
+        -13.5
+      ],
+      "centerline_path": [
+        [
+          0.0,
+          -13.5
+        ],
+        [
+          120.0,
+          -13.5
+        ]
+      ],
+      "lane_width": 3.0,
+      "lanes": [
+        {
+          "road_id": 4,
+          "lane_index": 0,
+          "direction": "forward"
+        },
+        {
+          "road_id": 5,
+          "lane_index": 0,
+          "direction": "backward"
+        }
+      ]
+    },
+    {
+      "id": "parking_access",
+      "baseline": [
+        90.0,
+        -20.0,
+        90.0,
+        -40.0
+      ],
+      "centerline_path": [
+        [
+          90.0,
+          -20.0
+        ],
+        [
+          90.0,
+          -40.0
+        ]
+      ],
+      "lane_width": 3.0,
+      "lanes": [
+        {
+          "road_id": 6,
+          "lane_index": 0,
+          "direction": "forward"
+        }
+      ]
+    }
+  ],
+  "disruptions": {
+    "probs": {
+      "breakdown": 0.01,
+      "tree": 0.0,
+      "accident": 0.005,
+      "flood": 0.0
+    },
+    "repair_scale": 1.0,
+    "active": [
+      {
+        "id": 1,
+        "kind": "breakdown",
+        "label": "Fall car (breakdown)",
+        "road_id": 0,
+        "cells": [
+          15
+        ],
+        "permanent": false,
+        "remaining": 50
+      },
+      {
+        "id": 2,
+        "kind": "accident",
+        "label": "Accident (two cars)",
+        "road_id": 5,
+        "cells": [
+          20,
+          21
+        ],
+        "permanent": false,
+        "remaining": 80
+      },
+      {
+        "id": 3,
+        "kind": "parking",
+        "label": "Parking",
+        "road_id": 6,
+        "cells": [
+          5
+        ],
+        "permanent": true,
+        "remaining": 0
+      }
+    ]
+  },
+  "batch": {
+    "steps": 500,
+    "record_every": 1,
+    "snapshot_every": 50,
+    "include_segments": true,
+    "schedule": [
+      {
+        "step": 100,
+        "action": "block_cells",
+        "road_id": 4,
+        "cells": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "kind": "flood",
+        "label": "Scheduled flood on Hostel Road",
+        "duration": 100,
+        "permanent": false
+      },
+      {
+        "step": 300,
+        "action": "clear_disruptions",
+        "kind": null
+      }
+    ]
+  }
+}
