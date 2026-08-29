@@ -254,3 +254,67 @@ def test_import_region_does_not_block_the_event_loop(client, monkeypatch):
                 break
         else:
             raise AssertionError("no import_result after the import finished")
+
+
+# ===========================================================================
+# REST API endpoint tests
+# ===========================================================================
+
+def test_rest_health(client):
+    res = client.get("/health")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "ok"
+
+
+def test_rest_get_state_and_network(client):
+    res_state = client.get("/api/state")
+    assert res_state.status_code == 200
+    state_data = res_state.json()
+    assert state_data["type"] == "state"
+    assert "roads" in state_data
+    assert "analytics" in state_data
+
+    res_net = client.get("/api/network")
+    assert res_net.status_code == 200
+    net_data = res_net.json()
+    assert net_data["type"] == "network"
+    assert "roads" in net_data
+
+
+def test_rest_controls_lifecycle(client):
+    # Pause
+    res = client.post("/api/control/pause")
+    assert res.status_code == 200
+    assert res.json()["running"] is False
+
+    # Step
+    res = client.post("/api/control/step")
+    assert res.status_code == 200
+    assert "step" in res.json()
+
+    # Resume
+    res = client.post("/api/control/resume")
+    assert res.status_code == 200
+    assert res.json()["running"] is True
+
+    # Speed
+    res = client.post("/api/control/speed", json={"steps_per_second": 30.0})
+    assert res.status_code == 200
+    assert res.json()["steps_per_second"] == 30.0
+
+    # Reset
+    res = client.post("/api/control/reset", json={"density": 0.4, "seed": 42})
+    assert res.status_code == 200
+    assert res.json()["status"] == "reset"
+
+    # Disruption
+    res = client.post("/api/control/disruptions", json={"kind": "tree"})
+    assert res.status_code == 200
+    assert res.json()["kind"] == "tree"
+
+    # Clear Disruptions
+    res = client.post("/api/control/disruptions/clear")
+    assert res.status_code == 200
+    assert res.json()["status"] == "disruptions_cleared"
+

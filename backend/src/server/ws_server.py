@@ -52,6 +52,7 @@ from typing import Any, AsyncIterator
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 
 from src.engine.simulation import Simulation
 from src.engine.scenario_runner import ScenarioError, run_scenario
@@ -322,6 +323,29 @@ class SimulationManager:
         return None
 
 
+# --------------------------------------------------------------------------- models
+class ResetParams(BaseModel):
+    density: float = Field(default=0.3, ge=0.0, le=1.0, description="Target vehicle density [0..1]")
+    seed: int | None = Field(default=None, description="Random seed for reproducibility")
+    car_fraction: float | None = Field(default=None, ge=0.0, le=1.0, description="Fraction of multi-cell vehicles")
+
+
+class SpeedParams(BaseModel):
+    steps_per_second: float = Field(default=12.0, ge=0.5, le=120.0, description="Simulation tick rate")
+
+
+class DisruptionParams(BaseModel):
+    kind: str = Field(..., description="Disruption type: 'breakdown', 'tree', 'accident', 'flood'")
+
+
+class OsmImportParams(BaseModel):
+    place_name: str = Field(..., description="Place or landmark name, e.g. 'IIT BHU Varanasi'")
+
+
+class ScenarioParams(BaseModel):
+    scenario: dict[str, Any] = Field(..., description="Batch scenario definition")
+
+
 # --------------------------------------------------------------------------- app
 manager = SimulationManager()
 
@@ -336,11 +360,35 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         await manager.stop()
 
 
-app = FastAPI(title="CA Rule 184 Traffic Simulator", lifespan=lifespan)
+API_DESCRIPTION = """
+## 🚦 CA Rule 184 Real-Time Traffic Simulator Backend
+
+### ⚡ Live WebSocket Stream
+Connect to **`/ws`** (`wss://<your-host>/ws` or `ws://localhost:8000/ws`) for high-frequency (20–60 FPS) bidirectional state streaming.
+
+- **Client → Server control messages**:
+  - `{"type": "pause"}`
+  - `{"type": "resume"}`
+  - `{"type": "step"}`
+  - `{"type": "reset", "density": 0.3, "seed": 42}`
+  - `{"type": "set_speed", "steps_per_second": 20}`
+  - `{"type": "trigger_disruption", "kind": "accident"}`
+  - `{"type": "import_region", "place_name": "..."}`
+  - `{"type": "run_scenario", "scenario": {...}}`
+  - `{"type": "ping", "t": 1234.5}`
+
+### 🌐 REST API
+Below are the HTTP REST endpoints to monitor health, query snapshots of simulation state/network, and trigger simulator actions.
+"""
+
+app = FastAPI(
+    title="CA Rule 184 Traffic Simulator",
+    description=API_DESCRIPTION,
+    version="1.0.0",
+    lifespan=lifespan,
+)
 
 # CORS configuration for cross-origin requests (e.g., Vercel frontend → Railway backend)
-# ALLOWED_ORIGINS env var should be a comma-separated list of allowed origins.
-# Default to "*" for initial testing, but lock down to specific Vercel domain(s) in production.
 allowed_origins_str = os.environ.get("ALLOWED_ORIGINS", "*")
 allowed_origins = (
     [origin.strip() for origin in allowed_origins_str.split(",")]
@@ -357,13 +405,115 @@ app.add_middleware(
 )
 
 
-@app.get("/health")
+# --------------------------------------------------------------------------- REST Endpoints
+@app.get("/health", tags=["System"], summary="Health check & simulation summary")
 async def health() -> dict[str, Any]:
+    """Check backend health and retrieve live simulation summary."""
     return {"status": "ok", **manager.sim.summary()}
 
 
+@app.get("/api/state", tags=["Simulation State"], summary="Get live simulation state snapshot")
+async def get_state() -> dict[str, Any]:
+    """Retrieve full cell occupancy, vehicles, disruptions, and real-time metrics (density, flow, entropy, landscape)."""
+    return serialize_state(manager.sim)
+
+
+@app.get("/api/network", tags=["Simulation State"], summary="Get road network topology")
+async def get_network() -> dict[str, Any]:
+    """Retrieve road geometries, lengths, lanes, and junction connections."""
+    return serialize_network(manager.sim)
+
+
+@app.post("/api/control/pause", tags=["Simulation Controls"], summary="Pause simulation")
+async def control_pause() -> dict[str, Any]:
+    """Pause the simulation tick loop."""
+    async with manager._lock:
+        manager.sim.pause()
+    await manager.broadcast_state()
+    return {"status": "paused", "running": False}
+
+
+@app.post("/api/control/resume", tags=["Simulation Controls"], summary="Resume simulation")
+async def control_resume() -> dict[str, Any]:
+    """Resume the continuous simulation tick loop."""
+    async with manager._lock:
+        manager.sim.resume()
+    await manager.broadcast_state()
+    return {"status": "resumed", "running": True}
+
+
+@app.post("/api/control/step", tags=["Simulation Controls"], summary="Single step simulation")
+async def control_step() -> dict[str, Any]:
+    """Advance the simulation by exactly one step."""
+    async with manager._lock:
+        manager.sim.single_step()
+    await manager.broadcast_state()
+    return {"status": "stepped", "step": manager.sim.step_count}
+
+
+@app.post("/api/control/reset", tags=["Simulation Controls"], summary="Reset simulation")
+async def control_reset(params: ResetParams) -> dict[str, Any]:
+    """Reset the road network with fresh vehicles matching target density."""
+    async with manager._lock:
+        manager.sim.reset(
+            density=params.density,
+            seed=params.seed,
+            car_fraction=params.car_fraction,
+        )
+    await manager.broadcast_network()
+    await manager.broadcast_state()
+    return {"status": "reset", "step": 0, "summary": manager.sim.summary()}
+
+
+@app.post("/api/control/speed", tags=["Simulation Controls"], summary="Set simulation speed")
+async def control_speed(params: SpeedParams) -> dict[str, Any]:
+    """Set simulation speed in steps per second [0.5..120]."""
+    async with manager._lock:
+        manager.sim.set_speed(params.steps_per_second)
+    await manager.broadcast_state()
+    return {"status": "speed_updated", "steps_per_second": manager.sim.steps_per_second}
+
+
+@app.post("/api/control/disruptions", tags=["Disruptions"], summary="Trigger disruption")
+async def control_disruption(params: DisruptionParams) -> dict[str, Any]:
+    """Trigger a disruption ('breakdown', 'tree', 'accident', 'flood')."""
+    async with manager._lock:
+        manager.sim.trigger_disruption(params.kind)
+    await manager.broadcast_state()
+    return {"status": "disruption_triggered", "kind": params.kind}
+
+
+@app.post("/api/control/disruptions/clear", tags=["Disruptions"], summary="Clear disruptions")
+async def control_clear_disruptions(kind: str | None = None) -> dict[str, Any]:
+    """Clear active disruptions on all roads."""
+    async with manager._lock:
+        manager.sim.clear_disruptions(kind)
+    await manager.broadcast_state()
+    return {"status": "disruptions_cleared"}
+
+
+@app.post("/api/osm/import", tags=["OpenStreetMap"], summary="Import OpenStreetMap region")
+async def import_osm(params: OsmImportParams) -> dict[str, Any]:
+    """Fetch real-world road networks from OpenStreetMap Overpass API and convert to simulation grid."""
+    async with manager._lock:
+        result = await asyncio.to_thread(manager.sim.import_region, params.place_name)
+    await manager.broadcast({"type": "import_result", **result})
+    if result.get("ok"):
+        await manager.broadcast_network()
+        await manager.broadcast_state()
+    return result
+
+
+@app.post("/api/scenarios/run", tags=["Scenarios"], summary="Run batch scenario")
+async def run_scenario_endpoint(params: ScenarioParams) -> dict[str, Any]:
+    """Execute a batch scenario on a worker thread and return result metrics."""
+    return await manager.run_batch(params.scenario)
+
+
+# --------------------------------------------------------------------------- WebSocket Endpoint
 @app.websocket("/ws")
 async def ws_endpoint(ws: WebSocket) -> None:
+    """Primary bidirectional WebSocket channel for real-time simulation streaming and control."""
     await manager.register(ws)
     try:
         while True:
