@@ -22,17 +22,35 @@ import type {
   StateMessage,
 } from "../types";
 
+function normalizeWsUrl(url: string): string {
+  let cleaned = url.trim();
+  if (cleaned.startsWith("http://")) {
+    cleaned = "ws://" + cleaned.slice(7);
+  } else if (cleaned.startsWith("https://")) {
+    cleaned = "wss://" + cleaned.slice(8);
+  } else if (!cleaned.startsWith("ws://") && !cleaned.startsWith("wss://")) {
+    cleaned = "wss://" + cleaned;
+  }
+  // Strip trailing slash
+  cleaned = cleaned.replace(/\/+$/, "");
+  // Append /ws if not present
+  if (!cleaned.endsWith("/ws")) {
+    cleaned += "/ws";
+  }
+  return cleaned;
+}
+
 function defaultWsUrl(): string {
   // In production (Vercel), use the environment variable pointing to Railway backend
   // In development, use same-origin (Vite proxies /ws → backend)
   // Can override with ?ws=... query param for testing
   const params = new URLSearchParams(window.location.search);
   const override = params.get("ws");
-  if (override) return override;
+  if (override) return normalizeWsUrl(override);
 
   // Check for Vite environment variable first (production deployment)
   const envWsUrl = import.meta.env.VITE_BACKEND_WS_URL;
-  if (envWsUrl) return envWsUrl;
+  if (envWsUrl) return normalizeWsUrl(envWsUrl);
 
   // Fallback to same-origin for local dev (Vite proxy handles this)
   const proto = window.location.protocol === "https:" ? "wss" : "ws";
