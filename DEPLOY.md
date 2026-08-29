@@ -1,24 +1,39 @@
-# Deployment Guide: Railway (Backend) + Vercel (Frontend)
+# Deployment Guide
 
-## Overview
-
-This project uses a **split deployment architecture**:
-- **Backend (FastAPI + WebSocket)**: Deployed to **Railway** as a containerized service
-- **Frontend (React + PixiJS + Vite)**: Deployed to **Vercel** as a static site
-
-The frontend and backend run on separate domains and communicate via cross-origin WebSocket connections.
+This project supports two deployment options:
+1. **Option 1: 1-Click Unified Railway Deployment (Recommended)** — Deploys the complete application (Frontend + Backend) in a single service on Railway.
+2. **Option 2: Split Deployment** — Backend on Railway + Frontend on Vercel.
 
 ---
 
-## Prerequisites
+## ⚡ Option 1: 1-Click Unified Railway Deployment (Recommended)
+
+When you connect this repository to Railway, Railway will automatically detect [`railway.json`](file:///Users/rachitgoyal/Desktop/cellular-automata-work/ca-seepage-sim/railway.json) and [`Dockerfile`](file:///Users/rachitgoyal/Desktop/cellular-automata-work/ca-seepage-sim/Dockerfile) at the root.
+
+### Steps:
+1. Go to [railway.app/new](https://railway.app/new) and select **"Deploy from GitHub repo"**.
+2. Select this repository.
+3. Railway builds the unified container:
+   - Builds the React + PixiJS frontend.
+   - Sets up Nginx reverse proxy dynamically bound to Railway's dynamic `$PORT`.
+   - Boots the FastAPI WebSocket backend.
+   - Healthcheck `/health` passes automatically.
+4. Go to **Settings** → **Networking** → **Public Networking** and click **"Generate Domain"**.
+5. Open your generated domain (e.g., `https://your-app.up.railway.app`) in your browser. The frontend and backend communicate seamlessly via same-origin WebSocket (`wss://.../ws`).
+
+---
+
+## Option 2: Split Deployment Architecture (Railway Backend + Vercel Frontend)
+
+### Prerequisites
 
 1. **Railway Account**: Sign up at [railway.app](https://railway.app/)
 2. **Vercel Account**: Sign up at [vercel.com](https://vercel.com/)
-3. **Git Repository**: Push this code to GitHub/GitLab (both platforms can deploy from git)
+3. **Git Repository**: Push this code to GitHub/GitLab
 
 ---
 
-## Deployment Order
+### Deployment Order
 
 **IMPORTANT:** Deploy the backend FIRST, then the frontend. The frontend build requires the backend's Railway URL to be set as an environment variable before building.
 
